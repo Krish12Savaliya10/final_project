@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourGen | Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <style>
+        :root { --sidebar-width: 260px; --primary: #0d6efd; --dark: #111418; }
+        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+        
+        #sidebar { 
+            width: var(--sidebar-width); height: 100vh; position: fixed; 
+            background: var(--dark); padding-top: 80px; z-index: 1000; 
+        }
+        #sidebar .nav-link { color: #a0aec0; padding: 12px 25px; cursor: pointer; border-radius: 10px; margin: 0 15px; transition: 0.3s; }
+        #sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        #sidebar .nav-link.active { color: #fff; background: var(--primary); }
+        
+        #main-content { margin-left: var(--sidebar-width); padding: 100px 40px; }
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        .card { border: none; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .tour-img-sm { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+        .avatar-circle { width: 40px; height: 40px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; }
+        
+        @media (max-width: 991px) {
+            #sidebar { width: 100%; height: auto; position: relative; padding-top: 20px; }
+            #main-content { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <ul class="nav flex-column gap-2">
+            <li><a onclick="showSection('dashboard', this)" class="nav-link active"><i class="bi bi-grid-1x2-fill me-2"></i> Analytics</a></li>
+            <li><a onclick="showSection('bookings', this)" class="nav-link"><i class="bi bi-person-badge-fill me-2"></i> User Bookings</a></li>
+            <li><hr class="text-secondary mx-3"></li>
+            <li><a href="home.html" class="nav-link"><i class="bi bi-box-arrow-up-right me-2"></i> Live Website</a></li>
+        </ul>
+    </nav>
+
+    <div id="main-content">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+            <div class="container-fluid px-4">
+                <a class="navbar-brand fw-bold"><i>TourGen</i> Admin</a>
+            </div>
+        </nav>
+
+        <div id="dashboard" class="section-content active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold">Inventory & Stats</h3>
+                <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addTourModal">
+                    <i class="bi bi-plus-lg me-2"></i>Add Package
+                </button>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <div class="col-md-6">
+                    <div class="card p-4">
+                        <small class="text-muted fw-bold">TOTAL PACKAGES</small>
+                        <h2 class="fw-bold mt-1" id="stat-tours">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-4">
+                        <small class="text-muted fw-bold">CONFIRMED BOOKINGS</small>
+                        <h2 class="fw-bold mt-1 text-primary" id="stat-bookings">0</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0">
+                <div class="p-3 border-bottom"><h5 class="mb-0 fw-bold">Active Tour Packages</h5></div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="bg-light text-muted">
+                            <tr><th class="ps-4">Image</th><th>Tour Name</th><th>Base Price</th><th class="text-end pe-4">Action</th></tr>
+                        </thead>
+                        <tbody id="tourTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="bookings" class="section-content">
+            <h3 class="fw-bold mb-4">Customer Orders</h3>
+            <div class="card border-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 py-3">Customer Profile</th>
+                                <th class="py-3">Destination</th>
+                                <th class="py-3">Guests</th>
+                                <th class="py-3">Total Fare</th>
+                                <th class="text-end pe-4 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <footer class="bg-dark text-light pt-4 mt-5" id="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-uppercase">TourGen</h5>
+                    <p class="small">
+                        We provide budget-friendly and customized tour packages across India
+                        with complete trip planning and support.
+                    </p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-uppercase">Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="home.html" class="text-light text-decoration-none">Home</a></li>
+                        <li><a href="home.html#tour" class="text-light text-decoration-none">Tours</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">MyTour</a></li>
+                        <li><a href="home.html#footer" class="text-light text-decoration-none">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-uppercase">Contact Us</h5>
+                    <p class="small mb-1">India</p>
+                    <p class="small mb-1">+91 9712952405</p>
+                    <p class="small">tourgen@gmail.com</p>
+                    <div class="row container" style="width:50%;">
+                        <div class="col-3"><a
+                                href="https://www.instagram.com/hemil_patel812?igsh=N3JkNTgzcXQ0ZnJ6&utm_source=qr"><i
+                                    class="bi bi-instagram"></i></a></div>
+                        <div class="col-3"><a href="https://youtube.com/@hemilgaming1261?si=0rPsl240UQqIwcGx"><i
+                                    class="bi bi-youtube"></i></a></div>
+                        <div class="col-3"><a href="#"><i class="bi bi-github"></i></a></div>
+                        <div class="col-3"><a href="tel:9712952405"><i class="bi bi-phone"></i></a></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <hr class="border-secondary">
+            <div class="text-center pb-3">
+                <p class="mb-0 small">
+                    © 2026 TourGen. All Rights Reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+    </div>
+    
+
+    <div class="modal fade" id="addTourModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg p-3" style="border-radius: 20px;">
+                <form id="tourForm">
+                    <h5 class="fw-bold mb-4">New Tour Details</h5>
+                    <input type="text" id="name" class="form-control mb-3" placeholder="Destination Name" required>
+                    <input type="text" id="img" class="form-control mb-3" placeholder="Image URL" required>
+                    <textarea id="desc" class="form-control mb-3" placeholder="Brief Description" required></textarea>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><input type="text" id="price" class="form-control" placeholder="Price (Ex: 5000)"></div>
+                        <div class="col-6"><input type="text" id="dur" class="form-control" placeholder="Ex: 4 Days"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow">Publish Tour</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const defaults = [
+            { name: "Kerala", img: "image/kerala.jpg", price: "₹3500", dur: "3 Days", desc: "Backwaters" },
+            { name: "Himachal", img: "image/manali.jpg", price: "₹4000", dur: "5 Days", desc: "Mountains" }
+        ];
+
+        function showSection(id, btn) {
+            document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function render() {
+            const tours = JSON.parse(localStorage.getItem('myTours')) || defaults;
+            const bookings = JSON.parse(localStorage.getItem('allBookings')) || [];
+
+            document.getElementById('stat-tours').innerText = tours.length;
+            document.getElementById('stat-bookings').innerText = bookings.length;
+
+            // Render Tour Table
+            document.getElementById('tourTable').innerHTML = tours.map((t, i) => `
+                <tr>
+                    <td class="ps-4"><img src="${t.img}" class="tour-img-sm"></td>
+                    <td><span class="fw-bold">${t.name}</span></td>
+                    <td class="text-primary fw-bold">${t.price}</td>
+                    <td class="text-end pe-4">
+                        <button onclick="deleteTour(${i})" class="btn text-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render User Bookings
+            const bookingBody = document.getElementById('bookingTable');
+            if(bookings.length === 0) {
+                bookingBody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No customers yet.</td></tr>`;
+            } else {
+                bookingBody.innerHTML = bookings.reverse().map(b => `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3">${b.name.charAt(0).toUpperCase()}</div>
+                                <div>
+                                    <div class="fw-bold">${b.name}</div>
+                                    <small class="text-muted">${b.email}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-primary border">${b.tour}</span></td>
+                        <td>${b.persons} Persons</td>
+                        <td class="fw-bold text-success">₹${b.total}</td>
+                        <td class="text-end pe-4"><span class="badge bg-success">PAID</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        document.getElementById('tourForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let tours = JSON.parse(localStorage.getItem('myTours')) || defaults;
+            tours.push({
+                name: document.getElementById('name').value,
+                img: document.getElementById('img').value,
+                desc: document.getElementById('desc').value,
+                price: '₹' + document.getElementById('price').value.replace('₹',''),
+                dur: document.getElementById('dur').value
+            });
+            localStorage.setItem('myTours', JSON.stringify(tours));
+            this.reset();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addTourModal')).hide();
+            render();
+        });
+
+        function deleteTour(i) {
+            let tours = JSON.parse(localStorage.getItem('myTours')) || defaults;
+            tours.splice(i, 1);
+            localStorage.setItem('myTours', JSON.stringify(tours));
+            render();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>

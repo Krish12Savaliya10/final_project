@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+
+    #logo{
+        position: fixed;
+        color: white;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        top: 15px;
+        left: 20px;
+
+    }
+
+    body{
+      min-height:100vh;
+      background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .login-container{
+      width:100%;
+      max-width:400px;
+      padding:40px;
+      border-radius:20px;
+      background:rgba(255,255,255,0.1);
+      backdrop-filter: blur(12px);
+      box-shadow:0 15px 40px rgba(0,0,0,0.4);
+      color:#fff;
+      text-align:center;
+      animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(30px);}
+      to{opacity:1;transform:translateY(0);}    
+    }
+
+    .login-container h2{
+      margin-bottom:10px;
+      font-weight:600;
+      letter-spacing:1px;
+    }
+
+    .login-container p{
+      font-size:14px;
+      color:#ddd;
+      margin-bottom:30px;
+    }
+
+    .input-group{
+      position:relative;
+      margin-bottom:20px;
+    }
+
+    .input-group i{
+      position:absolute;
+      top:50%;
+      left:15px;
+      transform:translateY(-50%);
+      color:#ccc;
+      font-size:18px;
+    }
+
+    .input-group input{
+      width:100%;
+      padding:12px 12px 12px 45px;
+      border:none;
+      outline:none;
+      border-radius:10px;
+      background:rgba(255,255,255,0.15);
+      color:#fff;
+      font-size:14px;
+    }
+
+    .input-group input::placeholder{color:white;}
+
+    .options{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+      margin-bottom:20px;
+    }
+
+    .options label{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+    }
+
+    .options a{
+      color:#00e6e6;
+      text-decoration:none;
+    }
+
+    .login-btn{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:12px;
+      background:linear-gradient(135deg,#00e6e6,#00b3b3);
+      color:#000;
+      font-weight:600;
+      font-size:15px;
+      cursor:pointer;
+      transition:0.3s;
+    }
+
+    .login-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 8px 20px rgba(0,230,230,0.4);
+    }
+
+    .register-link{
+      margin-top:25px;
+      font-size:13px;
+      color:#ddd;
+    }
+
+    .register-link a{
+      color:#00e6e6;
+      text-decoration:none;
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+<h2 id="logo">TourGen</h2>
+  <div class="login-container">
+    <h2>Welcome Back</h2>
+    <p>Login to your account</p>
+
+    <form>
+      <div class="input-group">
+        <i class="bi bi-person"></i>
+        <input type="text" placeholder="Username or Email" required>
+      </div>
+
+      <div class="input-group">
+        <i class="bi bi-lock"></i>
+        <input type="password" placeholder="Password" required>
+      </div>
+
+      <div class="options">
+        <label><input type="checkbox"> Remember me</label>
+        <a href="#">Forgot Password?</a>
+      </div>
+
+      <button class="login-btn" type="submit" >Login</button>
+
+      <div class="register-link">
+        Don’t have an account? <a href="signup.html">Create Account</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
