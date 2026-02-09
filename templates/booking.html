@@ -1,207 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TourGen | Premium Booking</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-  <style>
-    body { background: #eef2f7; font-family: 'Segoe UI', sans-serif; padding-top: 80px; }
-    .card { border-radius: 18px; border: none; margin-bottom: 20px; }
-    .price-card { background: linear-gradient(135deg, #0d6efd, #6610f2); color: #fff; border-radius: 20px; position: sticky; top: 100px; }
-    .badge-day { background: #0d6efd; }
-    .hover-card:hover { transform: translateY(-4px); transition: 0.3s; }
-  </style>
+<meta charset="UTF-8">
+<title>TourGen | Premium Booking</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
+
 <body>
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="home.html"><i>TourGen</i></a>
-    </div>
-  </nav>
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+<div class="container">
+<a class="navbar-brand fw-bold" href="{{ url_for('home') }}"><i>TourGen</i></a>
+</div>
+</nav>
 
-  <div class="container my-5">
-    <div class="row g-4">
-      <div class="col-lg-8">
-        <div class="card shadow p-4 hover-card">
-          <h2 id="tourTitle">Loading Tour...</h2>
-          <p class="text-muted" id="tourDesc"></p>
-        </div>
+<!-- MAIN -->
+<div class="container my-5">
+<div class="row g-4">
 
-        <div class="card shadow p-4 hover-card">
-          <h4 class="fw-bold mb-3">Customization</h4>
-          <div class="mb-3">
-            <label class="form-label">Transport Type</label>
-            <select class="form-select" id="car" onchange="calculateTotal()">
-              <option value="1500">Hatchback – ₹1500/day</option>
-              <option value="2500">Sedan – ₹2500/day</option>
-              <option value="4000">SUV – ₹4000/day</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Hotel Category</label>
-            <select class="form-select" id="hotel" onchange="calculateTotal()">
-              <option value="2000">Standard – ₹2000/day</option>
-              <option value="4000">Deluxe – ₹4000/day</option>
-              <option value="7000">Premium – ₹7000/day</option>
-            </select>
-          </div>
-        </div>
+<!-- LEFT SIDE -->
+<div class="col-lg-8">
 
-        <div class="card shadow p-4 hover-card">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Number Of People</label>
-              <input type="number" class="form-control" id="people" value="1" min="1" oninput="calculateTotal()">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Duration</label>
-              <select class="form-select" id="days" onchange="calculateTotal()">
-                <option value="3">3 Days / 2 Nights</option>
-                <option value="5">5 Days / 4 Nights</option>
-                <option value="7">7 Days / 6 Nights</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-2">
-            <label class="form-label">Travel Start Date</label>
-            <input type="date" class="form-control" id="travelDate">
-          </div>
-        </div>
-      </div>
+<div class="card shadow p-4">
+<h2>{{ tour.title }}</h2>
+<p class="text-muted">{{ tour.description }}</p>
+</div>
 
-      <div class="col-lg-4">
-        <div class="card shadow p-4 price-card text-center">
-          <h5>Estimated Cost</h5>
-          <h1 class="fw-bold">₹ <span id="totalPrice">0</span></h1>
-          <button class="btn btn-light mt-3 w-100 fw-bold py-3" onclick="saveBooking()">
-            <i class="bi bi-credit-card-2-front"></i> Confirm & Pay
-          </button>
-          <p class="small mt-3 mb-0 opacity-75">Secure checkout via UPI or Card</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <footer class="bg-dark text-light pt-4 mt-5" id="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">TourGen</h5>
-                    <p class="small">
-                        We provide budget-friendly and customized tour packages across India
-                        with complete trip planning and support.
-                    </p>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="home.html" class="text-light text-decoration-none">Home</a></li>
-                        <li><a href="home.html#tour" class="text-light text-decoration-none">Tours</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">MyTour</a></li>
-                        <li><a href="home.html#footer" class="text-light text-decoration-none">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">Contact Us</h5>
-                    <p class="small mb-1">India</p>
-                    <p class="small mb-1">+91 9712952405</p>
-                    <p class="small">tourgen@gmail.com</p>
-                    <div class="row container" style="width:50%;">
-                        <div class="col-3"><a
-                                href="https://www.instagram.com/hemil_patel812?igsh=N3JkNTgzcXQ0ZnJ6&utm_source=qr"><i
-                                    class="bi bi-instagram"></i></a></div>
-                        <div class="col-3"><a href="https://youtube.com/@hemilgaming1261?si=0rPsl240UQqIwcGx"><i
-                                    class="bi bi-youtube"></i></a></div>
-                        <div class="col-3"><a href="#"><i class="bi bi-github"></i></a></div>
-                        <div class="col-3"><a href="tel:9712952405"><i class="bi bi-phone"></i></a></div>
-                    </div>
-                </div>
+<!-- CUSTOMIZATION -->
+<div class="card shadow p-4">
+<h4 class="fw-bold mb-3">Customization</h4>
 
-            </div>
+<label class="form-label">Transport Type</label>
+<select class="form-select mb-3" id="car" onchange="calculateTotal()">
+<option value="1500">Hatchback – ₹1500/day</option>
+<option value="2500">Sedan – ₹2500/day</option>
+<option value="4000">SUV – ₹4000/day</option>
+</select>
 
-            <hr class="border-secondary">
-            <div class="text-center pb-3">
-                <p class="mb-0 small">
-                    © 2026 TourGen. All Rights Reserved.
-                </p>
-            </div>
-        </div>
-    </footer>
-  <script>
-    // 1. DATA SOURCES
-    const hardcodedTours = {
-      kerala: { title: "Kerala Backwater", desc: "Experience the serene backwaters." },
-      goa: { title: "Goa Paradise", desc: "Sun, sand, and sea." },
-      manali: { title: "Manali Adventure", desc: "Snowy peaks and thrills." }
-    };
+<label class="form-label">Hotel Category</label>
+<select class="form-select" id="hotel" onchange="calculateTotal()">
+<option value="2000">Standard – ₹2000/day</option>
+<option value="4000">Deluxe – ₹4000/day</option>
+<option value="7000">Premium – ₹7000/day</option>
+</select>
+</div>
 
-    // 2. LOAD ANY TOUR (Dynamic)
-    function loadTourData() {
-      const params = new URLSearchParams(window.location.search);
-      const tourKey = params.get("tour") ? params.get("tour").toLowerCase() : "";
-      
-      let selectedTour = null;
+<!-- PEOPLE & DAYS -->
+<div class="card shadow p-4">
+<div class="row">
+<div class="col-md-6 mb-3">
+<label class="form-label">Number Of People</label>
+<input type="number" class="form-control" id="people" value="1" min="1" oninput="calculateTotal()">
+</div>
 
-      // Check hardcoded list first
-      if (hardcodedTours[tourKey]) {
-        selectedTour = hardcodedTours[tourKey];
-      } else {
-        // Check Admin-added tours from localStorage
-        const adminTours = JSON.parse(localStorage.getItem('addedTours')) || [];
-        const found = adminTours.find(t => t.name.toLowerCase() === tourKey);
-        if (found) {
-          selectedTour = { title: found.name, desc: found.desc };
-        }
-      }
+<div class="col-md-6 mb-3">
+<label class="form-label">Duration</label>
+<select class="form-select" id="days" onchange="calculateTotal()">
+<option value="3">3 Days / 2 Nights</option>
+<option value="5">5 Days / 4 Nights</option>
+<option value="7">7 Days / 6 Nights</option>
+</select>
+</div>
+</div>
 
-      if (selectedTour) {
-        document.getElementById("tourTitle").textContent = selectedTour.title;
-        document.getElementById("tourDesc").textContent = selectedTour.desc;
-        calculateTotal();
-      } else {
-        document.getElementById("tourTitle").textContent = "Tour Not Found";
-      }
-    }
+<label class="form-label">Travel Start Date</label>
+<input type="date" class="form-control" id="travelDate">
+</div>
 
-    // 3. CALCULATION
-    function calculateTotal() {
-      const people = document.getElementById("people").value || 1;
-      const days = document.getElementById("days").value;
-      const hotel = document.getElementById("hotel").value;
-      const car = document.getElementById("car").value;
+</div>
 
-      const total = people * days * (Number(hotel) + Number(car));
-      document.getElementById("totalPrice").textContent = total.toLocaleString();
-    }
+<!-- RIGHT SIDE PRICE -->
+<div class="col-lg-4">
+<div class="card shadow p-4 text-center bg-primary text-white">
 
-    // 4. SAVE & REDIRECT
-    function saveBooking() {
-      const date = document.getElementById("travelDate").value;
-      const people = document.getElementById("people").value;
+<h5>Estimated Cost</h5>
+<h1 class="fw-bold">₹ <span id="totalPrice">0</span></h1>
 
-      if (!date || !people || people <= 0) {
-        alert("Please select a date and enter number of travelers.");
-        return;
-      }
+<form method="POST">
+<input type="hidden" name="date" id="hiddenDate">
+<button class="btn btn-light mt-3 w-100 fw-bold py-3">
+<i class="bi bi-credit-card-2-front"></i> Confirm & Pay
+</button>
+</form>
 
-      const bookingData = {
-        tour: document.getElementById("tourTitle").textContent,
-        hotel: document.getElementById("hotel").selectedOptions[0].text.split(' – ')[0],
-        car: document.getElementById("car").selectedOptions[0].text.split(' – ')[0],
-        people: people,
-        days: document.getElementById("days").value,
-        date: date,
-        price: document.getElementById("totalPrice").textContent
-      };
+<p class="small mt-3 mb-0 opacity-75">Secure checkout via UPI or Card</p>
 
-      localStorage.setItem("booking", JSON.stringify(bookingData));
-      window.location.href = "payment.html";
-    }
+</div>
+</div>
 
-    window.onload = loadTourData;
-  </script>
+</div>
+</div>
+
+<!-- JS -->
+<script>
+
+function calculateTotal(){
+const people = document.getElementById("people").value || 1;
+const days = document.getElementById("days").value;
+const hotel = document.getElementById("hotel").value;
+const car = document.getElementById("car").value;
+
+const total = people * days * (Number(hotel) + Number(car));
+document.getElementById("totalPrice").textContent = total.toLocaleString();
+}
+
+document.querySelector("form").addEventListener("submit", function(){
+document.getElementById("hiddenDate").value =
+document.getElementById("travelDate").value;
+});
+
+calculateTotal();
+</script>
+
 </body>
 </html>

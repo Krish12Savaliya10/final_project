@@ -1,347 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <title>TourGen | Secure Payment</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>TourGen | Secure Payment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/payment.css') }}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-
-  <style>
-    body {
-      background: linear-gradient(135deg, #eef2f7, #dfe7f3);
-      font-family: 'Segoe UI', sans-serif;
-      padding-top: 80px;
-    }
-
-    .card {
-      border-radius: 20px;
-      border: none;
-      transition: 0.3s;
-    }
-
-    .payment-img {
-      background: linear-gradient(135deg, #0d6efd, #6610f2);
-      color: white;
-      border-radius: 18px;
-      padding: 30px;
-      text-align: center;
-    }
-
-    .amount {
-      font-size: 2.6rem;
-      font-weight: 700;
-    }
-
-    .nav-pills .nav-link {
-      border-radius: 30px;
-      font-weight: 600;
-      color: #555;
-    }
-
-    .nav-pills .nav-link.active {
-      background: #0d6efd;
-      color: white;
-    }
-
-    .qr-box {
-      border: 2px dashed #0d6efd;
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      background: #f8fbff;
-    }
-
-    #downloadSection {
-      display: none;
-    }
-
-    .receipt-preview {
-      background: #fdfdfd;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: left;
-    }
-  </style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
 
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#"><i>TourGen</i></a>
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark bg-dark fixed-top">
+<div class="container">
+<a class="navbar-brand fw-bold" href="{{ url_for('home') }}"><i>TourGen</i></a>
+</div>
+</nav>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<div class="container my-5">
+<div class="row g-4 justify-content-center">
 
-            <div class="collapse navbar-collapse text-center" id="navMenu">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link active text-danger" href="home.html">Home</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="home.html#tour">Tours</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="#">MyTour</a></li>
-                    <li class="nav-item"><a class="nav-link text-white" href="home.html#footer">About</a></li>
-                    <button type="button" class="btn btn-primary ms-2">
-                        <i class="bi bi-person me-2"></i>Login
-                    </button>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<!-- BOOKING SUMMARY -->
+<div class="col-lg-5">
+<div class="card shadow p-4">
 
-  <div class="container my-5">
-    <div class="row g-4 justify-content-center">
+<div class="payment-img mb-4 text-center">
+<h4>Deposit Payment</h4>
+<div class="amount">₹ {{ booking.price }}</div>
+<p class="mb-0">Advance Booking Fee</p>
+</div>
 
-      <div class="col-lg-5" id="summaryCard">
-        <div class="card shadow p-4">
-          <div class="payment-img mb-4">
-            <h4>Deposit Payment</h4>
-            <div class="amount">₹ 5000</div>
-            <p class="mb-0">Advance Booking Fee</p>
-          </div>
+<h5 class="fw-bold mb-3 border-bottom pb-2">Booking Summary</h5>
 
-          <h5 class="fw-bold mb-3 border-bottom pb-2">Booking Summary</h5>
-          <div class="d-flex justify-content-between mb-2"><span>Tour:</span><strong id="tour"></strong></div>
-          <div class="d-flex justify-content-between mb-2"><span>Hotel:</span><strong id="hotel"></strong></div>
-          <div class="d-flex justify-content-between mb-2"><span>Transport:</span><strong id="car"></strong></div>
-          <div class="d-flex justify-content-between mb-2"><span>People:</span><strong id="people"></strong></div>
-          <div class="d-flex justify-content-between mb-3"><span>Days:</span><strong id="days"></strong></div>
+<div class="d-flex justify-content-between mb-2">
+<span>Tour:</span><strong>{{ booking.title }}</strong>
+</div>
 
-          <div class="alert alert-warning py-2 small">
-            <i class="bi bi-info-circle"></i> Non-refundable after 24 hours.
-          </div>
-        </div>
-      </div>
+<div class="d-flex justify-content-between mb-2">
+<span>Status:</span><strong>{{ booking.status }}</strong>
+</div>
 
-      <div class="col-lg-6">
-        <div class="card shadow p-4 h-100">
+<div class="d-flex justify-content-between mb-2">
+<span>User:</span><strong>{{ session.username }}</strong>
+</div>
 
-          <div id="paymentMethods">
-            <h4 class="fw-bold mb-4">Select Payment</h4>
-            <ul class="nav nav-pills mb-4 justify-content-center">
-              <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#upi"><i class="bi bi-qr-code"></i> UPI</button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#card"><i class="bi bi-credit-card"></i> Card</button>
-              </li>
-            </ul>
+</div>
+</div>
 
-            <div class="tab-content">
-              <div class="tab-pane fade show active" id="upi">
-                <div class="qr-box mb-4">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=firegaming8122006-4@oksbi&pn=TourGen&am=5000" class="img-fluid mb-2">
-                  <p class="mb-0 font-monospace small">firegaming8122006-4@oksbi</p>
-                </div>
-                <button class="btn btn-success w-100 py-3 fw-bold" onclick="processPayment()">Confirm Payment</button>
-              </div>
+<!-- PAYMENT OPTIONS -->
+<div class="col-lg-6">
+<div class="card shadow p-4 text-center">
 
-              <div class="tab-pane fade" id="card">
-                <div class="mb-3"><input type="text" class="form-control" placeholder="Card Holder Name"></div>
-                <div class="mb-3"><input type="text" class="form-control" placeholder="1234 5678 9101 1121"></div>
-                <div class="row mb-4">
-                  <div class="col"><input type="text" class="form-control" placeholder="MM/YY"></div>
-                  <div class="col"><input type="password" class="form-control" placeholder="CVV"></div>
-                </div>
-                <button class="btn btn-primary w-100 py-3 fw-bold" onclick="processPayment()">Pay ₹ 5,000</button>
-              </div>
-            </div>
-          </div>
+<h4 class="fw-bold mb-4">Choose Payment</h4>
 
-          <div id="downloadSection" class="text-center">
-            <i class="bi bi-patch-check-fill text-success" style="font-size: 3.5rem;"></i>
-            <h3 class="fw-bold mt-2">Payment Verified</h3>
-            <p class="text-muted small">Transaction ID: <span id="displayID" class="fw-bold text-dark"></span></p>
+<!-- UPI QR -->
+<div class="mb-4">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=demo@upi&pn=TourGen&am={{ booking.price }}" class="img-fluid">
+<p class="small mt-2">Scan & Pay via any UPI app</p>
+</div>
 
-            <div class="receipt-preview my-4 small">
-              <div class="d-flex justify-content-between"><span>Status:</span> <span class="badge bg-success">PAID</span></div>
-              <hr>
-              <div class="d-flex justify-content-between"><span>Amount:</span> <strong>₹ 5,000.00</strong></div>
-              <div class="d-flex justify-content-between"><span>Date:</span> <span id="currentDate"></span></div>
-            </div>
+<form method="POST">
+<input type="hidden" name="amount" value="{{ booking.price }}">
+<button class="btn btn-success w-100 py-3 fw-bold">
+<i class="bi bi-check-circle"></i> I Have Paid
+</button>
+</form>
 
-            <button class="btn btn-dark w-100 py-3 mb-3" onclick="downloadPDF()">
-              <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Download Official PDF
-            </button>
-            <a href="admin.html" class="btn btn-outline-primary w-100">Go to Dashboard</a>
-          </div>
+</div>
+</div>
 
-        </div>
-      </div>
-    </div>
-  </div>
-  <footer class="bg-dark text-light pt-4 mt-5" id="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">TourGen</h5>
-                    <p class="small">
-                        We provide budget-friendly and customized tour packages across India
-                        with complete trip planning and support.
-                    </p>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="home.html" class="text-light text-decoration-none">Home</a></li>
-                        <li><a href="home.html#tour" class="text-light text-decoration-none">Tours</a></li>
-                        <li><a href="#" class="text-light text-decoration-none">MyTour</a></li>
-                        <li><a href="home.html#footer" class="text-light text-decoration-none">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <h5 class="text-uppercase">Contact Us</h5>
-                    <p class="small mb-1">India</p>
-                    <p class="small mb-1">+91 9712952405</p>
-                    <p class="small">tourgen@gmail.com</p>
-                    <div class="row container" style="width:50%;">
-                        <div class="col-3"><a
-                                href="https://www.instagram.com/hemil_patel812?igsh=N3JkNTgzcXQ0ZnJ6&utm_source=qr"><i
-                                    class="bi bi-instagram"></i></a></div>
-                        <div class="col-3"><a href="https://youtube.com/@hemilgaming1261?si=0rPsl240UQqIwcGx"><i
-                                    class="bi bi-youtube"></i></a></div>
-                        <div class="col-3"><a href="#"><i class="bi bi-github"></i></a></div>
-                        <div class="col-3"><a href="tel:9712952405"><i class="bi bi-phone"></i></a></div>
-                    </div>
-                </div>
+</div>
+</div>
 
-            </div>
-
-            <hr class="border-secondary">
-            <div class="text-center pb-3">
-                <p class="mb-0 small">
-                    © 2026 TourGen. All Rights Reserved.
-                </p>
-            </div>
-        </div>
-    </footer>
-  <script>
-    let currentTransactionID = "";
-
-    // Load Data from previous page
-    const rawData = JSON.parse(localStorage.getItem("booking")) || {};
-
-    function cleanText(text) {
-      if (!text) return "N/A";
-      return String(text).replace(/[^\x20-\x7E]/g, '').trim();
-    }
-
-    const data = {
-      tour: cleanText(rawData.tour),
-      hotel: cleanText(rawData.hotel),
-      car: cleanText(rawData.car),
-      people: cleanText(rawData.people),
-      days: cleanText(rawData.days),
-      name: cleanText(rawData.name || "Customer"),
-      email: cleanText(rawData.email || "No Email"),
-      tourDate: cleanText(rawData.date || "Not Selected") // Added Tour Date
-    };
-
-    // UI Updates
-    document.getElementById("tour").textContent = data.tour;
-    document.getElementById("hotel").textContent = data.hotel;
-    document.getElementById("car").textContent = data.car;
-    document.getElementById("people").textContent = data.people;
-    document.getElementById("days").textContent = data.days;
-
-    function processPayment() {
-      currentTransactionID = "TG-" + Math.random().toString(36).substr(2, 9).toUpperCase();
-
-      const finalBooking = {
-        name: data.name,
-        email: data.email,
-        tour: data.tour,
-        persons: data.people,
-        total: "5,000",
-        status: "PAID",
-        txnId: currentTransactionID,
-        bookingDate: new Date().toLocaleDateString() // Record current date as booking date
-      };
-
-      let bookings = JSON.parse(localStorage.getItem('allBookings')) || [];
-      bookings.push(finalBooking);
-      localStorage.setItem('allBookings', JSON.stringify(bookings));
-
-      document.getElementById("displayID").textContent = currentTransactionID;
-      document.getElementById("currentDate").textContent = new Date().toLocaleString();
-      document.getElementById("paymentMethods").style.display = "none";
-      document.getElementById("downloadSection").style.display = "block";
-      alert("Payment Successful! Record sent to Admin.");
-    }
-
-    function downloadPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const img = new Image();
-      img.src = 'image/SING.jpeg';
-
-      const today = new Date().toLocaleDateString();
-
-      img.onload = function () {
-        // --- Header Design ---
-        doc.setFillColor(13, 110, 253);
-        doc.rect(0, 0, 210, 40, 'F');
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.setTextColor(255, 255, 255);
-        doc.text("TourGen Official Receipt", 20, 25);
-        
-        doc.setFontSize(10);
-        doc.text("Thank you for booking with us!", 20, 32);
-
-        // --- Details Table ---
-        doc.setTextColor(0, 0, 0);
-        doc.autoTable({
-          startY: 50,
-          head: [['Description', 'Details']],
-          body: [
-            ['Transaction ID', currentTransactionID],
-            ['Booking Date', today],
-            ['Destination', data.tour],
-            ['Hotel Category', data.hotel],
-            ['Transport Type', data.car],
-            ['Total Travelers', data.people],
-            ['Payment Status', 'PAID (Advance)']
-          ],
-          theme: 'striped',
-          headStyles: { fillColor: [13, 110, 253] }
-        });
-
-        // --- Financials ---
-        const finalY = doc.lastAutoTable.finalY + 15;
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Total Amount Paid: INR 5,000.00`, 20, finalY);
-        
-        // --- Signature Section ---
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text("Authorized Signature:", 150, finalY + 5);
-        
-        // The Signature Image
-        doc.addImage(img, 'JPEG', 150, finalY + 8, 40, 20);
-        
-        doc.setDrawColor(200, 200, 200);
-        doc.line(150, finalY + 30, 195, finalY + 30); // Signature line
-        doc.text("TourGen Management", 155, finalY + 35);
-
-        // --- Save ---
-        doc.save(`TourGen_Receipt_${currentTransactionID}.pdf`);
-      };
-
-      img.onerror = function() {
-        alert("Signature image not found, but downloading PDF anyway.");
-        // If image fails, trigger the onload logic without the image
-        img.onload(); 
-      };
-    }
-  </script>
 </body>
 </html>

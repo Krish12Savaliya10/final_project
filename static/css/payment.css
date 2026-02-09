@@ -1,0 +1,22 @@
+body{
+background:linear-gradient(135deg,#eef2f7,#dfe7f3);
+font-family:'Segoe UI',sans-serif;
+padding-top:80px;
+}
+
+.card{
+border-radius:20px;
+border:none;
+}
+
+.payment-img{
+background:linear-gradient(135deg,#0d6efd,#6610f2);
+color:white;
+border-radius:18px;
+padding:30px;
+}
+
+.amount{
+font-size:2.4rem;
+font-weight:700;
+}
