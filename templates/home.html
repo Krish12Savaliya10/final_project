@@ -55,9 +55,30 @@ function searchTour(e){
 </li>
 
 <li class="nav-item ms-2">
-<a class="btn btn-primary" href="{{ url_for('login') }}">
+{% if session.get('user_id') %}
+
+<li class="nav-item">
+<span class="navbar-text text-white me-3">
+👋 {{ session.username }}
+</span>
+</li>
+
+<li class="nav-item">
+<a class="btn btn-danger" href="{{ url_for('logout') }}">
+Logout
+</a>
+</li>
+
+{% else %}
+
+<li class="nav-item">
+<a class="btn btn-primary ms-2" href="{{ url_for('login') }}">
 <i class="bi bi-person me-2"></i>Login
 </a>
+</li>
+
+{% endif %}
+
 </li>
 
 </ul>

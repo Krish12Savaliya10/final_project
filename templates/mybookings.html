@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Bookings</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+<h2 class="mb-4">My Tour Bookings</h2>
+
+<table class="table table-bordered bg-white">
+<thead class="table-dark">
+<tr>
+<th>Tour</th>
+<th>Price</th>
+<th>Date</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody>
+{% for b in bookings %}
+<tr>
+<td>{{ b.title }}</td>
+<td>₹{{ b.price }}</td>
+<td>{{ b.date }}</td>
+<td>
+{% if b.status == 'paid' %}
+<span class="badge bg-success">Paid</span>
+{% else %}
+<span class="badge bg-warning text-dark">Pending</span>
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+</div>
+
+</body>
+</html>

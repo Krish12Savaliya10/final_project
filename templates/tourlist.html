@@ -67,7 +67,8 @@ box-shadow:0 4px 12px rgba(0,0,0,.05);
 
 {% if session.get('user_id') %}
 <li class="nav-item">
-<a class="nav-link" href="{{ url_for('bookings') }}">MyTour</a>
+<a class="nav-link" href="{{ url_for('mybookings') }}"
+>MyTour</a>
 </li>
 <li class="nav-item">
 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
