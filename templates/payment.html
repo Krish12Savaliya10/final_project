@@ -6,69 +6,187 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/payment.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+
+body{
+    background:#eef2f7;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    padding-top:80px;
+}
+
+/* NAVBAR */
+.navbar{ background:#0f172a !important; }
+.navbar-brand{ font-weight:700; font-size:24px; }
+
+/* MAIN CARD */
+.checkout-card{
+    border-radius:18px;
+    box-shadow:0 15px 40px rgba(0,0,0,.12);
+    border:none;
+}
+
+/* AMOUNT BOX */
+.amount-box{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    color:white;
+    border-radius:18px;
+    padding:30px;
+    text-align:center;
+}
+
+.amount-box .price{
+    font-size:42px;
+    font-weight:800;
+    margin:10px 0;
+}
+
+.secure-badge{ font-size:13px; opacity:.9; }
+
+/* SUMMARY */
+.summary-item{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+    font-size:15px;
+}
+
+/* PAYMENT METHOD */
+.method-card{
+    border:2px solid #e2e8f0;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:15px;
+}
+
+.qr-box{
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    display:inline-block;
+}
+
+/* PAY BUTTON */
+.pay-btn{
+    background:#16a34a;
+    border:none;
+    border-radius:50px;
+    padding:16px;
+    font-weight:700;
+    font-size:18px;
+}
+
+.pay-btn:hover{ background:#15803d; }
+
+.trust{ font-size:13px; color:#64748b; margin-top:10px; }
+
+</style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-dark bg-dark fixed-top">
+<nav class="navbar navbar-dark fixed-top">
 <div class="container">
-<a class="navbar-brand fw-bold" href="{{ url_for('home') }}"><i>TourGen</i></a>
+<a class="navbar-brand" href="{{ url_for('home') }}">
+<i class="bi bi-compass"></i> TourGen Checkout
+</a>
 </div>
 </nav>
 
 <div class="container my-5">
 <div class="row g-4 justify-content-center">
 
-<!-- BOOKING SUMMARY -->
+<!-- LEFT SIDE : BILL SUMMARY -->
 <div class="col-lg-5">
-<div class="card shadow p-4">
+<div class="card checkout-card p-4">
 
-<div class="payment-img mb-4 text-center">
-<h4>Deposit Payment</h4>
-<div class="amount">₹ {{ booking.price }}</div>
-<p class="mb-0">Advance Booking Fee</p>
-</div>
-
-<h5 class="fw-bold mb-3 border-bottom pb-2">Booking Summary</h5>
-
-<div class="d-flex justify-content-between mb-2">
-<span>Tour:</span><strong>{{ booking.title }}</strong>
-</div>
-
-<div class="d-flex justify-content-between mb-2">
-<span>Status:</span><strong>{{ booking.status }}</strong>
-</div>
-
-<div class="d-flex justify-content-between mb-2">
-<span>User:</span><strong>{{ session.username }}</strong>
-</div>
-
+<div class="amount-box mb-4">
+<div>Amount to Pay</div>
+<div class="price">₹ {{ amount_to_pay }}</div>
+<small>Includes selected upgrades</small>
+<div class="secure-badge">
+<i class="bi bi-shield-lock"></i> 100% Secure Payment
 </div>
 </div>
 
-<!-- PAYMENT OPTIONS -->
+<h5 class="fw-bold mb-3">Fare Breakdown</h5>
+
+<div class="summary-item">
+<span>Base Tour Cost</span>
+<strong>₹ {{ base_price }}</strong>
+</div>
+
+<div class="summary-item">
+<span>Hotel / Transport Upgrades</span>
+<strong>₹ {{ extra_charges }}</strong>
+</div>
+
+<div class="summary-item">
+<span>Taxes & Service Fees</span>
+<strong class="text-muted">Included</strong>
+</div>
+
+<hr>
+
+<h5 class="fw-bold mt-4 mb-3">Booking Details</h5>
+
+<div class="summary-item">
+<span>Tour Package</span>
+<strong>{{ booking.title }}</strong>
+</div>
+
+<div class="summary-item">
+<span>Traveler</span>
+<strong>{{ session.username }}</strong>
+</div>
+
+<div class="summary-item">
+<span>Travel Date</span>
+<strong>{{ booking.start_date }}</strong>
+</div>
+
+<div class="summary-item">
+<span>Status</span>
+<strong class="text-warning text-capitalize">{{ booking.status }}</strong>
+</div>
+
+<hr>
+
+<div class="summary-item fs-5">
+<span><b>Total Payable</b></span>
+<strong class="text-success">₹ {{ amount_to_pay }}</strong>
+</div>
+
+</div>
+</div>
+
+<!-- RIGHT SIDE : PAYMENT -->
 <div class="col-lg-6">
-<div class="card shadow p-4 text-center">
+<div class="card checkout-card p-4 text-center">
 
-<h4 class="fw-bold mb-4">Choose Payment</h4>
+<h4 class="fw-bold mb-4">UPI Payment</h4>
 
-<!-- UPI QR -->
-<div class="mb-4">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=demo@upi&pn=TourGen&am={{ booking.price }}" class="img-fluid">
-<p class="small mt-2">Scan & Pay via any UPI app</p>
+<div class="qr-box mb-3">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=230x230&data=upi://pay?pa=demo@upi&pn=TourGen&am={{ amount_to_pay }}"
+class="img-fluid">
 </div>
+
+<p class="small text-muted">
+Scan using Google Pay / PhonePe / Paytm
+</p>
 
 <form method="POST">
-<input type="hidden" name="amount" value="{{ booking.price }}">
-<button class="btn btn-success w-100 py-3 fw-bold">
+<input type="hidden" name="amount" value="{{ amount_to_pay }}">
+
+<button class="btn pay-btn w-100 mt-3">
 <i class="bi bi-check-circle"></i> I Have Paid
 </button>
 </form>
+
+<div class="trust mt-3">
+<i class="bi bi-lock"></i> SSL Encrypted • Safe Checkout • No card stored
+</div>
 
 </div>
 </div>

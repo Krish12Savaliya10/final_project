@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TourGen Invoice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+
+/* SCREEN STYLE */
+body{
+    background:#eef2f7;
+    font-family:Arial, Helvetica, sans-serif;
+    padding-top:80px;
+}
+
+/* NAVBAR */
+.custom-navbar{
+    background:#0f172a;
+}
+.brand{
+    font-weight:700;
+    font-size:22px;
+    color:white !important;
+}
+
+/* INVOICE BOX */
+.invoice-box{
+    background:white;
+    max-width:850px;
+    margin:auto;
+    padding:40px;
+    border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+
+/* HEADER */
+.invoice-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.company{
+    font-size:28px;
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.meta{
+    text-align:right;
+    font-size:14px;
+}
+
+/* TABLE */
+.table th{
+    background:#f1f5f9;
+}
+
+.total{
+    text-align:right;
+    font-size:22px;
+    font-weight:bold;
+    margin-top:20px;
+}
+
+/* PRINT SETTINGS (IMPORTANT) */
+@media print{
+
+    nav,
+    .no-print{
+        display:none !important;
+    }
+
+    body{
+        background:white;
+        padding:0;
+    }
+
+    .invoice-box{
+        box-shadow:none;
+        border:none;
+        margin:0;
+        padding:0;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top custom-navbar">
+<div class="container">
+
+<a class="navbar-brand brand" href="{{ url_for('home') }}">
+<i class="bi bi-compass"></i> TourGen
+</a>
+
+<div class="ms-auto no-print">
+<a href="{{ url_for('mybookings') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+<i class="bi bi-arrow-left"></i> Back to My Bookings
+</a>
+
+<button onclick="window.print()" class="btn btn-success btn-sm rounded-pill px-3 ms-2">
+<i class="bi bi-printer"></i> Print / Save PDF
+</button>
+</div>
+
+</div>
+</nav>
+
+<div class="container my-5">
+<div class="invoice-box">
+
+<!-- HEADER -->
+<div class="invoice-header mb-4">
+<div>
+<div class="company">TourGen</div>
+<div>Travel Booking Invoice</div>
+</div>
+
+<div class="meta">
+Invoice #: <b>{{ booking.id }}</b><br>
+Booking Date: {{ booking.date }}<br>
+Travel Date: {{ booking.start_date }}
+</div>
+</div>
+
+<hr>
+
+<!-- CUSTOMER -->
+<h5 class="fw-bold mt-4">Customer Details</h5>
+<p>
+<strong>Name:</strong> {{ session.username }}<br>
+<strong>Status:</strong> {{ booking.status|capitalize }}
+</p>
+
+<!-- TOUR TABLE -->
+<h5 class="fw-bold mt-4">Tour Details</h5>
+
+<table class="table table-bordered mt-3">
+<thead>
+<tr>
+<th>Package</th>
+<th>Travel Date</th>
+<th>Amount</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>{{ booking.title }}</td>
+<td>{{ booking.start_date }}</td>
+<td>₹{{ booking.price }}</td>
+</tr>
+</tbody>
+</table>
+
+<div class="total">
+Total Paid: ₹{{ booking.price }}
+</div>
+
+<p class="mt-5 text-muted">
+Thank you for choosing <b>TourGen</b>.<br>
+We wish you a pleasant and memorable journey!
+</p>
+
+</div>
+</div>
+
+</body>
+</html>
