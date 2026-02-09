@@ -1,160 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TourGen | Admin Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourGen | Admin Command Center</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
 <nav id="sidebar">
-<ul class="nav flex-column gap-2">
-<li><a onclick="showSection('dashboard', this)" class="nav-link active">
-<i class="bi bi-grid-1x2-fill me-2"></i> Analytics</a></li>
-
-<li><a onclick="showSection('bookings', this)" class="nav-link">
-<i class="bi bi-person-badge-fill me-2"></i> User Bookings</a></li>
-
-<li><hr class="text-secondary mx-3"></li>
-
-<li><a href="{{ url_for('home') }}" class="nav-link">
-<i class="bi bi-box-arrow-up-right me-2"></i> Live Website</a></li>
-</ul>
+    <ul class="nav flex-column gap-2">
+        <li>
+            <a onclick="showSection('tours', this)" class="nav-link active">
+                <i class="bi bi-map-fill me-2"></i> Manage Tours
+            </a>
+        </li>
+        <li>
+            <a onclick="showSection('spots', this)" class="nav-link">
+                <i class="bi bi-geo-alt-fill me-2"></i> Spot Library
+            </a>
+        </li>
+        <li>
+            <a onclick="showSection('bookings', this)" class="nav-link">
+                <i class="bi bi-journal-check me-2"></i> Bookings
+            </a>
+        </li>
+        <li><hr class="text-secondary mx-3"></li>
+        <li>
+            <a href="{{ url_for('home') }}" class="nav-link">
+                <i class="bi bi-box-arrow-up-right me-2"></i> Live Website
+            </a>
+        </li>
+    </ul>
 </nav>
 
-<!-- MAIN CONTENT -->
 <div id="main-content">
 
-<nav class="navbar navbar-dark bg-dark fixed-top shadow">
-<div class="container-fluid px-4">
-<a class="navbar-brand fw-bold"><i>TourGen</i> Admin</a>
-<a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+    <nav class="navbar navbar-dark bg-dark fixed-top shadow">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold"><i>TourGen</i> Admin Panel</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div id="tours" class="section-content active">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">Active Tour Packages</h3>
+            <button class="btn btn-primary rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#tourModal">
+                <i class="bi bi-plus-lg me-2"></i>Build Detailed Tour
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="bg-light text-muted">
+                        <tr>
+                            <th class="ps-4">Tour Name</th>
+                            <th>Route (Start ➔ End)</th>
+                            <th>Dates</th>
+                            <th>Base Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tour in tours %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}" 
+                                         class="rounded me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                                    <span class="fw-bold">{{ tour.title }}</span>
+                                </div>
+                            </td>
+                            <td>{{ tour.start_point }} to {{ tour.end_point }}</td>
+                            <td><small>{{ tour.start_date }} to {{ tour.end_date }}</small></td>
+                            <td class="text-primary fw-bold">₹{{ tour.price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="spots" class="section-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">Reusable Spot Library</h3>
+            <button class="btn btn-dark rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#spotModal">
+                <i class="bi bi-plus-circle me-2"></i>Add New Spot
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Spot Name</th>
+                            <th>Database ID</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in spots %}
+                        <tr>
+                            <td class="ps-4">
+                                <i class="bi bi-geo-alt-fill text-danger me-2"></i> {{ s.spot_name }}
+                            </td>
+                            <td><code class="small">SPOT-{{ s.id }}</code></td>
+                            <td><span class="badge bg-success">Library Item</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="bookings" class="section-content">
+        <h3 class="fw-bold mb-4">Traveler Enrollments</h3>
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Username</th>
+                            <th>Joined Tour</th>
+                            <th>Auto-Fixed Date</th>
+                            <th>Payment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in bookings %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-secondary">{{ b.username }}</td>
+                            <td>{{ b.title }}</td>
+                            <td>{{ b.date }}</td>
+                            <td>
+                                {% if b.status == 'paid' %}
+                                    <span class="badge bg-success px-3">PAID</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark px-3">PENDING</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
-</nav>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="section-content active">
+<div class="modal fade" id="tourModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form class="modal-content border-0 shadow-lg" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="add_tour">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold">Build Itinerary & Route</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Tour Display Name</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Base Price (₹)</label>
+                        <input type="number" name="price" class="form-control" required>
+                    </div>
+                </div>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-<h3 class="fw-bold">Inventory & Stats</h3>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Public Description</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
 
-<button class="btn btn-primary rounded-pill px-4"
-data-bs-toggle="modal" data-bs-target="#addTourModal">
-<i class="bi bi-plus-lg me-2"></i>Add Package
-</button>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Departure (City)</label>
+                        <input type="text" name="start_point" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Destination (City)</label>
+                        <input type="text" name="end_point" class="form-control">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Fixed Start Date</label>
+                        <input type="date" name="start_date" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Fixed End Date</label>
+                        <input type="date" name="end_date" class="form-control">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-primary">Day-by-Day Itinerary Planner</label>
+                    <div id="itinerary-list" class="mb-2">
+                        </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="addItineraryRow()">
+                        <i class="bi bi-calendar-plus me-1"></i> Add Spot to Itinerary
+                    </button>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label small fw-bold">Tour Banner Image</label>
+                    <input type="file" name="tour_image" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow">Publish Tour</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<div class="row g-4 mb-5">
-<div class="col-md-6">
-<div class="card p-4">
-<small class="text-muted fw-bold">TOTAL PACKAGES</small>
-<h2 class="fw-bold mt-1">{{ tours|length }}</h2>
-</div>
-</div>
-
-<div class="col-md-6">
-<div class="card p-4">
-<small class="text-muted fw-bold">CONFIRMED BOOKINGS</small>
-<h2 class="fw-bold mt-1 text-primary">{{ bookings|length }}</h2>
-</div>
-</div>
-</div>
-
-<!-- TOUR TABLE -->
-<div class="card border-0">
-<div class="p-3 border-bottom"><h5 class="mb-0 fw-bold">Active Tour Packages</h5></div>
-<div class="table-responsive">
-
-<table class="table align-middle">
-<thead class="bg-light text-muted">
-<tr>
-<th class="ps-4">Tour</th>
-<th>Description</th>
-<th>Price</th>
-</tr>
-</thead>
-
-<tbody>
-{% for tour in tours %}
-<tr>
-<td class="ps-4 fw-bold">{{ tour.title }}</td>
-<td>{{ tour.description }}</td>
-<td class="text-primary fw-bold">₹{{ tour.price }}</td>
-</tr>
-{% endfor %}
-</tbody>
-
-</table>
-</div>
-</div>
-</div>
-
-<!-- BOOKINGS -->
-<div id="bookings" class="section-content">
-<h3 class="fw-bold mb-4">Customer Orders</h3>
-
-<div class="card border-0">
-<div class="table-responsive">
-
-<table class="table align-middle mb-0">
-<thead class="bg-light">
-<tr>
-<th class="ps-4">User</th>
-<th>Tour</th>
-<th>Status</th>
-</tr>
-</thead>
-
-<tbody>
-{% for b in bookings %}
-<tr>
-<td class="ps-4">{{ b.username }}</td>
-<td>{{ b.title }}</td>
-<td><span class="badge bg-success">{{ b.status }}</span></td>
-</tr>
-{% endfor %}
-</tbody>
-
-</table>
-</div>
-</div>
-</div>
-
-</div>
-
-<!-- ADD TOUR MODAL -->
-<div class="modal fade" id="addTourModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered">
-<div class="modal-content border-0 shadow-lg p-3" style="border-radius:20px;">
-
-<form method="POST" action="{{ url_for('admin') }}">
-<h5 class="fw-bold mb-4">New Tour Details</h5>
-
-<input type="text" name="title" class="form-control mb-3" placeholder="Destination Name" required>
-<textarea name="description" class="form-control mb-3" placeholder="Description" required></textarea>
-<input type="number" name="price" class="form-control mb-3" placeholder="Price" required>
-
-<button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow">
-Publish Tour
-</button>
-
-</form>
-</div>
-</div>
+<div class="modal fade" id="spotModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content border-0 shadow-lg" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="add_spot">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold">New Library Spot</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Location Name</label>
+                    <input type="text" name="spot_name" class="form-control" placeholder="e.g. Rohtang Pass" required>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label small fw-bold">Reference Image</label>
+                    <input type="file" name="spot_image" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">Save to Library</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
+// Tab Switching Script
 function showSection(id, btn){
-document.querySelectorAll('.section-content').forEach(s=>s.classList.remove('active'));
-document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
-document.getElementById(id).classList.add('active');
-btn.classList.add('active');
+    document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Day-wise Itinerary Builder
+function addItineraryRow() {
+    const container = document.getElementById('itinerary-list');
+    const div = document.createElement('div');
+    div.className = "input-group mb-2 shadow-sm rounded overflow-hidden";
+    div.innerHTML = `
+        <span class="input-group-text bg-light border-end-0 small fw-bold">Day</span>
+        <input type="number" name="day_numbers[]" class="form-control border-start-0" value="1" min="1" style="max-width: 75px;" required>
+        
+        <select name="spots[]" class="form-select" required>
+            <option value="">-- Choose from Library --</option>
+            {% for s in spots %}
+            <option value="{{ s.id }}">{{ s.spot_name }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(div);
 }
 </script>
 
