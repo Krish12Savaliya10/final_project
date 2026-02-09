@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourGen | All Destinations</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 100px; }
+        .tour-card { transition: transform 0.3s ease, box-shadow 0.3s ease; border: none; border-radius: 20px; overflow: hidden; }
+        .tour-card:hover { transform: translateY(-10px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .card-img-top { height: 250px; object-fit: cover; }
+        .search-container { margin-bottom: 50px; }
+        .custom-search { height: 55px; border-radius: 50px; padding-left: 25px; border: 2px solid #dee2e6; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('home') }}"><i>TourGen</i></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+                <li class="nav-item"><a class="nav-link active text-primary" href="{{ url_for('tour') }}">Explore Tours</a></li>
+                {% if session.get('user_id') %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('mybookings') }}">My Bookings</a></li>
+                    <li class="nav-item"><a class="btn btn-danger btn-sm ms-lg-3 px-4 rounded-pill" href="{{ url_for('logout') }}">Logout</a></li>
+                {% else %}
+                    <li class="nav-item"><a class="btn btn-primary btn-sm ms-lg-3 px-4 rounded-pill" href="{{ url_for('login') }}">Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="search-container text-center">
+        <h1 class="fw-bold mb-3">Our Complete Collection</h1>
+        <p class="text-muted mb-4">Find your next adventure from our handpicked packages</p>
+        
+        <form method="GET" action="{{ url_for('tour') }}" class="col-md-7 mx-auto">
+            <div class="input-group">
+                <input type="text" name="search" value="{{ search }}" class="form-control custom-search" placeholder="Search by destination...">
+                <button class="btn btn-primary px-4 rounded-end" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4 pb-5">
+        {% if tours %}
+            {% for tour in tours %}
+            <div class="col">
+                <div class="card h-100 tour-card shadow-sm">
+                    
+                    <img src="{{ tour.image_path if tour.image_path and tour.image_path.startswith('http') else url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}" 
+                         class="card-img-top" 
+                         alt="{{ tour.title }}">                    
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h4 class="fw-bold mb-0">{{ tour.title }}</h4>
+                            <span class="badge bg-light text-dark border small">{{ tour.start_date }}</span>
+                        </div>
+                        <p class="text-primary small fw-bold mb-2">
+                            <i class="bi bi-geo-alt"></i> {{ tour.start_point }} ➔ {{ tour.end_point }}
+                        </p>
+                        <p class="text-muted small flex-grow-1">{{ tour.description[:120] }}...</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-3">
+                            <div>
+                                <small class="text-muted d-block">Starting at</small>
+                                <span class="h5 fw-bold text-dark mb-0">₹{{ tour.price }}</span>
+                            </div>
+                            <a href="{{ url_for('booking', tour_id=tour.id) }}" class="btn btn-primary rounded-pill px-4 fw-bold">Join Tour</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search text-muted display-1"></i>
+                <h4 class="mt-3 text-muted">No destinations found matching "{{ search }}"</h4>
+                <a href="{{ url_for('tour') }}" class="btn btn-link">View all tours</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<footer class="bg-dark text-white py-4 mt-auto">
+    <div class="container text-center">
+        <p class="mb-0">&copy; 2026 TourGen | Created by Krish Savaliya</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
