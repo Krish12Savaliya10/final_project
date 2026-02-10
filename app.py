@@ -10,7 +10,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'tourgen-secret-key'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# ---------------- DATABASE ----------------
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
@@ -28,7 +27,6 @@ def query_db(query, args=(), one=False):
     db.close()
     return res
 
-# ---------------- DECORATORS ----------------
 def login_required(fn):
     @wraps(fn)
     def wrapper(*a, **kw):
@@ -45,7 +43,6 @@ def admin_required(fn):
         return fn(*a, **kw)
     return wrapper
 
-# ---------------- HOME ----------------
 @app.route('/')
 def home():
     tours = query_db("SELECT * FROM tours LIMIT 3")
@@ -60,7 +57,6 @@ def tour():
         tours = query_db("SELECT * FROM tours")
     return render_template('tour.html', tours=tours, search=search)
 
-# ---------------- BOOKING ----------------
 @app.route('/booking/<int:tour_id>', methods=['GET','POST'])
 @login_required
 def booking(tour_id):
@@ -69,7 +65,6 @@ def booking(tour_id):
     if not tour:
         abort(404)
 
-    # already booked?
     existing_booking = query_db("""
         SELECT * FROM bookings
         WHERE user_id=%s AND tour_id=%s
@@ -104,7 +99,6 @@ def booking(tour_id):
 
     return render_template('booking.html',tour=tour,itinerary=itinerary,readonly=readonly)
 
-# ---------------- PAYMENT ----------------
 @app.route('/payment/<int:booking_id>', methods=['GET','POST'])
 @login_required
 def payment(booking_id):
@@ -150,7 +144,6 @@ def payment(booking_id):
         extra_charges=extra_charges
     )
 
-# ---------------- MY BOOKINGS ----------------
 @app.route('/mybookings')
 @login_required
 def mybookings():
@@ -164,7 +157,6 @@ def mybookings():
     """,(session['user_id'],))
     return render_template('mybookings.html',bookings=rows)
 
-# ---------------- INVOICE ----------------
 @app.route('/invoice/<int:booking_id>')
 @login_required
 def invoice(booking_id):
@@ -180,7 +172,6 @@ def invoice(booking_id):
 
     return render_template('invoice.html',booking=booking)
 
-# ---------------- ABOUT & CONTACT ----------------
 @app.route('/about')
 def about():
     return render_template('about.html')
@@ -189,7 +180,6 @@ def about():
 def contact():
     return render_template('contact.html')
 
-# ---------------- AUTH ----------------
 @app.route('/signup',methods=['GET','POST'])
 def signup():
 
@@ -262,13 +252,11 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
-# ---------------- ADMIN ----------------
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def admin():
 
-    # ====================== POST ACTIONS ======================
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -276,7 +264,6 @@ def admin():
             db = mysql.connector.connect(**MYSQL_CONFIG)
             cur = db.cursor()
 
-            # ---------- ADD STATE ----------
             if action == 'add_state':
                 state_name = request.form.get('state_name')
 
@@ -285,7 +272,6 @@ def admin():
                     (state_name,)
                 )
 
-            # ---------- ADD CITY ----------
             elif action == 'add_city':
                 state_id = request.form.get('state_id')
                 city_name = request.form.get('city_name')
@@ -295,7 +281,6 @@ def admin():
                     (state_id, city_name)
                 )
 
-            # ---------- ADD SPOT ----------
             elif action == 'add_spot':
 
                 spot_name = request.form.get('spot_name')
@@ -317,7 +302,6 @@ def admin():
                     VALUES(%s,%s,%s)
                 """,(spot_name, city_id, filename))
 
-            # ---------- ADD TOUR ----------
             elif action == 'add_tour':
 
                 title = request.form.get('title')
@@ -328,7 +312,6 @@ def admin():
                 start_date = request.form.get('start_date')
                 end_date = request.form.get('end_date')
 
-                # IMAGE UPLOAD
                 image = request.files.get('tour_image')
                 image_name = None
 
@@ -340,7 +323,6 @@ def admin():
 
                     image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_name))
 
-                # INSERT TOUR
                 cur.execute("""
                     INSERT INTO tours
                     (title,price,description,start_point,end_point,start_date,end_date,image_path)
@@ -349,7 +331,6 @@ def admin():
 
                 tour_id = cur.lastrowid
 
-                # ----------- ITINERARY SAVE (MOST IMPORTANT FIX) -----------
                 days = request.form.getlist("day_numbers[]")
                 spots = request.form.getlist("spots[]")
 
@@ -384,15 +365,11 @@ def admin():
             flash("Database Error! Check terminal output.")
             return redirect(url_for('admin'))
 
-    # ====================== FETCH DATA ======================
 
-    # TOURS
     tours = query_db("SELECT * FROM tours ORDER BY id DESC")
 
-    # STATES
     states = query_db("SELECT * FROM states ORDER BY state_name")
 
-    # CITIES (with state name)
     cities = query_db("""
         SELECT c.*, s.state_name
         FROM cities c
@@ -400,7 +377,6 @@ def admin():
         ORDER BY s.state_name, c.city_name
     """)
 
-    # SPOTS (FIX: show city + state)
     spots = query_db("""
         SELECT ms.*, c.city_name, s.state_name
         FROM master_spots ms
@@ -409,7 +385,6 @@ def admin():
         ORDER BY ms.id DESC
     """)
 
-    # BOOKINGS (full info)
     bookings = query_db("""
         SELECT b.*, 
                u.full_name,
@@ -429,7 +404,6 @@ def admin():
         spots=spots,
         bookings=bookings
     )
-# ---------------- START SERVER ----------------
 if __name__=='__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])

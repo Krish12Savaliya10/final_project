@@ -4,12 +4,10 @@
 {% block extra_css %}
 <style>
 
-/* PAGE BACKGROUND */
 body{
     background:#f1f5f9;
 }
 
-/* HEADER */
 .search-container h1{
     font-weight:800;
     letter-spacing:.5px;
@@ -30,7 +28,6 @@ body{
     box-shadow:0 0 0 3px rgba(59,130,246,.15);
 }
 
-/* TOUR CARD */
 .tour-card{
     border-radius:18px;
     border:1px solid #e5e7eb;
@@ -92,7 +89,6 @@ body{
 
 <div class="container">
 
-    <!-- SEARCH -->
     <div class="search-container text-center mb-5">
         <h1 class="fw-bold mb-3">Explore All Tour Packages</h1>
         <p class="text-muted mb-4">Find your perfect journey across India</p>
@@ -109,7 +105,6 @@ body{
         </form>
     </div>
 
-    <!-- TOUR CARDS -->
     <div class="row row-cols-1 row-cols-md-3 g-5 pb-5">
 
         {% if tours %}
