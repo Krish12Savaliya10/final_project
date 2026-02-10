@@ -1,0 +1,72 @@
+<nav class="navbar navbar-expand-lg custom-navbar fixed-top">
+<div class="container">
+
+<a class="navbar-brand brand-logo" href="{{ url_for('home') }}">
+<i class="bi bi-compass"></i> TourGen
+</a>
+
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+<span class="navbar-toggler-icon"></span>
+</button>
+
+<div class="collapse navbar-collapse" id="navMenu">
+<ul class="navbar-nav ms-auto align-items-center">
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('home') }}">
+<i class="bi bi-house-door"></i> Home
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('tour') }}">
+<i class="bi bi-map"></i> Tours
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('about') }}">
+<i class="bi bi-info-circle"></i> About
+</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('contact') }}">
+<i class="bi bi-envelope"></i> Contact
+</a>
+</li>
+
+{% if session.get('user_id') %}
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('mybookings') }}">
+<i class="bi bi-ticket-perforated"></i> My Bookings
+</a>
+</li>
+
+<li class="nav-item">
+<span class="user-badge">
+<i class="bi bi-person-circle"></i> {{ session.username }}
+</span>
+</li>
+
+<li class="nav-item">
+<a class="btn btn-logout" href="{{ url_for('logout') }}">
+<i class="bi bi-box-arrow-right"></i> Logout
+</a>
+</li>
+
+{% else %}
+
+<li class="nav-item">
+<a class="btn btn-login" href="{{ url_for('login') }}">
+<i class="bi bi-box-arrow-in-right"></i> Login
+</a>
+</li>
+
+{% endif %}
+
+</ul>
+</div>
+</div>
+</nav>

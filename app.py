@@ -263,48 +263,172 @@ def logout():
     return redirect(url_for('home'))
 
 # ---------------- ADMIN ----------------
-@app.route('/admin',methods=['GET','POST'])
+@app.route('/admin', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def admin():
 
-    if request.method=='POST':
-        action=request.form.get('action')
-        db=mysql.connector.connect(**MYSQL_CONFIG)
-        cur=db.cursor()
+    # ====================== POST ACTIONS ======================
+    if request.method == 'POST':
+        action = request.form.get('action')
 
-        if action=='add_state':
-            cur.execute("INSERT INTO states(state_name) VALUES(%s)",(request.form.get('state_name'),))
+        try:
+            db = mysql.connector.connect(**MYSQL_CONFIG)
+            cur = db.cursor()
 
-        elif action=='add_city':
-            cur.execute("INSERT INTO cities(state_id,city_name) VALUES(%s,%s)",
-                        (request.form.get('state_id'),request.form.get('city_name')))
+            # ---------- ADD STATE ----------
+            if action == 'add_state':
+                state_name = request.form.get('state_name')
 
-        elif action=='add_spot':
-            file=request.files.get('spot_image')
-            fname=None
-            if file and file.filename!='':
-                fname=secure_filename(file.filename)
-                if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                    os.makedirs(app.config['UPLOAD_FOLDER'])
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'],fname))
+                cur.execute(
+                    "INSERT INTO states(state_name) VALUES(%s)",
+                    (state_name,)
+                )
 
-            cur.execute("INSERT INTO master_spots(spot_name,city_id,image_url) VALUES(%s,%s,%s)",
-                        (request.form.get('spot_name'),request.form.get('city_id'),fname))
+            # ---------- ADD CITY ----------
+            elif action == 'add_city':
+                state_id = request.form.get('state_id')
+                city_name = request.form.get('city_name')
 
-        db.commit()
-        cur.close()
-        db.close()
+                cur.execute(
+                    "INSERT INTO cities(state_id, city_name) VALUES(%s,%s)",
+                    (state_id, city_name)
+                )
 
-    data={
-        'states':query_db("SELECT * FROM states"),
-        'cities':query_db("SELECT * FROM cities"),
-        'spots':query_db("SELECT * FROM master_spots"),
-        'tours':query_db("SELECT * FROM tours")
-    }
+            # ---------- ADD SPOT ----------
+            elif action == 'add_spot':
 
-    return render_template('admin.html',**data)
+                spot_name = request.form.get('spot_name')
+                city_id = request.form.get('city_id')
 
+                file = request.files.get('spot_image')
+                filename = None
+
+                if file and file.filename != '':
+                    filename = secure_filename(file.filename)
+
+                    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                        os.makedirs(app.config['UPLOAD_FOLDER'])
+
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+                cur.execute("""
+                    INSERT INTO master_spots(spot_name, city_id, image_url)
+                    VALUES(%s,%s,%s)
+                """,(spot_name, city_id, filename))
+
+            # ---------- ADD TOUR ----------
+            elif action == 'add_tour':
+
+                title = request.form.get('title')
+                price = request.form.get('price')
+                description = request.form.get('description')
+                start_point = request.form.get('start_point')
+                end_point = request.form.get('end_point')
+                start_date = request.form.get('start_date')
+                end_date = request.form.get('end_date')
+
+                # IMAGE UPLOAD
+                image = request.files.get('tour_image')
+                image_name = None
+
+                if image and image.filename != '':
+                    image_name = secure_filename(image.filename)
+
+                    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                        os.makedirs(app.config['UPLOAD_FOLDER'])
+
+                    image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_name))
+
+                # INSERT TOUR
+                cur.execute("""
+                    INSERT INTO tours
+                    (title,price,description,start_point,end_point,start_date,end_date,image_path)
+                    VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+                """,(title,price,description,start_point,end_point,start_date,end_date,image_name))
+
+                tour_id = cur.lastrowid
+
+                # ----------- ITINERARY SAVE (MOST IMPORTANT FIX) -----------
+                days = request.form.getlist("day_numbers[]")
+                spots = request.form.getlist("spots[]")
+
+                print("DEBUG DAYS:", days)
+                print("DEBUG SPOTS:", spots)
+
+                if len(spots) == 0:
+                    flash("⚠ You must add at least one spot in itinerary!")
+                    db.rollback()
+                    cur.close()
+                    db.close()
+                    return redirect(url_for('admin'))
+
+                for d, s in zip(days, spots):
+                    cur.execute("""
+                        INSERT INTO tour_itinerary(tour_id,day_number,spot_id)
+                        VALUES(%s,%s,%s)
+                    """,(tour_id, d, s))
+
+            db.commit()
+            cur.close()
+            db.close()
+
+            flash("Saved Successfully")
+            return redirect(url_for('admin'))
+
+        except Exception as e:
+            print("\n===== ADMIN DATABASE ERROR =====")
+            print(e)
+            print("================================\n")
+
+            flash("Database Error! Check terminal output.")
+            return redirect(url_for('admin'))
+
+    # ====================== FETCH DATA ======================
+
+    # TOURS
+    tours = query_db("SELECT * FROM tours ORDER BY id DESC")
+
+    # STATES
+    states = query_db("SELECT * FROM states ORDER BY state_name")
+
+    # CITIES (with state name)
+    cities = query_db("""
+        SELECT c.*, s.state_name
+        FROM cities c
+        JOIN states s ON c.state_id = s.id
+        ORDER BY s.state_name, c.city_name
+    """)
+
+    # SPOTS (FIX: show city + state)
+    spots = query_db("""
+        SELECT ms.*, c.city_name, s.state_name
+        FROM master_spots ms
+        JOIN cities c ON ms.city_id = c.id
+        JOIN states s ON c.state_id = s.id
+        ORDER BY ms.id DESC
+    """)
+
+    # BOOKINGS (full info)
+    bookings = query_db("""
+        SELECT b.*, 
+               u.full_name,
+               t.title AS tour_title,
+               t.price
+        FROM bookings b
+        JOIN users u ON u.id = b.user_id
+        JOIN tours t ON t.id = b.tour_id
+        ORDER BY b.id DESC
+    """)
+
+    return render_template(
+        'admin.html',
+        tours=tours,
+        states=states,
+        cities=cities,
+        spots=spots,
+        bookings=bookings
+    )
 # ---------------- START SERVER ----------------
 if __name__=='__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):

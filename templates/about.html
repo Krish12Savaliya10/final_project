@@ -1,28 +1,46 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>About TourGen</title>
-</head>
-<body style="font-family:Segoe UI; padding:40px">
+{% extends "layout.html" %}
+{% block title %}About TourGen{% endblock %}
 
-<h2>About TourGen</h2>
+{% block content %}
 
-<p>
-TourGen is a web-based tour booking system developed as a DBMS and Web Technology project.
-Users can explore tours, view itineraries, and book trips online.
-</p>
+<div class="container py-5 mt-5">
 
-<p>
-Technologies Used:
-<ul>
-<li>Flask (Backend)</li>
-<li>MySQL (Database)</li>
-<li>Jinja2 Templates</li>
-<li>Bootstrap (Frontend)</li>
-</ul>
-</p>
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">About TourGen</h1>
+        <p class="text-muted">A modern travel booking platform</p>
+    </div>
 
-<a href="{{ url_for('home') }}">← Back to Home</a>
+    <div class="row align-items-center">
 
-</body>
-</html>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', filename='image/background.JPG') }}"
+                 class="img-fluid rounded-4 shadow">
+        </div>
+
+        <div class="col-md-6">
+            <h3 class="fw-bold mb-3">Our Mission</h3>
+
+            <p class="text-muted">
+                TourGen is a web-based tour booking system developed as a DBMS
+                and Web Technology project. The platform allows travelers to
+                explore destinations, view detailed itineraries, and book trips online.
+            </p>
+
+            <h4 class="fw-bold mt-4">Technologies Used</h4>
+            <ul class="text-muted">
+                <li>Flask (Backend Framework)</li>
+                <li>MySQL (Database)</li>
+                <li>Jinja2 Template Engine</li>
+                <li>Bootstrap 5 UI</li>
+            </ul>
+
+            <a href="{{ url_for('tour') }}" class="btn btn-primary rounded-pill mt-3 px-4">
+                Explore Tours
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

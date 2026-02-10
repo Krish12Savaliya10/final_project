@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>{% block title %}TourGen{% endblock %}</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+
+/* ===== GLOBAL ===== */
+body{
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:#f8fafc;
+    margin:0;
+}
+
+/* MAIN WRAPPER */
+.main-wrapper{
+    padding-top:85px;
+}
+.no-top-padding{
+    padding-top:0 !important;
+}
+
+/* ===== NAVBAR ===== */
+.custom-navbar{
+    background:rgba(15,23,42,0.75);
+    backdrop-filter:blur(12px);
+    padding:14px 0;
+}
+
+.brand-logo{
+    font-size:26px;
+    font-weight:700;
+    color:white !important;
+}
+
+.brand-logo i{
+    color:#60a5fa;
+    margin-right:6px;
+}
+
+.nav-link{
+    color:#e2e8f0 !important;
+    margin-left:18px;
+    font-weight:500;
+}
+.nav-link:hover{ color:#60a5fa !important; }
+
+/* LOGIN BUTTON */
+.btn-login{
+    background:#2563eb;
+    color:white;
+    padding:8px 18px;
+    border-radius:50px;
+    margin-left:15px;
+}
+
+/* PROFILE BUTTON */
+.profile-btn{
+    cursor:pointer;
+    margin-left:15px;
+    background:rgba(255,255,255,.15);
+    padding:6px 14px;
+    border-radius:40px;
+    color:white;
+}
+
+/* PROFILE DROPDOWN */
+.profile-menu{
+    position:absolute;
+    right:0;
+    top:55px;
+    background:white;
+    border-radius:14px;
+    box-shadow:0 25px 55px rgba(0,0,0,.25);
+    width:230px;
+    display:none;
+    overflow:hidden;
+    z-index:9999;
+    animation:fadeDown .18s ease;
+}
+
+.profile-menu a{
+    display:block;
+    padding:12px 18px;
+    text-decoration:none;
+    color:#334155;
+    font-size:14px;
+}
+.profile-menu a:hover{
+    background:#f1f5f9;
+    color:#2563eb;
+}
+
+@keyframes fadeDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+/* FOOTER */
+footer{
+    background:#0f172a;
+    color:#cbd5e1;
+    text-align:center;
+    padding:18px 0;
+    margin-top:60px;
+}
+
+</style>
+
+{% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-lg custom-navbar fixed-top">
+<div class="container">
+
+<a class="navbar-brand brand-logo" href="{{ url_for('home') }}">
+<i class="bi bi-compass"></i> TourGen
+</a>
+
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+<span class="navbar-toggler-icon"></span>
+</button>
+
+<div class="collapse navbar-collapse" id="navMenu">
+<ul class="navbar-nav ms-auto align-items-center">
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('home') }}">Home</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('tour') }}">Tours</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('about') }}">About</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
+</li>
+
+{% if session.get('user_id') %}
+
+<!-- PROFILE -->
+<li class="nav-item position-relative">
+<div class="profile-btn" onclick="toggleProfile()">
+<i class="bi bi-person-circle"></i> {{ session.username }}
+</div>
+
+<div id="profileMenu" class="profile-menu">
+
+<div style="padding:12px 16px; border-bottom:1px solid #e2e8f0;">
+<small class="text-muted">Signed in as</small><br>
+<strong>{{ session.username }}</strong>
+</div>
+
+<a href="{{ url_for('mybookings') }}">
+<i class="bi bi-ticket-perforated"></i> My Bookings
+</a>
+
+{% if session.get('is_admin') %}
+<a href="{{ url_for('admin') }}">
+<i class="bi bi-speedometer2"></i> Admin Dashboard
+</a>
+{% endif %}
+
+<a href="{{ url_for('logout') }}" class="text-danger">
+<i class="bi bi-box-arrow-right"></i> Logout
+</a>
+
+</div>
+</li>
+
+{% else %}
+<li class="nav-item">
+<a class="btn btn-login" href="{{ url_for('login') }}">Login / Signup</a>
+</li>
+{% endif %}
+
+</ul>
+</div>
+</div>
+</nav>
+
+<!-- CONTENT -->
+<div class="main-wrapper {% block wrapper_class %}{% endblock %}">
+{% block content %}{% endblock %}
+</div>
+
+<footer>
+© 2026 TourGen | Created by Krish Savaliya
+</footer>
+
+<script>
+function toggleProfile(){
+const menu=document.getElementById("profileMenu");
+menu.style.display = (menu.style.display==="block")?"none":"block";
+}
+
+document.addEventListener("click",function(e){
+if(!e.target.closest(".profile-btn")){
+let menu=document.getElementById("profileMenu");
+if(menu) menu.style.display="none";
+}
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
