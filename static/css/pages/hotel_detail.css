@@ -1,0 +1,9 @@
+.hero-img{height:360px;object-fit:cover;width:100%;border-radius:16px;}
+.thumb-img{height:90px;object-fit:cover;width:100%;border-radius:10px;}
+.section-card{border:1px solid #e2e8f0;border-radius:16px;background:#fff;}
+.star{color:#f59e0b;font-weight:700;}
+
+.modal-img{
+    height:220px;
+    object-fit:cover;
+}

@@ -1,0 +1,66 @@
+
+body{
+    background:#eef2f7;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    padding-top:80px;
+}
+
+.navbar{ background:#0f172a !important; }
+.navbar-brand{ font-weight:700; font-size:24px; }
+
+.checkout-card{
+    border-radius:18px;
+    box-shadow:0 15px 40px rgba(0,0,0,.12);
+    border:none;
+}
+
+.amount-box{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    color:white;
+    border-radius:18px;
+    padding:30px;
+    text-align:center;
+}
+
+.amount-box .price{
+    font-size:42px;
+    font-weight:800;
+    margin:10px 0;
+}
+
+.secure-badge{ font-size:13px; opacity:.9; }
+
+.summary-item{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+    font-size:15px;
+}
+
+.method-card{
+    border:2px solid #e2e8f0;
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:15px;
+}
+
+.qr-box{
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    display:inline-block;
+}
+
+.pay-btn{
+    background:#16a34a;
+    border:none;
+    border-radius:50px;
+    padding:16px;
+    font-weight:700;
+    font-size:18px;
+}
+
+.pay-btn:hover{ background:#15803d; }
+
+.trust{ font-size:13px; color:#64748b; margin-top:10px; }
+

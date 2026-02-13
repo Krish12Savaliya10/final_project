@@ -8,74 +8,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-<style>
-
-body{
-    background:#eef2f7;
-    font-family:'Segoe UI',system-ui,sans-serif;
-    padding-top:80px;
-}
-
-.navbar{ background:#0f172a !important; }
-.navbar-brand{ font-weight:700; font-size:24px; }
-
-.checkout-card{
-    border-radius:18px;
-    box-shadow:0 15px 40px rgba(0,0,0,.12);
-    border:none;
-}
-
-.amount-box{
-    background:linear-gradient(135deg,#2563eb,#1d4ed8);
-    color:white;
-    border-radius:18px;
-    padding:30px;
-    text-align:center;
-}
-
-.amount-box .price{
-    font-size:42px;
-    font-weight:800;
-    margin:10px 0;
-}
-
-.secure-badge{ font-size:13px; opacity:.9; }
-
-.summary-item{
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:10px;
-    font-size:15px;
-}
-
-.method-card{
-    border:2px solid #e2e8f0;
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:15px;
-}
-
-.qr-box{
-    background:white;
-    padding:15px;
-    border-radius:12px;
-    display:inline-block;
-}
-
-.pay-btn{
-    background:#16a34a;
-    border:none;
-    border-radius:50px;
-    padding:16px;
-    font-weight:700;
-    font-size:18px;
-}
-
-.pay-btn:hover{ background:#15803d; }
-
-.trust{ font-size:13px; color:#64748b; margin-top:10px; }
-
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/payment.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 
 <body>
@@ -85,6 +19,9 @@ body{
 <a class="navbar-brand" href="{{ url_for('home') }}">
 <i class="bi bi-compass"></i> TourGen Checkout
 </a>
+<button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-theme-toggle>
+<i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
+</button>
 </div>
 </nav>
 
@@ -187,5 +124,6 @@ Scan using Google Pay / PhonePe / Paytm
 </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

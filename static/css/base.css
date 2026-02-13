@@ -1,0 +1,99 @@
+
+body{
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:#f8fafc;
+    margin:0;
+}
+
+.main-wrapper{
+    padding-top:85px;
+}
+.no-top-padding{
+    padding-top:0 !important;
+}
+
+.custom-navbar{
+    background:rgba(15,23,42,0.75);
+    backdrop-filter:blur(12px);
+    padding:14px 0;
+}
+
+.brand-logo{
+    font-size:26px;
+    font-weight:700;
+    color:white !important;
+}
+
+.brand-logo i{
+    color:#60a5fa;
+    margin-right:6px;
+}
+
+.nav-link{
+    color:#e2e8f0 !important;
+    margin-left:18px;
+    font-weight:500;
+}
+.nav-link:hover{ color:#60a5fa !important; }
+
+.btn-login{
+    background:#2563eb;
+    color:white;
+    padding:8px 18px;
+    border-radius:50px;
+    margin-left:15px;
+}
+
+.profile-btn{
+    cursor:pointer;
+    margin-left:15px;
+    background:rgba(255,255,255,.15);
+    padding:6px 14px;
+    border-radius:40px;
+    color:white;
+}
+
+.profile-menu{
+    position:absolute;
+    right:0;
+    top:55px;
+    background:white;
+    border-radius:14px;
+    box-shadow:0 25px 55px rgba(0,0,0,.25);
+    width:230px;
+    display:none;
+    overflow:hidden;
+    z-index:9999;
+    animation:fadeDown .18s ease;
+}
+
+.profile-menu a{
+    display:block;
+    padding:12px 18px;
+    text-decoration:none;
+    color:#334155;
+    font-size:14px;
+}
+.profile-menu a:hover{
+    background:#f1f5f9;
+    color:#2563eb;
+}
+
+@keyframes fadeDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+footer{
+    background:#0f172a;
+    color:#cbd5e1;
+    text-align:center;
+    padding:18px 0;
+    margin-top:60px;
+}
+
+
+.profile-head{
+    padding:12px 16px;
+    border-bottom:1px solid #e2e8f0;
+}

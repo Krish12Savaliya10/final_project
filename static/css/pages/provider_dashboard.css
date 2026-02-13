@@ -1,0 +1,16 @@
+.panel-card{border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 8px 24px rgba(15,23,42,.05);}
+.small-muted{font-size:12px;color:#64748b;}
+.badge-soft{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+
+.amenities-box{
+    max-height:140px;
+    overflow:auto;
+}
+
+.inv-count-input{
+    max-width:100px;
+}
+
+.inv-note-input{
+    max-width:220px;
+}

@@ -1,0 +1,41 @@
+body{
+    background:#f1f5f9;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    padding-top:80px;
+}
+
+.custom-navbar{
+    background:rgba(15,23,42,0.85);
+    backdrop-filter:blur(12px);
+}
+.brand-logo{font-weight:700;font-size:24px;color:white !important;}
+.nav-link{color:#e2e8f0 !important;margin-left:18px;}
+.nav-link:hover{color:#60a5fa !important;}
+.user-badge{margin-left:15px;background:rgba(255,255,255,.15);padding:6px 14px;border-radius:50px;color:white;}
+.btn-login{background:#2563eb;border-radius:40px;padding:7px 18px;margin-left:15px;color:white;}
+.btn-logout{background:#ef4444;border-radius:40px;padding:7px 18px;margin-left:10px;color:white;}
+
+.hero{height:460px;position:relative;overflow:hidden;}
+.hero img{width:100%;height:100%;object-fit:cover;}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.65));}
+.hero-content{position:absolute;bottom:50px;left:60px;color:white;z-index:2;}
+.hero-title{font-size:44px;font-weight:800;}
+.hero-meta span{background:rgba(255,255,255,.15);padding:8px 14px;border-radius:40px;margin-right:10px;font-size:14px;}
+
+.section-card{background:white;padding:30px;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.08);}
+.meta-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;}
+.hotel-mini-card{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#fff;}
+
+.timeline{position:relative;padding-left:55px;max-height:420px;overflow-y:auto;padding-right:10px;}
+.timeline::before{content:"";position:absolute;left:25px;top:0;bottom:0;width:3px;background:#3b82f6;}
+.timeline-item{padding:16px 18px;border-radius:12px;cursor:pointer;transition:.25s;margin-bottom:18px;border:1px solid transparent;}
+.timeline-item:hover{background:#f1f5f9;border-color:#3b82f6;transform:translateX(5px);}
+.timeline-dot{position:absolute;left:-5px;margin-top:18px;width:20px;height:20px;background:#2563eb;border-radius:50%;border:4px solid white;}
+
+.slideshow{height:420px;border-radius:18px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.15);}
+.slideshow img{width:100%;height:100%;object-fit:cover;transition:.35s ease;}
+
+.payment-card{background:white;border-radius:20px;padding:35px;box-shadow:0 20px 50px rgba(0,0,0,.12);text-align:center;}
+.total{font-size:36px;font-weight:800;color:#2563eb;}
+.pay-btn{margin-top:20px;background:#2563eb;border:none;padding:16px;border-radius:50px;font-size:18px;font-weight:700;width:100%;}
+.pay-btn:hover{background:#1d4ed8;}

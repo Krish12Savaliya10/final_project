@@ -3,76 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TourGen Admin Panel</title>
+<title>TourGen Organizer Panel</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 
-<style>
-
-body{
-    background:#f1f5f9;
-    font-family:'Segoe UI',system-ui;
-}
-
-.admin-topbar{
-    background:#0f172a;
-    padding:12px 25px;
-}
-
-.admin-topbar .brand{
-    color:white;
-    font-weight:700;
-    font-size:22px;
-}
-
-.admin-topbar .btn{
-    border-radius:40px;
-}
-
-.section-tabs{
-    background:white;
-    padding:12px;
-    box-shadow:0 4px 10px rgba(0,0,0,.06);
-}
-
-.section-tabs button{
-    border-radius:40px;
-    margin-right:10px;
-    font-weight:600;
-}
-
-.card{
-    border-radius:18px;
-}
-
-.card img{
-    height:180px;
-    object-fit:cover;
-}
-
-.table img{
-    object-fit:cover;
-}
-
-#itinerary-list .card{
-    background:#f8fafc;
-    border:1px dashed #cbd5e1;
-}
-
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 
 <body>
 
 <div class="admin-topbar d-flex justify-content-between align-items-center">
     <div class="brand">
-        <i class="bi bi-compass"></i> TourGen Admin
+        <i class="bi bi-compass"></i> TourGen Organizer
     </div>
 
-    <div>
+    <div class="d-flex align-items-center topbar-actions">
+        <button class="btn btn-outline-light btn-sm me-2" type="button" data-theme-toggle>
+            <i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
+        </button>
+        <div class="dropdown me-2">
+            <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle"></i> Profile
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                <li class="px-3 py-2 profile-summary">
+                    <div class="small text-muted">Signed in as</div>
+                    <div class="fw-semibold">{{ session.get('username', 'Organizer') }}</div>
+                    <div class="small text-uppercase text-muted">{{ session.get('role', 'organizer') }}</div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
+                        <i class="bi bi-person-lines-fill me-1"></i> View Profile
+                    </button>
+                </li>
+            </ul>
+        </div>
         <a href="{{ url_for('home') }}" class="btn btn-outline-light btn-sm me-2">
-            <i class="bi bi-globe"></i> View Website
+            <i class="bi bi-globe"></i> View Public Website
         </a>
         <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">
             Logout
@@ -80,14 +50,22 @@ body{
     </div>
 </div>
 
-<div class="section-tabs text-center">
-    <button class="btn btn-primary" onclick="showSection('tours')">Manage Tours</button>
-    <button class="btn btn-dark" onclick="showSection('library')">Places Library</button>
-</div>
+<div class="admin-layout">
+<aside class="admin-sidebar">
+    <button class="sidebar-link active" data-section="tours" onclick="showSection('tours')">
+        <i class="bi bi-briefcase me-2"></i>Manage Tours
+    </button>
+    <button class="sidebar-link" data-section="library" onclick="showSection('library')">
+        <i class="bi bi-geo-alt me-2"></i>Places Library
+    </button>
+    <button class="sidebar-link" data-section="analytics" onclick="showSection('analytics')">
+        <i class="bi bi-graph-up-arrow me-2"></i>Analytics
+    </button>
+</aside>
 
-<div class="container py-4">
+<main class="admin-main">
 
-<div id="tours">
+<div id="tours" class="section-pane">
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold">Active Tour Packages</h3>
@@ -119,7 +97,7 @@ body{
 </div>
 </div>
 
-<div id="library" style="display:none">
+<div id="library" class="section-pane d-none">
 
 <h3 class="fw-bold mb-3">Hierarchy Library</h3>
 
@@ -165,6 +143,88 @@ width="50" height="50" class="rounded">
 </div>
 </div>
 
+<div id="analytics" class="section-pane d-none">
+<h3 class="fw-bold mb-3">Organizer Analytics</h3>
+
+<div class="row g-3 mb-4">
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Tours</div><div class="fw-bold fs-4">{{ analytics.total_tours }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Bookings</div><div class="fw-bold fs-4">{{ analytics.total_bookings }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Paid</div><div class="fw-bold fs-4">{{ analytics.paid_bookings }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Spots</div><div class="fw-bold fs-4">{{ analytics.total_spots }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Hotels</div><div class="fw-bold fs-4">{{ analytics.partner_hotels }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Transport</div><div class="fw-bold fs-4">{{ analytics.partner_transport }}</div></div>
+</div>
+</div>
+
+{% if analytics.chart_error %}
+<div class="alert alert-warning">{{ analytics.chart_error }}</div>
+{% endif %}
+
+<div class="row g-4">
+<div class="col-lg-8">
+<div class="card p-3 shadow-sm h-100">
+<h6 class="fw-bold mb-3">Tours By Month</h6>
+{% if analytics.charts.tours_by_month %}
+<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.tours_by_month }}" alt="Tours by month chart">
+{% else %}
+<div class="text-muted small">Not enough data yet.</div>
+{% endif %}
+</div>
+</div>
+<div class="col-lg-4">
+<div class="card p-3 shadow-sm h-100">
+<h6 class="fw-bold mb-3">Booking Status Split</h6>
+{% if analytics.charts.booking_status %}
+<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.booking_status }}" alt="Booking status chart">
+{% else %}
+<div class="text-muted small">Not enough data yet.</div>
+{% endif %}
+</div>
+</div>
+<div class="col-12">
+<div class="card p-3 shadow-sm">
+<h6 class="fw-bold mb-3">Travel Mode Distribution</h6>
+{% if analytics.charts.travel_mode %}
+<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.travel_mode }}" alt="Travel mode chart">
+{% else %}
+<div class="text-muted small">Not enough data yet.</div>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+
+</main>
+</div>
+
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title" id="profileModalLabel">Profile Details</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+<div class="mb-2"><strong>Name:</strong> {{ session.get('username', 'Organizer') }}</div>
+<div class="mb-2"><strong>Role:</strong> {{ session.get('role', 'organizer')|capitalize }}</div>
+<div><strong>Status:</strong> Active Session</div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
 </div>
 
 <div class="modal fade" id="stateModal">
@@ -244,7 +304,15 @@ width="50" height="50" class="rounded">
 </div>
 
 <div class="modal-body">
-
+<div class="accordion tour-builder-accordion" id="tourBuilderAccordion">
+<div class="accordion-item">
+<h2 class="accordion-header" id="tourBasicHeading">
+<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tourBasicSection" aria-expanded="true" aria-controls="tourBasicSection">
+1. Basic Info
+</button>
+</h2>
+<div id="tourBasicSection" class="accordion-collapse collapse show" aria-labelledby="tourBasicHeading" data-bs-parent="#tourBuilderAccordion">
+<div class="accordion-body">
 <div class="row g-3 mb-3">
 <div class="col-md-8">
 <input type="text" name="title" class="form-control" placeholder="Tour Title" required>
@@ -253,9 +321,7 @@ width="50" height="50" class="rounded">
 <input type="number" name="price" class="form-control" placeholder="Base Price" required>
 </div>
 </div>
-
 <textarea name="description" class="form-control mb-3" placeholder="Tour Description"></textarea>
-
 <div class="row g-3 mb-3">
 <div class="col-md-6">
 <input type="text" name="start_point" class="form-control" placeholder="Start Point" required>
@@ -264,8 +330,7 @@ width="50" height="50" class="rounded">
 <input type="text" name="end_point" class="form-control" placeholder="End Point" required>
 </div>
 </div>
-
-<div class="row g-3 mb-3">
+<div class="row g-3">
 <div class="col-md-6">
 <input type="date" name="start_date" class="form-control" required>
 </div>
@@ -273,17 +338,270 @@ width="50" height="50" class="rounded">
 <input type="date" name="end_date" class="form-control" required>
 </div>
 </div>
+</div>
+</div>
+</div>
 
-<hr>
+<div class="accordion-item">
+<h2 class="accordion-header" id="tourEssentialsHeading">
+<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourEssentialsSection" aria-expanded="false" aria-controls="tourEssentialsSection">
+2. Tour Essentials
+</button>
+</h2>
+<div id="tourEssentialsSection" class="accordion-collapse collapse" aria-labelledby="tourEssentialsHeading" data-bs-parent="#tourBuilderAccordion">
+<div class="accordion-body">
+<div class="row g-3 mb-3">
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Pickup State</label>
+<select name="pickup_state_id" id="pickupState" class="form-select city-state-control">
+<option value="">Select Pickup State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Pickup City</label>
+<select name="pickup_city_id" id="pickupCity" class="form-select city-control">
+<option value="">Select Pickup City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
 
+<div class="row g-3 mb-3">
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Drop State</label>
+<select name="drop_state_id" id="dropState" class="form-select city-state-control">
+<option value="">Select Drop State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Drop City</label>
+<select name="drop_city_id" id="dropCity" class="form-select city-control">
+<option value="">Select Drop City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
+
+<div class="row g-3 mb-3">
+<div class="col-md-4">
+<label class="form-label small fw-semibold">Travel Mode</label>
+<select name="travel_mode" class="form-select">
+<option value="">Select Travel Mode</option>
+<option value="Bus">Bus</option>
+<option value="Train">Train</option>
+<option value="Flight">Flight</option>
+<option value="Private Cab">Private Cab</option>
+<option value="Mixed">Mixed</option>
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-semibold">Food Plan</label>
+<select name="food_plan" class="form-select">
+<option value="">Select Food Plan</option>
+<option value="No Meals">No Meals</option>
+<option value="Breakfast Only">Breakfast Only</option>
+<option value="Breakfast + Dinner">Breakfast + Dinner</option>
+<option value="All Meals">All Meals</option>
+<option value="Custom">Custom</option>
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-semibold">Max Group Size</label>
+<input type="number" name="max_group_size" class="form-control" min="1" placeholder="e.g. 20">
+</div>
+</div>
+
+<div class="row g-3 mb-3">
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Difficulty</label>
+<select name="difficulty_level" class="form-select">
+<option value="">Select Difficulty</option>
+<option value="Easy">Easy</option>
+<option value="Moderate">Moderate</option>
+<option value="Challenging">Challenging</option>
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Transport Details</label>
+<input type="text" name="transport_details" class="form-control" placeholder="AC coach + local cab">
+</div>
+</div>
+
+<div class="mb-3">
+<label class="form-label small fw-semibold">Inclusions</label>
+<textarea name="inclusions" class="form-control" rows="2" placeholder="Stay, meals, transfers, permits..."></textarea>
+</div>
+<div class="mb-3">
+<label class="form-label small fw-semibold">Exclusions</label>
+<textarea name="exclusions" class="form-control" rows="2" placeholder="Flights, personal expenses..."></textarea>
+</div>
+<div>
+<label class="form-label small fw-semibold">Hotel / Stay Notes</label>
+<textarea name="hotel_notes" class="form-control" rows="2" placeholder="Stay category, check-in policy, room sharing..."></textarea>
+</div>
+</div>
+</div>
+</div>
+
+<div class="accordion-item">
+<h2 class="accordion-header" id="tourPartnerHeading">
+<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourPartnerSection" aria-expanded="false" aria-controls="tourPartnerSection">
+3. Partner Services
+</button>
+</h2>
+<div id="tourPartnerSection" class="accordion-collapse collapse" aria-labelledby="tourPartnerHeading" data-bs-parent="#tourBuilderAccordion">
+<div class="accordion-body">
+<h6 class="fw-bold mb-3">Partner Hotels (Optional)</h6>
+<div class="row g-2 mb-3">
+<div class="col-md-6">
+<select id="hotelFilterState" class="form-select">
+<option value="">Filter Hotels by State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<select id="hotelFilterCity" class="form-select">
+<option value="">Filter Hotels by City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
+<div id="hotelLinkList" class="hotel-link-list border rounded p-2 mb-4">
+{% if hotel_options %}
+{% for h in hotel_options %}
+<label class="hotel-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ h.state_id or '' }}" data-city-id="{{ h.city_id or '' }}">
+<input class="form-check-input m-0" type="checkbox" name="linked_hotels[]" value="{{ h.service_id }}">
+<span class="small">{{ h.hotel_name }}{% if h.city_name %} - {{ h.city_name }}{% endif %}{% if h.state_name %}, {{ h.state_name }}{% endif %}</span>
+</label>
+{% endfor %}
+{% else %}
+<div class="text-muted small">No published hotels found yet.</div>
+{% endif %}
+</div>
+
+<h6 class="fw-bold mb-3">Partner Transport (Optional)</h6>
+<div class="row g-2 mb-3">
+<div class="col-md-6">
+<select id="transportFilterState" class="form-select">
+<option value="">Filter Transport by State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<select id="transportFilterCity" class="form-select">
+<option value="">Filter Transport by City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
+<div id="transportLinkList" class="hotel-link-list border rounded p-2">
+{% if transport_options %}
+{% for t in transport_options %}
+<label class="transport-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ t.state_id or '' }}" data-city-id="{{ t.city_id or '' }}">
+<input class="form-check-input m-0" type="checkbox" name="linked_transport[]" value="{{ t.service_id }}">
+<span class="small">
+{{ t.service_name }} - {{ t.transport_type }}{% if t.vehicle_model %} ({{ t.vehicle_model }}){% endif %}
+{% if t.seating_capacity %} | Seats: {{ t.seating_capacity }}{% endif %}
+{% if t.price_per_day %} | ₹{{ t.price_per_day }}/day{% endif %}
+{% if t.driver_available %} | Driver Included{% endif %}
+</span>
+</label>
+{% endfor %}
+{% else %}
+<div class="text-muted small">No verified transport options found yet.</div>
+{% endif %}
+</div>
+
+<h6 class="fw-bold mt-4 mb-3">Partner Guides (Optional)</h6>
+<div class="row g-2 mb-3">
+<div class="col-md-6">
+<select id="guideFilterState" class="form-select">
+<option value="">Filter Guides by State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<select id="guideFilterCity" class="form-select">
+<option value="">Filter Guides by City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
+<div id="guideLinkList" class="hotel-link-list border rounded p-2">
+{% if guide_options %}
+{% for g in guide_options %}
+<label class="guide-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ g.state_id or '' }}" data-city-id="{{ g.city_id or '' }}">
+<input class="form-check-input m-0" type="checkbox" name="linked_guides[]" value="{{ g.service_id }}">
+<span class="small">{{ g.service_name }}{% if g.city_name %} - {{ g.city_name }}{% endif %}{% if g.state_name %}, {{ g.state_name }}{% endif %}{% if g.price %} | ₹{{ g.price }}{% endif %}</span>
+</label>
+{% endfor %}
+{% else %}
+<div class="text-muted small">No guide services found yet.</div>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+
+<div class="accordion-item">
+<h2 class="accordion-header" id="tourItineraryHeading">
+<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourItinerarySection" aria-expanded="false" aria-controls="tourItinerarySection">
+4. Itinerary & Media
+</button>
+</h2>
+<div id="tourItinerarySection" class="accordion-collapse collapse" aria-labelledby="tourItineraryHeading" data-bs-parent="#tourBuilderAccordion">
+<div class="accordion-body">
 <h6 class="fw-bold">Itinerary</h6>
-
+<div class="row g-2 mb-2">
+<div class="col-md-6">
+<select id="spotFilterState" class="form-select">
+<option value="">Filter Spots by State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<select id="spotFilterCity" class="form-select">
+<option value="">Filter Spots by City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
 <div id="itinerary-list"></div>
-
 <button type="button" class="btn btn-outline-primary mt-2" onclick="addItineraryRow()">+ Add Spot</button>
 
 <div class="mt-3">
+<label class="form-label small fw-semibold">Cover Image</label>
 <input type="file" name="tour_image" class="form-control">
+</div>
+</div>
+</div>
+</div>
 </div>
 
 </div>
@@ -296,18 +614,106 @@ width="50" height="50" class="rounded">
 </div>
 </div>
 
+<script id="spots-json" type="application/json">{{ spots|tojson }}</script>
 <script>
+let SPOTS = [];
+try{
+const rawSpots = document.getElementById('spots-json');
+SPOTS = rawSpots ? JSON.parse(rawSpots.textContent) : [];
+}catch(err){
+SPOTS = [];
+}
+
+function getValueById(id){
+const el = document.getElementById(id);
+return el ? el.value : '';
+}
+
+function bindChange(id, handler){
+const el = document.getElementById(id);
+if(el){
+el.addEventListener('change', handler);
+}
+}
+
+function updateCityOptions(stateId, citySelectId){
+const citySelect = document.getElementById(citySelectId);
+if(!citySelect) return;
+const options = citySelect.querySelectorAll('option[data-state-id]');
+options.forEach(opt => {
+const visible = !stateId || opt.dataset.stateId === stateId;
+opt.hidden = !visible;
+});
+if(citySelect.value){
+const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
+if(selected && selected.hidden){
+citySelect.value = '';
+}
+}
+}
+
+function filterHotelLinks(){
+const stateId = getValueById('hotelFilterState');
+const cityId = getValueById('hotelFilterCity');
+document.querySelectorAll('#hotelLinkList .hotel-link-item').forEach((item) => {
+const stateOk = !stateId || item.dataset.stateId === stateId;
+const cityOk = !cityId || item.dataset.cityId === cityId;
+item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+});
+}
+
+function filterTransportLinks(){
+const stateId = getValueById('transportFilterState');
+const cityId = getValueById('transportFilterCity');
+document.querySelectorAll('#transportLinkList .transport-link-item').forEach((item) => {
+const stateOk = !stateId || item.dataset.stateId === stateId;
+const cityOk = !cityId || item.dataset.cityId === cityId;
+item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+});
+}
+
+function filterGuideLinks(){
+const stateId = getValueById('guideFilterState');
+const cityId = getValueById('guideFilterCity');
+document.querySelectorAll('#guideLinkList .guide-link-item').forEach((item) => {
+const stateOk = !stateId || item.dataset.stateId === stateId;
+const cityOk = !cityId || item.dataset.cityId === cityId;
+item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+});
+}
+
+function getSpotOptionsMarkup(selectedSpot){
+const filterState = getValueById('spotFilterState');
+const filterCity = getValueById('spotFilterCity');
+let options = '<option value="">Select Spot</option>';
+SPOTS.forEach((spot) => {
+const stateOk = !filterState || String(spot.state_id) === String(filterState);
+const cityOk = !filterCity || String(spot.city_id) === String(filterCity);
+if(stateOk && cityOk){
+const selected = String(selectedSpot || '') === String(spot.spot_id) ? ' selected' : '';
+options += `<option value="${spot.spot_id}"${selected}>${spot.state_name} ➜ ${spot.city_name} ➜ ${spot.spot_name}</option>`;
+}
+});
+return options;
+}
+
+function refreshItinerarySpotOptions(){
+document.querySelectorAll('#itinerary-list select[name="spots[]"]').forEach((selectEl) => {
+const current = selectEl.value;
+selectEl.innerHTML = getSpotOptionsMarkup(current);
+});
+}
 
 function showSection(id){
-document.getElementById('tours').style.display='none';
-document.getElementById('library').style.display='none';
-document.getElementById(id).style.display='block';
+document.querySelectorAll('.section-pane').forEach(el=>el.classList.add('d-none'));
+document.getElementById(id).classList.remove('d-none');
+document.querySelectorAll('.sidebar-link').forEach((btn) => {
+btn.classList.toggle('active', btn.dataset.section === id);
+});
 }
 
 function addItineraryRow(){
 const container=document.getElementById('itinerary-list');
-const id=Date.now();
-
 container.innerHTML+=`
 <div class="card p-3 mb-2">
 <div class="row g-2">
@@ -318,10 +724,6 @@ container.innerHTML+=`
 
 <div class="col-md-4">
 <select name="spots[]" class="form-select" required>
-<option value="">Select Spot</option>
-{% for s in spots %}
-<option value="{{ s.id }}">{{ s.state_name }} ➜ {{ s.city_name }} ➜ {{ s.spot_name }}</option>
-{% endfor %}
 </select>
 </div>
 
@@ -331,11 +733,52 @@ container.innerHTML+=`
 
 </div>
 </div>`;
+refreshItinerarySpotOptions();
 }
+
+document.addEventListener('DOMContentLoaded', function(){
+bindChange('pickupState', function(){
+updateCityOptions(this.value, 'pickupCity');
+});
+bindChange('dropState', function(){
+updateCityOptions(this.value, 'dropCity');
+});
+bindChange('hotelFilterState', function(){
+updateCityOptions(this.value, 'hotelFilterCity');
+filterHotelLinks();
+});
+bindChange('hotelFilterCity', filterHotelLinks);
+bindChange('transportFilterState', function(){
+updateCityOptions(this.value, 'transportFilterCity');
+filterTransportLinks();
+});
+bindChange('transportFilterCity', filterTransportLinks);
+bindChange('guideFilterState', function(){
+updateCityOptions(this.value, 'guideFilterCity');
+filterGuideLinks();
+});
+bindChange('guideFilterCity', filterGuideLinks);
+bindChange('spotFilterState', function(){
+updateCityOptions(this.value, 'spotFilterCity');
+refreshItinerarySpotOptions();
+});
+bindChange('spotFilterCity', refreshItinerarySpotOptions);
+
+updateCityOptions('', 'pickupCity');
+updateCityOptions('', 'dropCity');
+updateCityOptions('', 'hotelFilterCity');
+updateCityOptions('', 'transportFilterCity');
+updateCityOptions('', 'guideFilterCity');
+updateCityOptions('', 'spotFilterCity');
+filterHotelLinks();
+filterTransportLinks();
+filterGuideLinks();
+});
 
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
 </body>
 </html>

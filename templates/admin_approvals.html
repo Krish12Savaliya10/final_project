@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | TourGen</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_approvals.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body>
+<div class="topbar">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="brand"><i class="bi bi-shield-check"></i> Admin Control Center</div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-theme-toggle>
+        <i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
+      </button>
+      <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div class="alert alert-info border-0 shadow-sm">{{ messages[0] }}</div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <button class="sidebar-link active" data-section="overview" onclick="showAdminSection('overview')"><i class="bi bi-speedometer2 me-2"></i>Overview</button>
+      <button class="sidebar-link" data-section="approvals" onclick="showAdminSection('approvals')"><i class="bi bi-person-check me-2"></i>Approvals</button>
+      <button class="sidebar-link" data-section="data" onclick="showAdminSection('data')"><i class="bi bi-table me-2"></i>Data Tables</button>
+      <button class="sidebar-link" data-section="history" onclick="showAdminSection('history')"><i class="bi bi-clock-history me-2"></i>History</button>
+    </aside>
+
+    <main class="admin-content">
+      <div id="overview" class="admin-pane">
+        <div class="stat-grid mb-4">
+          <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">{{ stats.total_users or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Travelers</div><div class="stat-value">{{ stats.total_travelers or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Organizers</div><div class="stat-value">{{ stats.total_organizers or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Providers</div><div class="stat-value">{{ stats.total_providers or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Admins</div><div class="stat-value">{{ stats.total_admins or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Tours</div><div class="stat-value">{{ tour_stats.total_tours or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Services</div><div class="stat-value">{{ service_stats.total_services or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">Rs {{ payment_stats.total_revenue or 0 }}</div></div>
+        </div>
+        <div class="section h-100">
+          <div class="panel-title">Bookings Snapshot</div>
+          <h5 class="mb-3">System Activity</h5>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Total Bookings</span><strong>{{ booking_stats.total_bookings or 0 }}</strong></div>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Paid Bookings</span><strong class="text-success">{{ booking_stats.paid_bookings or 0 }}</strong></div>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Pending Bookings</span><strong class="text-warning">{{ booking_stats.pending_bookings or 0 }}</strong></div>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Total Payments</span><strong>{{ payment_stats.total_payments or 0 }}</strong></div>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Nearest Tour Date</span><strong>{{ tour_stats.nearest_tour_date or '-' }}</strong></div>
+        </div>
+      </div>
+
+      <div id="approvals" class="admin-pane d-none">
+        <div class="section h-100">
+          <div class="panel-title">User Approval Queue</div>
+          <h5 class="mb-3">Pending Requests ({{ stats.pending_approvals or 0 }})</h5>
+          {% if pending_users %}
+          <div class="table-responsive scroll">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Category</th>
+                  <th>Document</th>
+                  <th>Action + Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for u in pending_users %}
+                <tr>
+                  <td>
+                    <strong>{{ u.full_name }}</strong><br>
+                    <small class="text-muted">{{ u.email }} | {{ u.phone }}</small>
+                  </td>
+                  <td><span class="badge bg-secondary role-badge">{{ u.role }}</span></td>
+                  <td>{{ u.provider_category or '-' }}</td>
+                  <td>
+                    {% if u.document_path %}
+                    <a href="{{ url_for('static', filename='uploads/documents/' + u.document_path) }}" target="_blank" class="btn btn-outline-dark btn-sm">View</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td>
+                    <form method="POST" class="d-flex flex-column gap-2">
+                      <input type="hidden" name="user_id" value="{{ u.id }}">
+                      <input type="text" name="note" class="form-control form-control-sm" placeholder="optional note">
+                      <div class="d-flex gap-1">
+                        <button class="btn btn-success btn-sm" name="action" value="approve">Approve</button>
+                        <button class="btn btn-outline-danger btn-sm" name="action" value="reject">Reject</button>
+                        <button class="btn btn-outline-secondary btn-sm" name="action" value="set_pending">Set Pending</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-light border mb-0">No pending approval requests.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="data" class="admin-pane d-none">
+        <div class="row g-4 mb-4">
+          <div class="col-lg-6">
+            <div class="section">
+              <div class="panel-title">Users</div>
+              <h5 class="mb-3">All Registered Users</h5>
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>Name</th><th>Role</th><th>Status</th><th>Contact</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for u in all_users %}
+                    <tr>
+                      <td><strong>{{ u.full_name }}</strong><br><small class="text-muted">{{ u.business_name or '-' }}</small></td>
+                      <td><span class="badge bg-light text-dark border role-badge">{{ u.role }}</span></td>
+                      <td>
+                        {% if u.status == 'approved' %}
+                          <span class="badge bg-success">approved</span>
+                        {% elif u.status == 'pending' %}
+                          <span class="badge bg-warning text-dark">pending</span>
+                        {% else %}
+                          <span class="badge bg-danger">rejected</span>
+                        {% endif %}
+                      </td>
+                      <td><small>{{ u.email }}</small><br><small>{{ u.phone }}</small></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="section">
+              <div class="panel-title">Tours</div>
+              <h5 class="mb-3">All Tours</h5>
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>Title</th><th>Route</th><th>Date</th><th>Price</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for t in all_tours %}
+                    <tr>
+                      <td><strong>{{ t.title }}</strong></td>
+                      <td><small>{{ t.start_point }} -> {{ t.end_point }}</small></td>
+                      <td><small>{{ t.start_date }} to {{ t.end_date }}</small></td>
+                      <td>Rs {{ t.price }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="section">
+              <div class="panel-title">Services</div>
+              <h5 class="mb-3">Provider Services</h5>
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>Service</th><th>Type</th><th>Provider</th><th>City</th><th>Price</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for s in all_services %}
+                    <tr>
+                      <td>{{ s.service_name }}</td>
+                      <td>{{ s.service_type }}</td>
+                      <td>{{ s.provider_name or '-' }}</td>
+                      <td>{{ s.city_name or '-' }}</td>
+                      <td>Rs {{ s.price }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="section">
+              <div class="panel-title">Recent Bookings</div>
+              <h5 class="mb-3">Latest 20</h5>
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>ID</th><th>Traveler</th><th>Tour</th><th>Status</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for b in recent_bookings %}
+                    <tr>
+                      <td>#{{ b.id }}</td>
+                      <td>{{ b.full_name }}</td>
+                      <td>{{ b.title }}</td>
+                      <td>
+                        {% if b.status == 'paid' %}
+                        <span class="badge bg-success">paid</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">{{ b.status }}</span>
+                        {% endif %}
+                      </td>
+                      <td><small>{{ b.date }}</small></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="history" class="admin-pane d-none">
+        <div class="section">
+          <div class="panel-title">Approval History</div>
+          <h5 class="mb-3">Latest 30 Actions</h5>
+          {% if approval_logs %}
+          <div class="table-responsive scroll">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr><th>Date</th><th>User</th><th>Action</th><th>Admin</th><th>Note</th></tr>
+              </thead>
+              <tbody>
+                {% for log in approval_logs %}
+                <tr>
+                  <td><small>{{ log.created_at }}</small></td>
+                  <td>{{ log.target_user_name }}</td>
+                  <td><span class="badge bg-light text-dark border">{{ log.action_taken }}</span></td>
+                  <td>{{ log.admin_name }}</td>
+                  <td>{{ log.note or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-light border mb-0">No approval activity yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script>
+function showAdminSection(id){
+  document.querySelectorAll('.admin-pane').forEach((el) => el.classList.add('d-none'));
+  const target = document.getElementById(id);
+  if(target) target.classList.remove('d-none');
+  document.querySelectorAll('.sidebar-link').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.section === id);
+  });
+}
+</script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</body>
+</html>

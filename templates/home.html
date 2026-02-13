@@ -3,64 +3,12 @@
 {% block wrapper_class %}no-top-padding{% endblock %}
 
 {% block extra_css %}
-<style>
-
-/* HERO */
-.bg-image{
-    height:95vh;
-    background:
-    linear-gradient(rgba(15,23,42,.65),rgba(15,23,42,.8)),
-    url('/static/image/background.JPG');
-    background-size:cover;
-    background-position:center;
-    display:flex;
-    align-items:center;
-}
-
-.home_div h1{
-    font-weight:800;
-    letter-spacing:1px;
-}
-
-.home_div input{
-    height:55px;
-    border-radius:50px;
-    border:none;
-    padding-left:20px;
-}
-
-.home_div .btn{
-    background:#2563eb;
-    border:none;
-    border-radius:50px;
-    height:50px;
-    font-weight:600;
-}
-
-.home_div .btn:hover{
-    background:#1d4ed8;
-}
-
-/* TOUR CARDS */
-.card{
-    border-radius:20px;
-    transition:.35s;
-}
-.card:hover{
-    transform:translateY(-10px);
-    box-shadow:0 20px 45px rgba(0,0,0,0.25);
-}
-.card img{
-    height:200px;
-    object-fit:cover;
-}
-
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/home.css') }}">
 {% endblock %}
 
 {% block content %}
 
-<div class="bg-image" style="height:100vh;">
+<div class="bg-image full-vh">
     <div class="home_div container text-white text-center">
         <h1 class="display-3 fw-bold mb-4">Discover India's Beauty</h1>
 
@@ -98,6 +46,24 @@
                         </p>
 
                         <p class="text-muted small">{{ tour.description[:90] }}...</p>
+
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            {% if tour.travel_mode %}
+                            <span class="badge bg-light text-primary border">{{ tour.travel_mode }}</span>
+                            {% endif %}
+                            {% if tour.food_plan %}
+                            <span class="badge bg-light text-success border">{{ tour.food_plan }}</span>
+                            {% endif %}
+                            {% if tour.linked_hotels_count %}
+                            <span class="badge bg-warning text-dark">{{ tour.linked_hotels_count }} Hotel Options</span>
+                            {% endif %}
+                            {% if tour.linked_transport_count %}
+                            <span class="badge bg-info text-dark">{{ tour.linked_transport_count }} Transport Options</span>
+                            {% endif %}
+                            {% if tour.linked_guides_count %}
+                            <span class="badge bg-secondary">{{ tour.linked_guides_count }} Guide Options</span>
+                            {% endif %}
+                        </div>
 
                         <p class="fw-bold text-dark">₹{{ tour.price }}</p>
 

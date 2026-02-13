@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Organizer Dashboard{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/organizer_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pb-5">
+  <h2 class="fw-bold mb-4">Organizer Dashboard</h2>
+
+  {% if tours %}
+  <div class="row g-4">
+    {% for tour in tours %}
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm border-0">
+        <img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}" class="card-img-top organizer-tour-img">
+        <div class="card-body">
+          <h5 class="fw-bold">{{ tour.title }}</h5>
+          <p class="text-muted small mb-1">{{ tour.start_point }} -> {{ tour.end_point }}</p>
+          <p class="text-primary fw-bold mb-0">Rs {{ tour.price }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-light border">No tours available yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

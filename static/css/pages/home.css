@@ -1,0 +1,55 @@
+
+/* HERO */
+.bg-image{
+    height:95vh;
+    background:
+    linear-gradient(rgba(15,23,42,.65),rgba(15,23,42,.8)),
+    url('/static/image/background.JPG');
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    align-items:center;
+}
+
+.home_div h1{
+    font-weight:800;
+    letter-spacing:1px;
+}
+
+.home_div input{
+    height:55px;
+    border-radius:50px;
+    border:none;
+    padding-left:20px;
+}
+
+.home_div .btn{
+    background:#2563eb;
+    border:none;
+    border-radius:50px;
+    height:50px;
+    font-weight:600;
+}
+
+.home_div .btn:hover{
+    background:#1d4ed8;
+}
+
+/* TOUR CARDS */
+.card{
+    border-radius:20px;
+    transition:.35s;
+}
+.card:hover{
+    transform:translateY(-10px);
+    box-shadow:0 20px 45px rgba(0,0,0,0.25);
+}
+.card img{
+    height:200px;
+    object-fit:cover;
+}
+
+
+.full-vh{
+    height:100vh;
+}

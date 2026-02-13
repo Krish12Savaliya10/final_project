@@ -1,0 +1,162 @@
+body {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.theme-toggle-float {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2000;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(15, 23, 42, 0.55);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+html[data-theme="dark"] body {
+  background: #0b1220 !important;
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .theme-toggle-float {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .main-wrapper,
+html[data-theme="dark"] .container,
+html[data-theme="dark"] .container-fluid {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .section-card,
+html[data-theme="dark"] .meta-box,
+html[data-theme="dark"] .hotel-mini-card,
+html[data-theme="dark"] .tour-card,
+html[data-theme="dark"] .hotel-card,
+html[data-theme="dark"] .booking-card,
+html[data-theme="dark"] .panel-card,
+html[data-theme="dark"] .cardx,
+html[data-theme="dark"] .section,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .checkout-card,
+html[data-theme="dark"] .invoice-box,
+html[data-theme="dark"] .login-container,
+html[data-theme="dark"] .signup-container,
+html[data-theme="dark"] .method-card,
+html[data-theme="dark"] .profile-menu {
+  background: #111827 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .profile-head,
+html[data-theme="dark"] .table thead th,
+html[data-theme="dark"] .price-box,
+html[data-theme="dark"] .alert-light,
+html[data-theme="dark"] .flash {
+  background: #0f172a !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .table,
+html[data-theme="dark"] .table td,
+html[data-theme="dark"] .table th,
+html[data-theme="dark"] .table tr {
+  color: #dbeafe !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .text-dark {
+  color: #e2e8f0 !important;
+}
+
+html[data-theme="dark"] .badge.bg-light.text-dark {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] .small-muted,
+html[data-theme="dark"] .subtitle,
+html[data-theme="dark"] .role-note {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .input-group input,
+html[data-theme="dark"] .input-group select {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .form-control::placeholder,
+html[data-theme="dark"] .input-group input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .dropdown-menu {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+html[data-theme="dark"] .dropdown-item:hover {
+  background: #1f2937 !important;
+}
+
+html[data-theme="dark"] .dropdown-divider {
+  border-top-color: #334155 !important;
+}
+
+html[data-theme="dark"] .table-hover tbody tr:hover {
+  background: #1f2937 !important;
+}
+
+html[data-theme="dark"] .section-tabs {
+  background: #111827 !important;
+}
+
+html[data-theme="dark"] .timeline-item:hover {
+  background: #1f2937 !important;
+}
+
+html[data-theme="dark"] .btn-outline-dark {
+  color: #e2e8f0 !important;
+  border-color: #64748b !important;
+}
+
+html[data-theme="dark"] .btn-outline-dark:hover {
+  background: #334155 !important;
+}
+
+html[data-theme="dark"] .btn-close {
+  filter: invert(1);
+}
+
+@media print {
+  html[data-theme="dark"] body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  html[data-theme="dark"] .invoice-box {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
+  }
+}

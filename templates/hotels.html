@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block title %}Hotels | TourGen{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/hotels.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">Hotel Availability</h2>
+    <p class="text-muted">Organizer and travelers can track room availability type-wise.</p>
+  </div>
+
+  <form method="GET" class="row justify-content-center mb-4">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search hotel, city or locality...">
+        <button class="btn btn-primary"><i class="bi bi-search"></i></button>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-4">
+    {% if hotels %}
+      {% for h in hotels %}
+      <div class="col-md-6 col-lg-4">
+        <div class="hotel-card h-100">
+          <img src="{{ url_for('static', filename='uploads/' + (h.cover_image or 'demo.jpg')) }}" class="hotel-img" alt="{{ h.hotel_name }}">
+          <div class="p-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <h5 class="fw-bold mb-1">{{ h.hotel_name }}</h5>
+              <span class="star">{{ h.star_rating }}★</span>
+            </div>
+            <div class="text-muted small mb-1">{{ h.locality or h.address_line1 }}</div>
+            <div class="text-muted small mb-2">{{ h.city_name or '-' }}, {{ h.state_name or '-' }}</div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <div>
+                <div class="small text-muted">Starting from</div>
+                <div class="fw-bold text-primary">Rs {{ h.starting_price }}</div>
+              </div>
+              <div class="text-end">
+                <div class="small text-muted">Available Rooms</div>
+                <div class="fw-bold text-success">{{ h.total_available_rooms }}</div>
+              </div>
+            </div>
+
+            <a href="{{ url_for('hotel_detail', service_id=h.service_id) }}" class="btn btn-dark w-100 mt-3 rounded-pill">View Details</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="alert alert-light border">No hotels found for this search.</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

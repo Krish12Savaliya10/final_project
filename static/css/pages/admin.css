@@ -1,0 +1,303 @@
+
+body{
+    background:#f1f5f9;
+    font-family:'Segoe UI',system-ui;
+    color:#0f172a;
+    transition:background-color .25s ease,color .25s ease;
+}
+
+.admin-topbar{
+    background:#0f172a;
+    padding:12px 25px;
+}
+
+.admin-topbar .brand{
+    color:white;
+    font-weight:700;
+    font-size:22px;
+}
+
+.admin-topbar .btn{
+    border-radius:40px;
+}
+
+.topbar-actions .dropdown-menu{
+    min-width:220px;
+}
+
+.profile-summary{
+    line-height:1.3;
+}
+
+.admin-layout{
+    display:flex;
+    min-height:calc(100vh - 64px);
+}
+
+.admin-sidebar{
+    width:240px;
+    background:#ffffff;
+    border-right:1px solid #e2e8f0;
+    padding:18px 12px;
+    position:sticky;
+    top:0;
+    align-self:flex-start;
+    height:calc(100vh - 64px);
+}
+
+.admin-main{
+    flex:1;
+    padding:20px;
+}
+
+.sidebar-link{
+    width:100%;
+    border:none;
+    background:transparent;
+    text-align:left;
+    padding:10px 12px;
+    border-radius:10px;
+    margin-bottom:8px;
+    font-weight:600;
+    color:#1f2937;
+}
+
+.sidebar-link:hover{
+    background:#f1f5f9;
+}
+
+.sidebar-link.active{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.stat-box{
+    min-height:100px;
+}
+
+.chart-img{
+    width:100%;
+    border-radius:10px;
+    border:1px solid #e2e8f0;
+}
+
+.tour-builder-accordion .accordion-item{
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    margin-bottom:10px;
+    overflow:hidden;
+}
+
+.tour-builder-accordion .accordion-button{
+    font-weight:700;
+    background:#f8fafc;
+}
+
+.tour-builder-accordion .accordion-button:not(.collapsed){
+    color:#0f172a;
+    background:#eff6ff;
+    box-shadow:none;
+}
+
+.tour-builder-accordion .accordion-body{
+    background:#ffffff;
+}
+
+.card{
+    border-radius:18px;
+    transition:background-color .25s ease,border-color .25s ease,color .25s ease;
+}
+
+.card img{
+    height:180px;
+    object-fit:cover;
+}
+
+.table img{
+    object-fit:cover;
+}
+
+#itinerary-list .card{
+    background:#f8fafc;
+    border:1px dashed #cbd5e1;
+}
+
+.hotel-link-list{
+    max-height:180px;
+    overflow:auto;
+    background:#ffffff;
+}
+
+.hotel-link-item{
+    padding:6px 8px;
+    border-radius:8px;
+}
+.transport-link-item{
+    padding:6px 8px;
+    border-radius:8px;
+}
+.guide-link-item{
+    padding:6px 8px;
+    border-radius:8px;
+}
+
+.hotel-link-item:hover{
+    background:#f1f5f9;
+}
+.transport-link-item:hover{
+    background:#f1f5f9;
+}
+.guide-link-item:hover{
+    background:#f1f5f9;
+}
+
+body.dark-mode{
+    background:#0b1220;
+    color:#e2e8f0;
+}
+
+body.dark-mode .section-tabs{
+    background:#111827;
+    box-shadow:0 8px 22px rgba(0,0,0,.28);
+}
+
+body.dark-mode .admin-sidebar{
+    background:#111827;
+    border-right-color:#334155;
+}
+
+body.dark-mode .sidebar-link{
+    color:#e2e8f0;
+}
+
+body.dark-mode .sidebar-link:hover{
+    background:#1f2937;
+}
+
+body.dark-mode .sidebar-link.active{
+    background:#1e3a8a;
+    color:#dbeafe;
+}
+
+body.dark-mode .chart-img{
+    border-color:#334155;
+}
+
+body.dark-mode .tour-builder-accordion .accordion-item{
+    border-color:#334155;
+}
+
+body.dark-mode .tour-builder-accordion .accordion-button{
+    background:#0f172a;
+    color:#e2e8f0;
+}
+
+body.dark-mode .tour-builder-accordion .accordion-button:not(.collapsed){
+    background:#1e293b;
+}
+
+body.dark-mode .tour-builder-accordion .accordion-body{
+    background:#111827;
+}
+
+body.dark-mode .card,
+body.dark-mode .modal-content{
+    background:#111827;
+    color:#e2e8f0;
+    border-color:#1f2937;
+}
+
+body.dark-mode .text-muted{
+    color:#94a3b8 !important;
+}
+
+body.dark-mode .table{
+    color:#dbeafe;
+}
+
+body.dark-mode .table-hover tbody tr:hover{
+    background-color:#1f2937;
+}
+
+body.dark-mode .table-dark{
+    --bs-table-bg:#020617;
+}
+
+body.dark-mode #itinerary-list .card{
+    background:#0f172a;
+    border-color:#334155;
+}
+
+body.dark-mode .hotel-link-list{
+    background:#0f172a;
+    border-color:#334155 !important;
+}
+
+body.dark-mode .hotel-link-item:hover{
+    background:#1f2937;
+}
+body.dark-mode .transport-link-item:hover{
+    background:#1f2937;
+}
+body.dark-mode .guide-link-item:hover{
+    background:#1f2937;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select{
+    background:#0f172a;
+    color:#e2e8f0;
+    border-color:#334155;
+}
+
+body.dark-mode .form-control::placeholder{
+    color:#94a3b8;
+}
+
+body.dark-mode .dropdown-menu{
+    background:#0f172a;
+    color:#e2e8f0;
+    border-color:#334155;
+}
+
+body.dark-mode .dropdown-item{
+    color:#e2e8f0;
+}
+
+body.dark-mode .dropdown-item:hover{
+    background:#1f2937;
+}
+
+body.dark-mode .dropdown-divider{
+    border-top-color:#334155;
+}
+
+body.dark-mode .btn-close{
+    filter:invert(1);
+}
+
+@media (max-width: 992px){
+    .admin-layout{
+        flex-direction:column;
+    }
+
+    .admin-sidebar{
+        width:100%;
+        height:auto;
+        position:static;
+        display:flex;
+        gap:8px;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    .sidebar-link{
+        width:auto;
+        margin-bottom:0;
+    }
+
+    .admin-main{
+        padding:14px;
+    }
+}
+

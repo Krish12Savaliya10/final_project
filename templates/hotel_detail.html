@@ -1,0 +1,202 @@
+{% extends "layout.html" %}
+{% block title %}{{ hotel.hotel_name }} | Hotel Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/hotel_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div class="alert alert-info border-0 shadow-sm mb-3">{{ messages[0] }}</div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="section-card p-3 mb-4">
+    <div class="row g-3">
+      <div class="col-lg-7">
+        {% set hero = (images[0].image_url if images else 'demo.jpg') %}
+        <img src="{{ url_for('static', filename='uploads/' + hero) }}" class="hero-img" alt="{{ hotel.hotel_name }}">
+      </div>
+      <div class="col-lg-5">
+        <h2 class="fw-bold mb-1">{{ hotel.hotel_name }}</h2>
+        <div class="star mb-2">{{ hotel.star_rating }}★ Hotel</div>
+        <div class="text-muted mb-1">{{ hotel.address_line1 }}{% if hotel.locality %}, {{ hotel.locality }}{% endif %}</div>
+        <div class="text-muted mb-3">{{ hotel.city_name or '-' }}, {{ hotel.state_name or '-' }}{% if hotel.pincode %} - {{ hotel.pincode }}{% endif %}</div>
+
+        <div class="small mb-1"><b>Check-in:</b> {{ hotel.check_in_time or '-' }}</div>
+        <div class="small mb-1"><b>Check-out:</b> {{ hotel.check_out_time or '-' }}</div>
+
+        <div class="mt-2 d-flex flex-wrap gap-2">
+          {% if hotel.couple_friendly %}<span class="badge bg-success">Couple Friendly</span>{% endif %}
+          {% if hotel.breakfast_available %}<span class="badge bg-info text-dark">Breakfast</span>{% endif %}
+          {% if hotel.parking_available %}<span class="badge bg-secondary">Parking</span>{% endif %}
+          {% if hotel.pets_allowed %}<span class="badge bg-dark">Pets Allowed</span>{% endif %}
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a href="{{ url_for('hotels') }}" class="btn btn-outline-primary rounded-pill">Back to Hotels</a>
+          <button class="btn btn-dark rounded-pill" data-bs-toggle="modal" data-bs-target="#allPhotosModal">
+            See All Photos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% if images|length > 1 %}
+    <div class="row g-2 mt-2">
+      {% for img in images[1:7] %}
+      <div class="col-4 col-md-2">
+        <img src="{{ url_for('static', filename='uploads/' + img.image_url) }}" class="thumb-img" alt="{{ hotel.hotel_name }}">
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="section-card p-3 mb-4">
+        <h5 class="fw-bold">About Hotel</h5>
+        <p class="text-muted mb-2">{{ hotel.hotel_description or 'No description available.' }}</p>
+        {% if hotel.house_rules %}
+        <h6 class="fw-bold mt-3">House Rules</h6>
+        <p class="text-muted mb-0">{{ hotel.house_rules }}</p>
+        {% endif %}
+      </div>
+
+      <div class="section-card p-3">
+        <h5 class="fw-bold mb-3">Room Availability (Type-wise)</h5>
+        {% if room_types %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Room Type</th>
+                <th>Guests</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in room_types %}
+              <tr>
+                <td>
+                  <strong>{{ r.room_type_name }}</strong><br>
+                  <small class="text-muted">{{ r.bed_type or '-' }}</small>
+                </td>
+                <td>{{ r.max_guests }}</td>
+                <td>Rs {{ r.base_price }}</td>
+                <td>{{ r.total_rooms }}</td>
+                <td>
+                  {% if r.available_rooms > 0 %}
+                    <span class="badge bg-success">{{ r.available_rooms }}</span>
+                  {% else %}
+                    <span class="badge bg-danger">Sold Out</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-light border mb-0">Room types are not published yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="section-card p-3 mb-4">
+        <h6 class="fw-bold">Amenities</h6>
+        {% if amenities %}
+          <div class="d-flex flex-wrap gap-2">
+            {% for a in amenities %}
+            <span class="badge bg-light text-dark border"><i class="bi {{ a.amenity_icon or 'bi-check2' }}"></i> {{ a.amenity_name }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No amenities added.</p>
+        {% endif %}
+      </div>
+
+      {% if session.get('role') in ['customer', 'organizer'] %}
+      <div class="section-card p-3 mb-4">
+        <h6 class="fw-bold">Book This Hotel</h6>
+        <form method="POST" class="row g-2">
+          <div class="col-12">
+            <label class="form-label small">Room Type</label>
+            <select name="room_type_id" class="form-select" required>
+              <option value="">Select room type</option>
+              {% for r in room_types %}
+              <option value="{{ r.id }}" {% if r.available_rooms <= 0 %}disabled{% endif %}>
+                {{ r.room_type_name }} | Rs {{ r.base_price }} | Available {{ r.available_rooms }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Check-In</label>
+            <input type="date" name="check_in_date" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Check-Out</label>
+            <input type="date" name="check_out_date" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Rooms</label>
+            <input type="number" name="rooms_booked" min="1" value="1" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Guests</label>
+            <input type="number" name="guests_count" min="1" value="2" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <button class="btn btn-success w-100">Book Now</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      <div class="section-card p-3">
+        <h6 class="fw-bold">Recent Inventory Updates</h6>
+        {% if inventory_updates %}
+        <div class="small">
+          {% for item in inventory_updates %}
+          <div class="border-bottom py-2">
+            <div><b>{{ item.room_type_name }}</b></div>
+            <div class="text-muted">{{ item.old_available }} -> {{ item.new_available }} by {{ item.changed_by_name }}</div>
+            <div class="text-muted">{{ item.created_at }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No updates yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="allPhotosModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ hotel.hotel_name }} - All Photos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          {% for img in images %}
+          <div class="col-6 col-md-4">
+            <img src="{{ url_for('static', filename='uploads/' + img.image_url) }}" class="w-100 rounded modal-img" alt="{{ hotel.hotel_name }}">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

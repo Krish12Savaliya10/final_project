@@ -1,0 +1,55 @@
+
+body{
+    background:#f1f5f9;
+}
+
+.page-title{
+    font-weight:800;
+    letter-spacing:.5px;
+}
+
+.booking-card{
+    border-radius:20px;
+    border:none;
+    transition:.25s;
+}
+.booking-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 14px 30px rgba(0,0,0,.12);
+}
+
+.status-paid{
+    background:#16a34a;
+    color:white;
+    padding:8px 16px;
+    border-radius:40px;
+    font-weight:600;
+}
+
+.status-pending{
+    background:#f59e0b;
+    color:white;
+    padding:8px 16px;
+    border-radius:40px;
+    font-weight:600;
+}
+
+.btn-main{
+    border-radius:40px;
+    padding:10px 22px;
+    font-weight:600;
+}
+
+.btn-view{ border:2px solid #2563eb; color:#2563eb; }
+.btn-view:hover{ background:#2563eb; color:white; }
+
+.btn-pay{ background:#2563eb; color:white; }
+.btn-pay:hover{ background:#1d4ed8; color:white; }
+
+.btn-bill{ background:#111827; color:white; }
+.btn-bill:hover{ background:#000; color:white; }
+
+.empty-box{
+    margin-top:70px;
+}
+

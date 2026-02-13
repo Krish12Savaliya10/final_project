@@ -1,0 +1,6 @@
+/* solid navbar only on this page */
+.solid-nav .custom-navbar{
+    background:#0f172a !important;
+    backdrop-filter:none !important;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+}

@@ -1,0 +1,11 @@
+.cardx{border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 10px 22px rgba(15,23,42,.05);}
+.stat{font-size:26px;font-weight:800;line-height:1.2;}
+.small-muted{font-size:12px;color:#64748b;}
+
+.inv-count-input{
+    max-width:100px;
+}
+
+.inv-note-input{
+    max-width:230px;
+}
