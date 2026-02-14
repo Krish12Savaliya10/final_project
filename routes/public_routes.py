@@ -223,20 +223,6 @@ def register_routes(app):
             """,
             (service_id,),
         )
-        inventory_updates = query_db(
-            """
-            SELECT
-                l.created_at, l.old_available, l.new_available,
-                rt.room_type_name, u.full_name AS changed_by_name
-            FROM hotel_room_inventory_logs l
-            JOIN hotel_room_types rt ON rt.id=l.room_type_id
-            JOIN users u ON u.id=l.changed_by
-            WHERE rt.service_id=%s
-            ORDER BY l.id DESC
-            LIMIT 20
-            """,
-            (service_id,),
-        )
 
         if request.method == "POST":
             room_type_id = to_int(request.form.get("room_type_id"), 0)
@@ -332,7 +318,6 @@ def register_routes(app):
             images=images,
             room_types=room_types,
             amenities=amenities,
-            inventory_updates=inventory_updates,
         )
 
     @app.route("/signup", methods=["GET", "POST"])

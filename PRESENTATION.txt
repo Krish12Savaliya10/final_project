@@ -1,0 +1,91 @@
+# TourGen Presentation - 5 Slides
+
+## Slide 1: Problem Statement & Solution
+
+### Problem Statement:
+- Travel booking is fragmented across multiple platforms
+- No unified system for tours, hotels, and transport
+- Users struggle to compare options easily
+- Service providers lack easy market access
+- Manual booking processes are time-consuming
+
+### Our Solution - TourGen:
+- All-in-one travel booking platform
+- Integrated tour, hotel, and transport booking
+- Real-time availability and pricing
+- Easy provider onboarding
+- Automated booking confirmations
+
+---
+
+## Slide 2: Workflow
+
+### User Journey:
+1. Register/Login
+2. Browse tours/hotels
+3. Select package
+4. Fill booking details
+5. Make payment
+6. Get confirmation & invoice
+
+### Provider Journey:
+1. Sign up with documents
+2. Admin approval
+3. Add services (hotels/transport)
+4. Manage inventory
+5. Receive bookings
+
+---
+
+## Slide 3: Features (Uniqueness)
+
+### For Travelers:
+- 50+ tour packages across India
+- Hotel search by location/rating/price
+- Complete itinerary with day-wise plans
+- Compare hotels & transport options
+- Book hotel rooms separately
+- Download invoices
+
+### For Providers:
+- Easy hotel listing with room types
+- Transport management with documents
+- Real-time inventory tracking
+- Booking notifications
+- Performance analytics
+
+### For Organizers:
+- Create custom tour packages
+- Link hotels, transport, guides
+- Manage destinations
+- Booking analytics with charts
+
+---
+
+## Slide 4: Key Differentiators
+
+### What Makes TourGen Unique:
+1. **Comprehensive** - Tours + Hotels + Transport
+2. **Multi-stakeholder** - 4 user roles
+3. **Scalable** - Modular architecture
+4. **Analytics** - Data-driven insights
+5. **Approval System** - Quality control
+6. **Customizable** - Flexible tour building
+
+---
+
+## Slide 5: Technology
+
+### Tech Stack:
+- Python Flask (Backend)
+- MySQL (Database)
+- Bootstrap 5 (Frontend)
+- Werkzeug Security (Auth)
+
+### Features:
+- Multi-role authentication
+- Role-based access control
+- File upload handling
+- Dynamic charts
+- Responsive design
+- Invoice generation
