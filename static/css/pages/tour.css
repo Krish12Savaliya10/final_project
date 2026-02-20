@@ -1,20 +1,26 @@
-
 body{
-    background:#f1f5f9;
+    background:#f2f6fb;
+}
+
+.search-container{
+    background:#ffffff;
+    border:1px solid #dde7f3;
+    border-radius:20px;
+    padding:30px 24px;
+    box-shadow:0 16px 30px rgba(15,23,42,.07);
 }
 
 .search-container h1{
     font-weight:800;
-    letter-spacing:.5px;
+    letter-spacing:.35px;
     color:#0f172a;
 }
 
 .custom-search{
-    height:58px;
-    border-radius:50px;
-    padding-left:25px;
-    border:2px solid #e2e8f0;
-    transition:.25s;
+    height:56px;
+    border-radius:999px;
+    padding-left:22px;
+    border:1px solid #cdd9e7;
     font-size:15px;
 }
 
@@ -24,33 +30,33 @@ body{
 }
 
 .search-container .form-select{
-    border-radius:14px;
-    border:2px solid #e2e8f0;
+    border-radius:12px;
+    border:1px solid #cfd9e7;
     height:46px;
 }
 
 .tour-card{
-    border-radius:18px;
-    border:1px solid #e5e7eb;
+    border-radius:20px;
+    border:1px solid #dbe6f1;
     overflow:hidden;
-    transition:all .28s ease;
-    background:white;
+    transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+    background:#ffffff;
 }
 
 .tour-card:hover{
     transform:translateY(-8px);
-    box-shadow:0 18px 40px rgba(0,0,0,.12);
-    border-color:#dbeafe;
+    box-shadow:0 20px 40px rgba(0,0,0,.12);
+    border-color:#bfd6f6;
 }
 
 .card-img-top{
     height:240px;
     object-fit:cover;
-    transition:transform .5s ease;
+    transition:transform .45s ease;
 }
 
 .tour-card:hover .card-img-top{
-    transform:scale(1.05);
+    transform:scale(1.04);
 }
 
 .card-body{
@@ -64,22 +70,160 @@ body{
 }
 
 .price-box{
-    background:#f8fafc;
+    background:#f5f8fc;
+    border:1px solid #dbe6f2;
     padding:10px 14px;
     border-radius:12px;
 }
 
 .join-btn{
-    background:#2563eb;
+    border-radius:999px;
+    padding:10px 18px;
+    min-width:164px;
+    text-align:center;
+    color:#ffffff;
     border:none;
-    border-radius:50px;
-    padding:10px 20px;
-    font-weight:600;
-    color:white;
+    background:linear-gradient(135deg,#2563eb,#0ea5e9);
 }
 
 .join-btn:hover{
-    background:#1d4ed8;
-    transform:translateY(-2px);
+    color:#ffffff;
+    transform:translateY(-1px);
+    box-shadow:0 10px 24px rgba(37,99,235,.28);
 }
 
+.tour-points{
+    background:#f7fafd;
+    border:1px solid #dde7f3;
+    border-radius:12px;
+    padding:10px 12px;
+}
+
+.preview-label{
+    font-size:12px;
+    font-weight:700;
+    color:#334155;
+    margin-bottom:6px;
+}
+
+.preview-card{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    border:1px solid #dde5ef;
+    border-radius:12px;
+    padding:8px;
+    background:#ffffff;
+}
+
+.preview-img{
+    width:72px;
+    height:54px;
+    object-fit:cover;
+    border-radius:8px;
+    border:1px solid #d6deea;
+    flex-shrink:0;
+}
+
+.spot-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+.spot-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid #dce6f2;
+    border-radius:10px;
+    padding:6px;
+    background:#ffffff;
+}
+
+.spot-img{
+    width:40px;
+    height:40px;
+    object-fit:cover;
+    border-radius:8px;
+    border:1px solid #d9e3ef;
+    flex-shrink:0;
+}
+
+@media (max-width: 991.98px){
+    .search-container{
+        padding:22px 18px;
+    }
+
+    .custom-search{
+        height:52px;
+        padding-left:18px;
+    }
+
+    .card-img-top{
+        height:210px;
+    }
+
+    .card-body{
+        padding:18px;
+    }
+
+    .card-body h4{
+        font-size:18px;
+    }
+}
+
+@media (max-width: 575.98px){
+    .search-container{
+        margin-bottom:1.7rem !important;
+        border-radius:14px;
+        padding:16px 14px;
+    }
+
+    .search-container h1{
+        font-size:1.5rem;
+    }
+
+    .custom-search{
+        height:47px;
+        font-size:14px;
+    }
+
+    .search-container .form-select{
+        height:42px;
+        border-radius:10px;
+        font-size:14px;
+    }
+
+    .card-img-top{
+        height:182px;
+    }
+
+    .card-body{
+        padding:14px;
+    }
+
+    .preview-card{
+        align-items:flex-start;
+    }
+
+    .preview-img{
+        width:64px;
+        height:48px;
+    }
+
+    .spot-grid{
+        grid-template-columns:1fr;
+    }
+
+    .tour-card .card-body .d-flex.justify-content-between.align-items-center.mt-4.pt-3.border-top{
+        flex-direction:column;
+        align-items:stretch !important;
+        gap:10px;
+    }
+
+    .join-btn{
+        width:100%;
+        min-width:0;
+    }
+}

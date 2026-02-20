@@ -19,7 +19,10 @@ def role_required(role):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            if session.get("role") != role:
+            current_role = session.get("role")
+            allowed_roles = set(role) if isinstance(role, (list, tuple, set)) else {role}
+
+            if current_role not in allowed_roles:
                 abort(403)
             return fn(*args, **kwargs)
 

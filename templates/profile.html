@@ -1,0 +1,201 @@
+{% extends "layout.html" %}
+{% block title %}TourGen | My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-md-5">
+          <h3 class="fw-bold mb-2">My Profile</h3>
+          <p class="text-muted mb-4">Update your personal and role-specific details.</p>
+
+          {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="alert alert-info">{{ messages[0] }}</div>
+          {% endif %}
+          {% endwith %}
+
+          <div class="alert alert-light border">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+              <div>
+                <strong>Verification Stage:</strong>
+                <span class="text-capitalize">{{ profile.kyc_stage or 'registered' }}</span>
+              </div>
+              <div>
+                <strong>Badge:</strong>
+                {% if profile.verification_badge %}
+                <span class="badge bg-success">Verified</span>
+                {% else %}
+                <span class="badge bg-secondary">Not Verified</span>
+                {% endif %}
+              </div>
+            </div>
+            {% if profile.admin_note %}
+            <div class="mt-2"><strong>Admin Note:</strong> {{ profile.admin_note }}</div>
+            {% endif %}
+            <hr>
+            <div class="row g-2">
+              {% for key, label in doc_labels.items() %}
+              <div class="col-md-6">
+                <div class="small">
+                  <strong>{{ label }}:</strong>
+                  {% if profile.get(key) %}
+                  <a href="{{ url_for('static', filename='uploads/documents/' + profile.get(key)) }}" target="_blank">View file</a>
+                  {% else %}
+                  <span class="text-muted">Not uploaded</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <form method="POST" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="full_name" class="form-control" maxlength="100" required
+                     value="{{ user.full_name or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" class="form-control" maxlength="10" required
+                     value="{{ user.phone or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" value="{{ user.email }}" disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Role</label>
+              <select name="requested_role" class="form-select">
+                {% set active_role = (profile.requested_role or user.role or 'customer')|lower %}
+                <option value="traveler" {% if active_role in ['traveler', 'customer'] %}selected{% endif %}>Traveler</option>
+                <option value="organizer" {% if active_role == 'organizer' %}selected{% endif %}>Organizer</option>
+                <option value="hotel_provider" {% if active_role in ['hotel_provider', 'provider'] %}selected{% endif %}>Hotel & Services Provider</option>
+                {% if (user.role or '')|lower == 'admin' %}
+                <option value="admin" selected>Admin (Locked)</option>
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Business Name</label>
+              <input type="text" name="business_name" class="form-control" maxlength="120"
+                     value="{{ profile.business_name or '' }}" placeholder="Optional">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Provider Category</label>
+              <input type="text" name="provider_category" class="form-control" maxlength="60"
+                     value="{{ profile.provider_category or '' }}" placeholder="Hotel / Guides / Food">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-select">
+                <option value="">Select</option>
+                <option value="Male" {% if profile.gender == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if profile.gender == 'Female' %}selected{% endif %}>Female</option>
+                <option value="Other" {% if profile.gender == 'Other' %}selected{% endif %}>Other</option>
+                <option value="Prefer not to say" {% if profile.gender == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" name="date_of_birth" class="form-control"
+                     value="{{ profile.date_of_birth }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Emergency Contact</label>
+              <input type="text" name="emergency_contact" class="form-control" maxlength="10"
+                     value="{{ profile.emergency_contact or '' }}" placeholder="Optional">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pincode</label>
+              <input type="text" name="pincode" class="form-control" maxlength="6" pattern="[0-9]{6}"
+                     value="{{ profile.pincode or '' }}" placeholder="Enter pincode">
+              <div class="form-text">On save, city and district are auto-fetched from Google Maps.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">City</label>
+              <input type="text" name="city" class="form-control" maxlength="120"
+                     value="{{ profile.city or '' }}" placeholder="Auto from pincode">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">District</label>
+              <input type="text" name="district" class="form-control" maxlength="120"
+                     value="{{ profile.district or '' }}" placeholder="Auto from pincode">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Home State</label>
+              <select id="profileHomeState" class="form-select">
+                <option value="">Select state</option>
+                {% for s in states %}
+                <option value="{{ s.id }}">{{ s.state_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Home City</label>
+              <select name="city_id" id="profileHomeCity" class="form-select" {% if not profile.city_id %}disabled{% endif %}>
+                <option value="">Select city</option>
+                {% for c in cities %}
+                <option value="{{ c.id }}" data-state-id="{{ c.state_id }}" {% if profile.city_id == c.id %}selected{% endif %}>
+                  {{ c.state_name }} -> {{ c.city_name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Address</label>
+              <input type="text" name="address_line" class="form-control" maxlength="255"
+                     value="{{ profile.address_line or '' }}" placeholder="Optional">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Bio</label>
+              <textarea name="bio" class="form-control" rows="3" maxlength="255"
+                        placeholder="Tell others about you (optional)">{{ profile.bio or '' }}</textarea>
+            </div>
+            <div class="col-12 d-grid d-md-flex justify-content-md-end gap-2 pt-2">
+              <button type="submit" class="btn btn-primary px-4">Save Profile</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    const stateSelect = document.getElementById("profileHomeState");
+    const citySelect = document.getElementById("profileHomeCity");
+    if (!stateSelect || !citySelect) return;
+
+    const syncCityOptions = () => {
+      const stateId = (stateSelect.value || "").trim();
+      citySelect.querySelectorAll("option[data-state-id]").forEach((opt) => {
+        const visible = !!stateId && String(opt.dataset.stateId) === stateId;
+        opt.hidden = !visible;
+        opt.disabled = !visible;
+        opt.style.display = visible ? "" : "none";
+      });
+      if (!stateId) {
+        citySelect.value = "";
+        citySelect.disabled = true;
+        return;
+      }
+      citySelect.disabled = false;
+      const selectedOption = citySelect.options[citySelect.selectedIndex];
+      if (selectedOption && selectedOption.value && (selectedOption.disabled || String(selectedOption.dataset.stateId || "") !== stateId)) {
+        citySelect.value = "";
+      }
+    };
+
+    const selectedOption = citySelect.options[citySelect.selectedIndex];
+    if (selectedOption && selectedOption.dataset.stateId) {
+      stateSelect.value = selectedOption.dataset.stateId;
+    }
+
+    stateSelect.addEventListener("change", syncCityOptions);
+    syncCityOptions();
+  })();
+</script>
+{% endblock %}

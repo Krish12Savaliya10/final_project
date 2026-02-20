@@ -5,8 +5,12 @@
 <title>TourGen | Join Trip</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/booking.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
@@ -15,12 +19,16 @@
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top custom-navbar">
-<div class="container">
+<div class="container-xl">
 <a class="navbar-brand brand-logo" href="{{ url_for('home') }}">
 <i class="bi bi-compass"></i> TourGen
 </a>
 
-<div class="collapse navbar-collapse">
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bookingNavMenu" aria-controls="bookingNavMenu" aria-expanded="false" aria-label="Toggle navigation">
+<span class="navbar-toggler-icon"></span>
+</button>
+
+<div class="collapse navbar-collapse" id="bookingNavMenu">
 <ul class="navbar-nav ms-auto align-items-center">
 <li class="nav-item me-2">
 <button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-theme-toggle>
@@ -43,7 +51,8 @@
 </nav>
 
 <div class="hero">
-<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}">
+<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
+     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
 <div class="hero-content">
 <div class="hero-title">{{ tour.title }}</div>
 <div class="hero-meta mt-2">
@@ -73,6 +82,7 @@
 </div>
 
 <div class="text-end">
+<a href="{{ url_for('invoice', booking_id=booking_id) }}" class="btn btn-sm btn-outline-primary rounded-pill">
 <i class="bi bi-download"></i> Download Ticket
 </a>
 </div>
@@ -99,12 +109,34 @@
 <div class="col-md-4">
 <div class="meta-box"><small class="text-muted d-block">Group Size</small><strong>{% if tour.max_group_size %}Up to {{ tour.max_group_size }}{% else %}Flexible{% endif %}</strong></div>
 </div>
+<div class="col-md-4">
+<div class="meta-box"><small class="text-muted d-block">Tour Start Requirement</small><strong>Minimum {{ min_group_size or 6 }} persons</strong></div>
+</div>
+<div class="col-md-4">
+<div class="meta-box"><small class="text-muted d-block">Child Pricing</small><strong>{{ tour.child_price_percent or 100 }}% of base fare</strong></div>
+</div>
+<div class="col-md-4">
+<div class="meta-box"><small class="text-muted d-block">Available Seats</small><strong>{% if remaining_slots is not none %}{{ remaining_slots }}{% else %}N/A{% endif %}</strong></div>
+</div>
+<div class="col-md-4">
+<div class="meta-box"><small class="text-muted d-block">Estimated Route Distance</small><strong>{% if total_distance_km and total_distance_km > 0 %}{{ total_distance_km }} km{% else %}N/A{% endif %}</strong></div>
+</div>
 <div class="col-md-6">
 <div class="meta-box"><small class="text-muted d-block">Pickup</small><strong>{{ tour.pickup_city_name or tour.start_point }}{% if tour.pickup_state_name %}, {{ tour.pickup_state_name }}{% endif %}</strong></div>
 </div>
 <div class="col-md-6">
 <div class="meta-box"><small class="text-muted d-block">Drop</small><strong>{{ tour.drop_city_name or tour.end_point }}{% if tour.drop_state_name %}, {{ tour.drop_state_name }}{% endif %}</strong></div>
 </div>
+{% if tour.departure_datetime %}
+<div class="col-md-6">
+<div class="meta-box"><small class="text-muted d-block">Departure Date & Time</small><strong>{{ tour.departure_datetime }}</strong></div>
+</div>
+{% endif %}
+{% if tour.return_datetime %}
+<div class="col-md-6">
+<div class="meta-box"><small class="text-muted d-block">Return Date & Time</small><strong>{{ tour.return_datetime }}</strong></div>
+</div>
+{% endif %}
 </div>
 {% if tour.transport_details %}
 <p class="mt-3 mb-0"><span class="fw-semibold">Transport:</span> {{ tour.transport_details }}</p>
@@ -113,16 +145,127 @@
 
 {% if linked_hotels %}
 <div class="section-card mb-5">
-<h3 class="fw-bold mb-4">Stay Options From Our Platform</h3>
-<div class="row g-3">
+<h3 class="fw-bold mb-4">Stay Details (Fixed By Organizer)</h3>
+<div class="row g-4">
 {% for h in linked_hotels %}
-<div class="col-md-6">
-<div class="hotel-mini-card">
+<div class="col-lg-6">
+<div class="hotel-mini-card h-100">
+{% set hotel_carousel_id = 'tourHotelCarousel' ~ h.service_id %}
+{% set hotel_images = h.images or [] %}
+<div id="{{ hotel_carousel_id }}" class="carousel slide media-carousel mb-3" data-bs-interval="false">
+  <div class="carousel-inner">
+    {% if hotel_images %}
+      {% for himg in hotel_images %}
+      {% set h_img_src = himg.image_url if himg.image_url and (himg.image_url.startswith('http://') or himg.image_url.startswith('https://')) else url_for('static', filename='uploads/' ~ (himg.image_url or 'demo.jpg')) %}
+      <div class="carousel-item {% if loop.first %}active{% endif %}">
+        <img src="{{ h_img_src }}"
+             class="d-block w-100 media-slide-img"
+             alt="{{ h.hotel_name }}"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+        <div class="media-caption">{{ 'Main Photo' if himg.is_cover else 'Sub Photo' }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="carousel-item active">
+        <img src="{{ url_for('static', filename='uploads/demo.jpg') }}"
+             class="d-block w-100 media-slide-img"
+             alt="{{ h.hotel_name }}">
+      </div>
+    {% endif %}
+  </div>
+  {% if hotel_images|length > 1 %}
+  <button class="carousel-control-prev" type="button" data-bs-target="#{{ hotel_carousel_id }}" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#{{ hotel_carousel_id }}" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
+  {% endif %}
+</div>
+
+<div class="d-flex justify-content-between align-items-start gap-2">
 <h6 class="fw-bold mb-1">{{ h.hotel_name }}</h6>
-<p class="small text-muted mb-1">{{ h.city_name or '' }}{% if h.state_name %}, {{ h.state_name }}{% endif %}</p>
-<div class="d-flex justify-content-between align-items-center">
-<span class="small">Star Rating: {{ h.star_rating or 0 }}★</span>
-<span class="fw-semibold">From ₹{{ h.from_price }}</span>
+<span class="badge bg-light text-dark border">{{ h.star_rating or 0 }}★</span>
+</div>
+{% if h.brand_name %}
+<div class="small text-muted mb-2">Brand: {{ h.brand_name }}</div>
+{% endif %}
+<div class="small mb-1"><span class="fw-semibold">Location:</span> {{ h.city_name or '' }}{% if h.state_name %}, {{ h.state_name }}{% endif %}</div>
+<div class="small mb-1">
+  <span class="fw-semibold">Address:</span>
+  {{ h.address_line1 or '-' }}
+  {% if h.address_line2 %}, {{ h.address_line2 }}{% endif %}
+  {% if h.locality %}, {{ h.locality }}{% endif %}
+</div>
+{% if h.landmark %}
+<div class="small mb-1"><span class="fw-semibold">Landmark:</span> {{ h.landmark }}</div>
+{% endif %}
+{% if h.pincode %}
+<div class="small mb-1"><span class="fw-semibold">Pincode:</span> {{ h.pincode }}</div>
+{% endif %}
+<div class="small mb-1">
+  <span class="fw-semibold">Check-In/Out:</span> {{ h.check_in_time or '-' }} / {{ h.check_out_time or '-' }}
+</div>
+<div class="d-flex flex-wrap gap-1 mt-1 mb-2">
+  {% if h.couple_friendly %}<span class="badge bg-success">Couple Friendly</span>{% endif %}
+  {% if h.breakfast_available %}<span class="badge bg-info text-dark">Breakfast</span>{% endif %}
+  {% if h.parking_available %}<span class="badge bg-secondary">Parking</span>{% endif %}
+  {% if h.pets_allowed %}<span class="badge bg-dark">Pets Allowed</span>{% endif %}
+</div>
+<div class="small mb-1">
+  <span class="fw-semibold">Available Rooms For Tour:</span>
+  <span class="text-success fw-semibold">{{ h.total_available_rooms or 0 }}</span>
+</div>
+{% if h.from_price %}
+<div class="small mb-1"><span class="fw-semibold">Public Starting Price:</span> ₹{{ h.from_price }}</div>
+{% endif %}
+{% if h.stay_plans %}
+<div class="mt-2">
+  <div class="small fw-semibold">Night Stay Plan:</div>
+  {% for stay in h.stay_plans %}
+  <div class="small text-muted">
+    {{ stay.check_in_date }} to {{ stay.check_out_date }} ({{ stay.nights }} night{% if stay.nights > 1 %}s{% endif %})
+    {% if stay.stay_notes %} - {{ stay.stay_notes }}{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if h.room_types %}
+<div class="mt-2">
+  <div class="small fw-semibold">Room Types:</div>
+  {% for room in h.room_types %}
+  <div class="small text-muted">
+    {{ room.room_type_name }} | Available: {{ room.currently_available }}
+    {% if room.max_guests %} | Max {{ room.max_guests }} guest{% if room.max_guests > 1 %}s{% endif %}{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if h.hotel_description %}
+<p class="small text-muted mt-2 mb-1"><span class="fw-semibold text-dark">Description:</span> {{ h.hotel_description }}</p>
+{% endif %}
+{% if h.house_rules %}
+<p class="small text-muted mb-1"><span class="fw-semibold text-dark">House Rules:</span> {{ h.house_rules }}</p>
+{% endif %}
+{% if h.latitude is not none and h.longitude is not none %}
+<div class="small mb-2">
+  <span class="fw-semibold">Coordinates:</span> {{ h.latitude }}, {{ h.longitude }}
+</div>
+{% endif %}
+<div class="d-flex flex-wrap gap-2 mt-2">
+  {% if h.latitude is not none and h.longitude is not none %}
+  <a class="btn btn-sm btn-outline-secondary"
+     target="_blank"
+     rel="noopener"
+     href="https://www.google.com/maps?q={{ h.latitude }},{{ h.longitude }}">
+    Open in Maps
+  </a>
+  {% endif %}
+  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('hotel_detail', service_id=h.service_id) }}">
+    View Full Hotel Page
+  </a>
 </div>
 </div>
 </div>
@@ -133,21 +276,55 @@
 
 {% if linked_transports %}
 <div class="section-card mb-5">
-<h3 class="fw-bold mb-4">Transport Options For This Tour</h3>
+<h3 class="fw-bold mb-4">Transport Details For This Tour</h3>
 <div class="row g-3">
 {% for tr in linked_transports %}
-<div class="col-md-6">
-<div class="hotel-mini-card">
-<h6 class="fw-bold mb-1">{{ tr.service_name }}</h6>
-<p class="small text-muted mb-1">{{ tr.transport_type }}{% if tr.vehicle_model %} - {{ tr.vehicle_model }}{% endif %}</p>
-<p class="small text-muted mb-1">{{ tr.city_name or '' }}{% if tr.state_name %}, {{ tr.state_name }}{% endif %}</p>
-<div class="d-flex justify-content-between align-items-center">
-<span class="small">{% if tr.seating_capacity %}{{ tr.seating_capacity }} seats{% endif %}{% if tr.driver_available %} • Driver Included{% endif %}</span>
-<span class="fw-semibold">₹{{ tr.price_per_day or 0 }}/day</span>
+<div class="col-12">
+<div class="hotel-mini-card h-100">
+{% set tr_img = tr.vehicle_image_url if tr.vehicle_image_url and (tr.vehicle_image_url.startswith('http://') or tr.vehicle_image_url.startswith('https://')) else url_for('static', filename='uploads/' ~ (tr.vehicle_image_url or 'demo.jpg')) %}
+<div class="transport-split">
+  <div class="transport-split-details">
+    <h6 class="fw-bold mb-1">{{ tr.service_name }}</h6>
+    <p class="small text-muted mb-1">{{ tr.transport_type }}{% if tr.vehicle_model %} - {{ tr.vehicle_model }}{% endif %}</p>
+    <div class="transport-detail-item">
+      <span>Route City</span>
+      <strong>{{ tr.city_name or '' }}{% if tr.state_name %}, {{ tr.state_name }}{% endif %}</strong>
+    </div>
+    <div class="transport-detail-item">
+      <span>Registration</span>
+      <strong>{{ tr.registration_number or 'N/A' }}</strong>
+    </div>
+    <div class="transport-detail-item">
+      <span>Capacity</span>
+      <strong>{{ tr.seating_capacity or 0 }} seats{% if tr.luggage_capacity %} | Luggage {{ tr.luggage_capacity }}{% endif %}</strong>
+    </div>
+    <div class="transport-detail-item">
+      <span>Features</span>
+      <strong>AC {{ 'Yes' if tr.ac_available else 'No' }} | Driver {{ 'Included' if tr.driver_available else 'No' }}</strong>
+    </div>
+    <div class="transport-detail-item">
+      <span>Driver</span>
+      <strong>{{ tr.driver_name or 'N/A' }}{% if tr.driver_phone %} ({{ tr.driver_phone }}){% endif %}</strong>
+    </div>
+    <div class="transport-detail-item">
+      <span>Price Benchmark</span>
+      <strong>₹{{ tr.price_per_day or 0 }}/day, ₹{{ tr.price_per_km or 0 }}/km</strong>
+    </div>
+    {% if tr.description %}
+    <p class="small text-muted mb-1"><span class="fw-semibold text-dark">Description:</span> {{ tr.description }}</p>
+    {% endif %}
+    {% if tr.notes %}
+    <p class="small text-muted mb-1"><span class="fw-semibold text-dark">Notes:</span> {{ tr.notes }}</p>
+    {% endif %}
+    <div class="small fw-semibold mt-2 text-success">Included in tour package</div>
+  </div>
+  <div class="transport-split-image-wrap">
+    <img src="{{ tr_img }}"
+         class="transport-split-image"
+         alt="{{ tr.transport_type or 'Transport' }}"
+         onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+  </div>
 </div>
-{% if tr.price_per_km %}
-<div class="small mt-1">₹{{ tr.price_per_km }}/km</div>
-{% endif %}
 </div>
 </div>
 {% endfor %}
@@ -190,48 +367,117 @@
 </div>
 {% endif %}
 
-<div class="section-card mb-5">
-<h3 class="fw-bold mb-4">Travel Roadmap</h3>
-
-<div class="row">
-
-<div class="col-lg-6">
-<div class="timeline">
-{% for item in itinerary %}
-<div class="timeline-item"
-     data-img="{{ url_for('static', filename='uploads/' ~ item.image_url) }}"
-     onclick="showSlide(this)">
-<div class="timeline-dot"></div>
-<span class="badge bg-primary mb-1">Day {{ item.day_number }}</span>
-<h6 class="fw-bold">{{ item.spot_name }}</h6>
+{% if tour.terms_conditions %}
+<div class="section-card mb-5 border border-warning">
+<h3 class="fw-bold mb-3">Terms & Conditions</h3>
+<p class="mb-0">{{ tour.terms_conditions }}</p>
 </div>
+{% endif %}
+
+<div class="section-card mb-5">
+<h3 class="fw-bold mb-4">Day-wise Itinerary</h3>
+{% if itinerary %}
+{% set spot_img = namespace(count=0) %}
+{% for item in itinerary %}
+  {% if item.image_url %}
+    {% set spot_img.count = spot_img.count + 1 %}
+  {% endif %}
+{% endfor %}
+{% if spot_img.count > 0 %}
+<div id="tourSpotCarousel"
+     class="carousel slide media-carousel itinerary-carousel mb-4"
+     data-bs-ride="carousel"
+     data-bs-interval="5000"
+     data-bs-pause="false">
+  <div class="carousel-inner">
+    {% set spot_slide = namespace(active_done=False) %}
+    {% for item in itinerary %}
+      {% if item.image_url %}
+      {% if item.photo_source == 'external_url' %}
+        {% set spot_img_src = item.image_url %}
+      {% else %}
+        {% set spot_img_src = url_for('static', filename='uploads/' + item.image_url) %}
+      {% endif %}
+      {% set is_first_slide = not spot_slide.active_done %}
+      {% if is_first_slide %}{% set spot_slide.active_done = True %}{% endif %}
+      <div class="carousel-item {% if is_first_slide %}active{% endif %}">
+        <img src="{{ spot_img_src }}"
+             class="d-block w-100 media-slide-img"
+             alt="{{ item.spot_name }}"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+        <div class="media-caption">Day {{ item.day_number }} • {{ item.spot_name }}</div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% if spot_img.count > 1 %}
+  <button class="carousel-control-prev" type="button" data-bs-target="#tourSpotCarousel" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#tourSpotCarousel" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
+  {% endif %}
+</div>
+{% endif %}
+<div class="spot-sequence-wrap mb-3">
+{% for item in itinerary %}
+  <div class="spot-sequence-item">
+    <div class="spot-sequence-node">{{ loop.index }}</div>
+    <div class="spot-sequence-text">
+      <div class="spot-sequence-day">Day {{ item.day_number }}</div>
+      <div class="spot-sequence-name">{{ item.spot_name }}</div>
+    </div>
+  </div>
+{% if not loop.last %}
+<div class="spot-sequence-link" aria-hidden="true"></div>
+{% endif %}
 {% endfor %}
 </div>
+{% else %}
+<div class="text-muted">Itinerary will be shared by organizer.</div>
+{% endif %}
 </div>
 
-<div class="col-lg-6">
-<div class="slideshow">
-<img id="slideImage"
-src="{{ url_for('static', filename='uploads/' ~ itinerary[0].image_url) if itinerary else url_for('static', filename='uploads/demo.jpg') }}">
-</div>
-</div>
-
-</div>
+<div class="section-card mb-5">
+<h3 class="fw-bold mb-3">Route Map (1st, 2nd, 3rd...)</h3>
+<div id="tourRouteMap" class="route-map"></div>
+<div id="tourRouteSummary" class="small text-muted mt-2"></div>
+<div id="tourRouteLegs" class="route-legs mt-3"></div>
 </div>
 
 {% if not readonly %}
+{% if not session.get('user_id') %}
+<div class="section-card mb-5 border border-primary">
+<h4 class="fw-bold mb-2"><i class="bi bi-box-arrow-in-right"></i> Join This Tour</h4>
+<p class="mb-3">You can view all tour details without login. To continue booking, please login first.</p>
+<a href="{{ url_for('login', next=url_for('booking', tour_id=tour.id)) }}" class="btn btn-primary rounded-pill px-4">
+Login to Join Tour
+</a>
+</div>
+{% elif tour_is_full %}
+<div class="section-card mb-5 border border-danger">
+<h4 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill"></i> Tour Full</h4>
+<p class="mb-0">This tour is currently full. Please try another tour or contact organizer.</p>
+</div>
+{% else %}
 <div class="section-card mb-5">
 <h3 class="fw-bold mb-4">Customize Your Trip</h3>
 
 <label class="fw-bold small">Number of People</label>
 <input type="number" id="people" class="form-control mb-3" value="1" min="1" oninput="calculateTotal()">
+<div class="small text-muted">
+Minimum {{ min_group_size or 6 }} or more persons are required to start this tour.
+</div>
 </div>
 
 <div class="payment-card mb-5">
 <h4 class="fw-bold">Trip Total</h4>
 <div class="total">₹<span id="totalPrice">0</span></div>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 {% if linked_guides %}
 <div class="form-check text-start mt-3">
 <input class="form-check-input" type="checkbox" id="needGuide" name="need_individual_guide" value="1">
@@ -245,10 +491,66 @@ src="{{ url_for('static', filename='uploads/' ~ itinerary[0].image_url) if itine
 </select>
 <input type="text" name="guide_note" class="form-control mt-2" placeholder="Guide language or special request (optional)">
 {% endif %}
+<div class="card mt-3 p-3 text-start">
+  <div class="fw-semibold mb-2">Primary Traveler ID Proof & Traveler Details</div>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <select name="booking_id_proof_type" class="form-select" required>
+        <option value="">Select ID Proof Type</option>
+        {% for proof_type in id_proof_types %}
+        <option value="{{ proof_type }}" {% if booking_id_defaults and booking_id_defaults.id_proof_type == proof_type %}selected{% endif %}>
+          {{ proof_type }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <input type="text" name="booking_id_proof_number" class="form-control" maxlength="120"
+             value="{{ booking_id_defaults.id_proof_number if booking_id_defaults else '' }}"
+             placeholder="ID Proof Number" required>
+    </div>
+    <div class="col-md-4">
+      <input type="file" name="booking_id_proof_file" class="form-control"
+             accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
+             {% if not booking_id_defaults or not booking_id_defaults.id_proof_file_path %}required{% endif %}>
+    </div>
+  </div>
+  <div class="small text-muted mt-1">Accepted file types: PDF, JPG.</div>
+  <hr class="my-3">
+  <div class="fw-semibold mb-2">Traveler Details (Name, Age, Contact)</div>
+  <div id="travelerDetailsWrap"></div>
+</div>
+{% set room_req = existing_room_request or {} %}
+{% if linked_hotels %}
+<div class="text-start mt-3">
+<div class="fw-semibold">Hotel Stay is fixed by organizer</div>
+<div class="small text-muted">You only need to select your room type.</div>
+</div>
+<select name="room_type_id" id="roomTypeSelect" class="form-select mt-2" {% if room_options_flat %}required{% else %}disabled{% endif %}>
+<option value="">{% if room_options_flat %}Select room type{% else %}No room types configured for this tour{% endif %}</option>
+{% for opt in room_options_flat %}
+<option value="{{ opt.room_type_id }}"
+        data-extra-per-room-total="{{ '%.2f'|format(opt.extra_per_room_total or 0) }}"
+        data-extra-per-night="{{ '%.2f'|format(opt.extra_per_night or 0) }}"
+        data-stay-nights="{{ opt.stay_nights or 1 }}"
+        {% if room_req.room_type_id == opt.room_type_id %}selected{% endif %}>
+{{ opt.hotel_name }} - {{ opt.room_type_name }} | Available {{ opt.available }}{% if opt.max_guests %} | Max {{ opt.max_guests }}{% endif %}{% if (opt.extra_per_room_total or 0) > 0 %} | Extra ₹{{ '%.2f'|format(opt.extra_per_room_total) }}/room{% else %} | Included{% endif %}
+</option>
+{% endfor %}
+</select>
+<div class="row g-2 mt-1">
+<div class="col-md-4">
+<input type="number" name="rooms_requested" min="1" value="{{ room_req.rooms_requested or 1 }}" class="form-control">
+</div>
+</div>
+<div class="small text-muted mt-1" id="roomUpgradeSummary">Room Type Upgrade: ₹0.00 (included room type)</div>
+{% endif %}
 <input type="hidden" name="final_amount" id="finalAmountInput">
+<input type="hidden" name="pax_count" id="paxCountInput" value="1">
 <button class="pay-btn">Proceed to Payment</button>
 </form>
 </div>
+{% endif %}
 {% else %}
 <div class="text-center text-success fw-bold mb-5">
 <i class="bi bi-check-circle-fill"></i>
@@ -259,25 +561,300 @@ This trip is already booked. Enjoy your itinerary above!
 </div>
 
 <div id="tour-data" data-price="{{ tour.price | default(0) }}"></div>
+<script id="existing-travelers-json" type="application/json">{{ existing_travelers|tojson }}</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
 <script>
+const spotPointsRaw = [
+{% for item in itinerary %}
+{
+type: 'spot',
+day: {{ item.day_number }},
+name: {{ item.spot_name|tojson }},
+lat: {{ item.latitude if item.latitude is not none else 'null' }},
+lng: {{ item.longitude if item.longitude is not none else 'null' }},
+img: {% if item.image_url %}{% if item.photo_source == 'external_url' %}{{ item.image_url|tojson }}{% else %}{{ url_for('static', filename='uploads/' + item.image_url)|tojson }}{% endif %}{% else %}null{% endif %}
+}{% if not loop.last %},{% endif %}
+{% endfor %}
+];
+const stayPlanEntriesRaw = [];
+{% for h in linked_hotels %}
+  {% for stay in h.stay_plans %}
+stayPlanEntriesRaw.push({
+hotelName: {{ h.hotel_name|tojson }},
+stayLabel: {{ ((stay.check_in_date|string) + ' to ' + (stay.check_out_date|string))|tojson }},
+checkIn: {{ (stay.check_in_date|string)|tojson }},
+checkOut: {{ (stay.check_out_date|string)|tojson }},
+lat: {{ h.latitude if h.latitude is not none else 'null' }},
+lng: {{ h.longitude if h.longitude is not none else 'null' }},
+img: {% if h.cover_image %}{% if h.cover_image.startswith('http://') or h.cover_image.startswith('https://') %}{{ h.cover_image|tojson }}{% else %}{{ url_for('static', filename='uploads/' + h.cover_image)|tojson }}{% endif %}{% else %}null{% endif %}
+});
+  {% endfor %}
+{% endfor %}
+const tourStartDateRaw = {{ (tour.start_date|string)|tojson if tour.start_date else 'null' }};
+
+function parseYmdToDate(value){
+  if(!value) return null;
+  const parts = String(value).slice(0, 10).split('-').map((v) => Number(v));
+  if(parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function buildDailyStayMap(stayPlans, tourStartRaw){
+  const daily = {};
+  const tourStart = parseYmdToDate(tourStartRaw);
+  if(!tourStart) return daily;
+  stayPlans.forEach((entry) => {
+    const checkIn = parseYmdToDate(entry.checkIn);
+    const checkOut = parseYmdToDate(entry.checkOut);
+    if(!checkIn || !checkOut || checkOut <= checkIn) return;
+    const cursor = new Date(checkIn.getTime());
+    while(cursor < checkOut){
+      const dayNo = Math.floor((cursor - tourStart) / 86400000) + 1;
+      if(dayNo > 0 && !daily[dayNo]){
+        daily[dayNo] = {
+          type: 'stay',
+          day: dayNo,
+          name: entry.hotelName,
+          stayLabel: entry.stayLabel,
+          lat: entry.lat,
+          lng: entry.lng,
+          img: entry.img
+        };
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  });
+  return daily;
+}
+
+function resolveStayLocation(stayPoint, daySpots, alreadyOrdered){
+  if(stayPoint.lat !== null && stayPoint.lng !== null) return stayPoint;
+  const fallbackPool = [...daySpots, ...alreadyOrdered].reverse();
+  const fallback = fallbackPool.find((p) => p.lat !== null && p.lng !== null);
+  if(!fallback) return stayPoint;
+  return { ...stayPoint, lat: fallback.lat, lng: fallback.lng };
+}
+
+const dailyStayMap = buildDailyStayMap(stayPlanEntriesRaw, tourStartDateRaw);
+const orderedDays = Array.from(new Set(
+  spotPointsRaw
+    .map((p) => Number(p.day))
+    .filter((d) => Number.isFinite(d) && d > 0)
+)).sort((a, b) => a - b);
+const routePointsRaw = [];
+if(orderedDays.length){
+  orderedDays.forEach((dayNo) => {
+    const daySpots = spotPointsRaw.filter((p) => Number(p.day) === dayNo);
+    daySpots.forEach((s) => routePointsRaw.push(s));
+    const stayPoint = dailyStayMap[dayNo];
+    if(stayPoint){
+      routePointsRaw.push(resolveStayLocation(stayPoint, daySpots, routePointsRaw));
+    }
+  });
+}else{
+  routePointsRaw.push(...spotPointsRaw);
+}
+
 const basePrice = Number(document.getElementById('tour-data').dataset.price);
+function getRoomUpgradeCharge(){
+const roomTypeSelect = document.getElementById("roomTypeSelect");
+if(!roomTypeSelect || roomTypeSelect.selectedIndex < 0) return 0;
+const selectedOption = roomTypeSelect.options[roomTypeSelect.selectedIndex];
+if(!selectedOption || !selectedOption.value) return 0;
+const extraPerRoomTotal = Number(selectedOption.dataset.extraPerRoomTotal || 0);
+const roomsInput = document.querySelector('input[name="rooms_requested"]');
+const requestedRooms = Math.max(1, Number((roomsInput && roomsInput.value) || 1));
+return extraPerRoomTotal * requestedRooms;
+}
+
+function updateRoomUpgradeSummary(){
+const summaryEl = document.getElementById("roomUpgradeSummary");
+if(!summaryEl) return;
+const roomTypeSelect = document.getElementById("roomTypeSelect");
+if(!roomTypeSelect || roomTypeSelect.selectedIndex < 0){
+summaryEl.textContent = "Room Type Upgrade: ₹0.00 (included room type)";
+return;
+}
+const selectedOption = roomTypeSelect.options[roomTypeSelect.selectedIndex];
+if(!selectedOption || !selectedOption.value){
+summaryEl.textContent = "Room Type Upgrade: ₹0.00 (included room type)";
+return;
+}
+const extraPerNight = Number(selectedOption.dataset.extraPerNight || 0);
+const stayNights = Math.max(1, Number(selectedOption.dataset.stayNights || 1));
+const roomsInput = document.querySelector('input[name="rooms_requested"]');
+const requestedRooms = Math.max(1, Number((roomsInput && roomsInput.value) || 1));
+const totalExtra = extraPerNight * stayNights * requestedRooms;
+if(totalExtra > 0){
+summaryEl.textContent = `Room Type Upgrade: ₹${totalExtra.toFixed(2)} (₹${extraPerNight.toFixed(2)}/night x ${stayNights} night(s) x ${requestedRooms} room(s))`;
+}else{
+summaryEl.textContent = "Room Type Upgrade: ₹0.00 (included room type)";
+}
+}
 
 function calculateTotal(){
-let people=document.getElementById("people").value||1;
-let total=(Number(basePrice))*Number(people);
-document.getElementById("totalPrice").textContent=total.toLocaleString();
-document.getElementById("finalAmountInput").value=total;
+const peopleEl = document.getElementById("people");
+const totalEl = document.getElementById("totalPrice");
+const finalEl = document.getElementById("finalAmountInput");
+if (!peopleEl || !totalEl || !finalEl) return;
+let people=peopleEl.value||1;
+let tourBaseTotal=(Number(basePrice))*Number(people);
+let roomUpgradeTotal=getRoomUpgradeCharge();
+let total=tourBaseTotal + roomUpgradeTotal;
+totalEl.textContent=total.toLocaleString();
+finalEl.value=total;
+const paxInput = document.getElementById("paxCountInput");
+if (paxInput) paxInput.value = Number(people);
+updateRoomUpgradeSummary();
+ renderTravelerRows(Number(people));
+}
+
+let existingTravelers = [];
+try{
+  const rawTravelers = document.getElementById('existing-travelers-json');
+  existingTravelers = rawTravelers ? JSON.parse(rawTravelers.textContent || '[]') : [];
+}catch(err){
+  existingTravelers = [];
+}
+
+function renderTravelerRows(count){
+  const wrap = document.getElementById('travelerDetailsWrap');
+  if(!wrap) return;
+  let html = '';
+  for(let i=0;i<count;i++){
+    const row = existingTravelers[i] || {};
+    html += `
+      <div class="row g-2 mb-2">
+        <div class="col-md-5">
+          <input type="text" name="traveler_full_name[]" class="form-control form-control-sm"
+                 placeholder="Full name" maxlength="120" value="${row.full_name || ''}" required>
+        </div>
+        <div class="col-md-2">
+          <input type="number" name="traveler_age[]" class="form-control form-control-sm"
+                 placeholder="Age" min="0" max="120" value="${row.age || ''}" required>
+        </div>
+        <div class="col-md-5">
+          <input type="text" name="traveler_contact[]" class="form-control form-control-sm"
+                 placeholder="Contact" maxlength="20" value="${row.contact_number || ''}">
+        </div>
+      </div>`;
+  }
+  wrap.innerHTML = html;
 }
 calculateTotal();
 
-function showSlide(el){
-const src = el.dataset.img;
-const img = document.getElementById("slideImage");
-img.style.opacity=0;
-setTimeout(()=>{img.src=src;img.style.opacity=1;},150);
+function haversineKm(lat1, lng1, lat2, lng2){
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const r = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2))
+    * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return r * c;
 }
+
+function initRouteMap(){
+const mapEl = document.getElementById('tourRouteMap');
+const legsEl = document.getElementById('tourRouteLegs');
+const summaryEl = document.getElementById('tourRouteSummary');
+if(!mapEl) return;
+if(!window.L){
+mapEl.innerHTML = '<div class="text-muted p-3">Map failed to load.</div>';
+return;
+}
+
+const points = routePointsRaw.filter((p) => p.lat !== null && p.lng !== null);
+if(!points.length){
+mapEl.innerHTML = '<div class="text-muted p-3">Route coordinates are not available for this itinerary.</div>';
+if(legsEl) legsEl.innerHTML = '';
+if(summaryEl) summaryEl.textContent = '';
+return;
+}
+
+const indiaBounds = L.latLngBounds(
+  L.latLng(6.4627, 68.1097),
+  L.latLng(37.0841, 97.3956)
+);
+const map = L.map('tourRouteMap', {
+maxBounds: indiaBounds,
+maxBoundsViscosity: 1.0,
+minZoom: 4
+});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+maxZoom: 18,
+attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const line = [];
+let legsHtml = '';
+let totalKm = 0;
+const fallbackImg = {{ url_for('static', filename='uploads/demo.jpg')|tojson }};
+
+points.forEach((p, i) => {
+const markerIcon = L.divIcon({
+className: 'route-marker-wrap',
+html: `<div class="route-marker-pin${p.type === 'stay' ? ' route-marker-pin-stay' : ''}">${i + 1}</div>`,
+iconSize: [28, 28],
+iconAnchor: [14, 28],
+popupAnchor: [0, -24]
+});
+const imgHtml = p.img
+  ? `<img src="${p.img}" alt="${p.name}" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.onerror=null;this.src='${fallbackImg}';">`
+  : `<div style="width:100%;height:110px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:6px;margin-bottom:8px;color:#64748b;font-size:12px;">Photo Not Uploaded</div>`;
+const legKm = i > 0 ? haversineKm(points[i - 1].lat, points[i - 1].lng, p.lat, p.lng) : null;
+L.marker([p.lat, p.lng], { icon: markerIcon })
+.addTo(map)
+.bindPopup(
+`<div style="min-width:220px">
+${imgHtml}
+<div style="font-weight:600">Point ${i + 1}: ${p.name}</div>
+<div style="font-size:12px;color:#64748b">${p.type === 'stay' ? `Stay: ${p.stayLabel || 'Fixed tour stay'}` : `Day ${p.day || '-'}`}</div>
+${i > 0 ? `<div style="font-size:12px;margin-top:4px;">Distance from Point ${i}: ${legKm !== null ? legKm.toFixed(1) + ' km' : 'N/A'}</div>` : '<div style="font-size:12px;margin-top:4px;">Start Point</div>'}
+</div>`
+);
+line.push([p.lat, p.lng]);
+
+if(i > 0){
+const legText = legKm !== null ? `${legKm.toFixed(1)} km` : 'N/A';
+legsHtml += `<div class="route-leg-item">Point ${i} (${points[i - 1].type === 'stay' ? 'Stay' : 'Spot'}) ➜ Point ${i + 1} (${p.type === 'stay' ? 'Stay' : 'Spot'}): <b>${legText}</b></div>`;
+if(legKm !== null) totalKm += Number(legKm);
+}
+});
+
+if(line.length > 1){
+L.polyline(line, { color: '#2563eb', weight: 4, opacity: 0.8 }).addTo(map);
+map.fitBounds(line, { padding: [24, 24] });
+map.panInsideBounds(indiaBounds, { animate: false });
+}else{
+map.setView(line[0], 12);
+}
+
+if(legsEl){
+legsEl.innerHTML = legsHtml || '<div class="route-leg-item">Only one map point is available.</div>';
+}
+if(summaryEl){
+summaryEl.textContent = `Total route distance: ${totalKm > 0 ? totalKm.toFixed(1) + ' km' : 'N/A'}`;
+}
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+const roomTypeSelect = document.getElementById("roomTypeSelect");
+if(roomTypeSelect){
+roomTypeSelect.addEventListener("change", calculateTotal);
+}
+const roomsInput = document.querySelector('input[name="rooms_requested"]');
+if(roomsInput){
+roomsInput.addEventListener("input", calculateTotal);
+roomsInput.addEventListener("change", calculateTotal);
+}
+calculateTotal();
+initRouteMap();
+});
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
 </body>

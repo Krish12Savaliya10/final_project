@@ -16,8 +16,35 @@
   <div class="section-card p-3 mb-4">
     <div class="row g-3">
       <div class="col-lg-7">
-        {% set hero = (images[0].image_url if images else 'demo.jpg') %}
-        <img src="{{ url_for('static', filename='uploads/' + hero) }}" class="hero-img" alt="{{ hotel.hotel_name }}">
+        {% if images %}
+        <div id="hotelHeroCarousel" class="carousel slide hero-carousel" data-bs-interval="false">
+          <div class="carousel-inner">
+            {% for img in images %}
+            {% set hero_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+              <img src="{{ hero_src }}" class="d-block w-100 hero-img hotel-photo-trigger"
+                   alt="{{ hotel.hotel_name }}"
+                   data-bs-toggle="modal"
+                   data-bs-target="#allPhotosModal"
+                   data-gallery-index="{{ loop.index0 }}"
+                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+            </div>
+            {% endfor %}
+          </div>
+          {% if images|length > 1 %}
+          <button class="carousel-control-prev" type="button" data-bs-target="#hotelHeroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#hotelHeroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
+          {% endif %}
+        </div>
+        {% else %}
+        <img src="{{ url_for('static', filename='uploads/demo.jpg') }}" class="hero-img" alt="{{ hotel.hotel_name }}">
+        {% endif %}
       </div>
       <div class="col-lg-5">
         <h2 class="fw-bold mb-1">{{ hotel.hotel_name }}</h2>
@@ -46,9 +73,17 @@
 
     {% if images|length > 1 %}
     <div class="row g-2 mt-2">
-      {% for img in images[1:7] %}
+      {% for img in images[:8] %}
       <div class="col-4 col-md-2">
-        <img src="{{ url_for('static', filename='uploads/' + img.image_url) }}" class="thumb-img" alt="{{ hotel.hotel_name }}">
+        {% set thumb_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
+        <button type="button"
+                class="thumb-btn {% if loop.first %}is-active{% endif %}"
+                data-bs-target="#hotelHeroCarousel"
+                data-bs-slide-to="{{ loop.index0 }}"
+                aria-label="Hotel photo {{ loop.index }}">
+          <img src="{{ thumb_src }}" class="thumb-img" alt="{{ hotel.hotel_name }}"
+               onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+        </button>
       </div>
       {% endfor %}
     </div>
@@ -63,6 +98,62 @@
         {% if hotel.house_rules %}
         <h6 class="fw-bold mt-3">House Rules</h6>
         <p class="text-muted mb-0">{{ hotel.house_rules }}</p>
+        {% endif %}
+      </div>
+
+      <div class="section-card p-3 mb-4">
+        <h5 class="fw-bold mb-3">Complete Hotel Details</h5>
+        {% if images %}
+        <div id="hotelDetailsCarousel" class="carousel slide details-carousel mb-3" data-bs-interval="false">
+          <div class="carousel-inner">
+            {% for img in images %}
+            {% set details_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+              <img src="{{ details_src }}" class="d-block w-100 details-carousel-img" alt="{{ hotel.hotel_name }}"
+                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+            </div>
+            {% endfor %}
+          </div>
+          {% if images|length > 1 %}
+          <button class="carousel-control-prev" type="button" data-bs-target="#hotelDetailsCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#hotelDetailsCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
+          {% endif %}
+        </div>
+        {% endif %}
+        <div class="row g-2 details-grid">
+          <div class="col-md-6"><div class="detail-pill"><span>Service Name</span><strong>{{ hotel.service_name or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Brand</span><strong>{{ hotel.brand_name or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Hotel Name</span><strong>{{ hotel.hotel_name or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Star Rating</span><strong>{{ hotel.star_rating or 0 }}★</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Address Line 1</span><strong>{{ hotel.address_line1 or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Address Line 2</span><strong>{{ hotel.address_line2 or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Locality</span><strong>{{ hotel.locality or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Landmark</span><strong>{{ hotel.landmark or '-' }}</strong></div></div>
+          <div class="col-md-4"><div class="detail-pill"><span>City</span><strong>{{ hotel.city_name or '-' }}</strong></div></div>
+          <div class="col-md-4"><div class="detail-pill"><span>State</span><strong>{{ hotel.state_name or '-' }}</strong></div></div>
+          <div class="col-md-4"><div class="detail-pill"><span>Pincode</span><strong>{{ hotel.pincode or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Check-In Time</span><strong>{{ hotel.check_in_time or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Check-Out Time</span><strong>{{ hotel.check_out_time or '-' }}</strong></div></div>
+          <div class="col-md-3"><div class="detail-pill"><span>Couple Friendly</span><strong>{{ 'Yes' if hotel.couple_friendly else 'No' }}</strong></div></div>
+          <div class="col-md-3"><div class="detail-pill"><span>Breakfast</span><strong>{{ 'Yes' if hotel.breakfast_available else 'No' }}</strong></div></div>
+          <div class="col-md-3"><div class="detail-pill"><span>Parking</span><strong>{{ 'Yes' if hotel.parking_available else 'No' }}</strong></div></div>
+          <div class="col-md-3"><div class="detail-pill"><span>Pets Allowed</span><strong>{{ 'Yes' if hotel.pets_allowed else 'No' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Latitude</span><strong>{{ hotel.latitude if hotel.latitude is not none else '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Longitude</span><strong>{{ hotel.longitude if hotel.longitude is not none else '-' }}</strong></div></div>
+        </div>
+        {% if hotel.latitude is not none and hotel.longitude is not none %}
+        <a class="btn btn-outline-secondary btn-sm rounded-pill mt-3"
+           target="_blank"
+           rel="noopener"
+           href="https://www.google.com/maps?q={{ hotel.latitude }},{{ hotel.longitude }}">
+          Open Hotel on Maps
+        </a>
         {% endif %}
       </div>
 
@@ -153,10 +244,29 @@
             <label class="form-label small">Guests</label>
             <input type="number" name="guests_count" min="1" value="2" class="form-control" required>
           </div>
+          <div class="col-6">
+            <label class="form-label small">ID Proof Type</label>
+            <select name="id_proof_type" class="form-select" required>
+              <option value="">Select ID proof</option>
+              {% for proof_type in id_proof_types %}
+              <option value="{{ proof_type }}">{{ proof_type }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">ID Proof Number</label>
+            <input type="text" name="id_proof_number" maxlength="120" class="form-control" required>
+          </div>
           <div class="col-12">
             <button class="btn btn-success w-100">Book Now</button>
           </div>
         </form>
+      </div>
+      {% elif not session.get('user_id') %}
+      <div class="section-card p-3 mb-4">
+        <h6 class="fw-bold">Book This Hotel</h6>
+        <p class="text-muted small mb-3">Login is required to complete hotel booking.</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary w-100">Login to Book</a>
       </div>
       {% endif %}
 
@@ -188,15 +298,78 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="row g-3">
-          {% for img in images %}
-          <div class="col-6 col-md-4">
-            <img src="{{ url_for('static', filename='uploads/' + img.image_url) }}" class="w-100 rounded modal-img" alt="{{ hotel.hotel_name }}">
+        {% if images %}
+        <div id="allPhotosCarousel" class="carousel slide" data-bs-interval="false">
+          <div class="carousel-inner">
+            {% for img in images %}
+            {% set modal_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+              <img src="{{ modal_src }}" class="d-block w-100 rounded modal-img" alt="{{ hotel.hotel_name }}"
+                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
+          {% if images|length > 1 %}
+          <button class="carousel-control-prev" type="button" data-bs-target="#allPhotosCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#allPhotosCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
+          {% endif %}
         </div>
+        {% else %}
+        <img src="{{ url_for('static', filename='uploads/demo.jpg') }}" class="d-block w-100 rounded modal-img" alt="{{ hotel.hotel_name }}">
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const modalEl = document.getElementById('allPhotosModal');
+  const modalCarouselEl = document.getElementById('allPhotosCarousel');
+  const heroCarouselEl = document.getElementById('hotelHeroCarousel');
+  const thumbButtons = Array.from(document.querySelectorAll('.thumb-btn[data-bs-target="#hotelHeroCarousel"]'));
+  if(!modalEl || !modalCarouselEl || typeof bootstrap === 'undefined') return;
+
+  const modalCarousel = bootstrap.Carousel.getOrCreateInstance(modalCarouselEl, { interval: false, ride: false, wrap: true });
+  const heroCarousel = heroCarouselEl ? bootstrap.Carousel.getOrCreateInstance(heroCarouselEl, { interval: false, ride: false, wrap: true }) : null;
+
+  function setActiveThumb(index){
+    thumbButtons.forEach((btn, i) => btn.classList.toggle('is-active', i === index));
+  }
+
+  function getActiveHeroIndex(){
+    if(!heroCarouselEl) return 0;
+    const slides = Array.from(heroCarouselEl.querySelectorAll('.carousel-item'));
+    const active = heroCarouselEl.querySelector('.carousel-item.active');
+    const idx = slides.indexOf(active);
+    return idx >= 0 ? idx : 0;
+  }
+
+  if(heroCarouselEl && heroCarousel){
+    setActiveThumb(getActiveHeroIndex());
+    heroCarouselEl.addEventListener('slid.bs.carousel', function(event){
+      setActiveThumb(Number(event.to || 0));
+    });
+    thumbButtons.forEach((btn) => {
+      btn.addEventListener('click', function(){
+        setActiveThumb(Number(btn.dataset.bsSlideTo || 0));
+      });
+    });
+  }
+
+  modalEl.addEventListener('show.bs.modal', function(event){
+    const trigger = event.relatedTarget;
+    if(trigger && trigger.dataset && trigger.dataset.galleryIndex){
+      modalCarousel.to(Number(trigger.dataset.galleryIndex || 0));
+      return;
+    }
+    modalCarousel.to(getActiveHeroIndex());
+  });
+});
+</script>
 {% endblock %}

@@ -1,55 +1,134 @@
-
 /* HERO */
 .bg-image{
-    height:95vh;
+    min-height:94vh;
     background:
-    linear-gradient(rgba(15,23,42,.65),rgba(15,23,42,.8)),
-    url('/static/image/background.JPG');
+        linear-gradient(112deg, rgba(8, 47, 73, .56), rgba(15, 23, 42, .78)),
+        url('/static/image/background.JPG');
     background-size:cover;
     background-position:center;
     display:flex;
     align-items:center;
+    padding:110px 0 74px;
+}
+
+.home_div{
+    max-width:840px;
 }
 
 .home_div h1{
+    font-size:clamp(2rem, 5vw, 3.55rem);
     font-weight:800;
-    letter-spacing:1px;
+    letter-spacing:.6px;
+    text-shadow:0 10px 28px rgba(2, 6, 23, .35);
 }
 
 .home_div input{
-    height:55px;
-    border-radius:50px;
-    border:none;
+    height:56px;
+    border-radius:999px;
+    border:1px solid rgba(255, 255, 255, .24);
+    background:rgba(255, 255, 255, .92);
     padding-left:20px;
 }
 
 .home_div .btn{
-    background:#2563eb;
     border:none;
-    border-radius:50px;
-    height:50px;
-    font-weight:600;
+    border-radius:999px;
+    height:51px;
+    font-weight:700;
+    letter-spacing:.2px;
 }
 
 .home_div .btn:hover{
-    background:#1d4ed8;
+    transform:translateY(-1px);
 }
 
-/* TOUR CARDS */
-.card{
+#tour{
+    padding-top:4.5rem !important;
+    padding-bottom:4.5rem !important;
+}
+
+/* POPULAR TOUR CARDS */
+#tour .card{
     border-radius:20px;
-    transition:.35s;
+    border:1px solid #dbe3ef;
+    background:#ffffff;
+    transition:transform .26s ease, box-shadow .26s ease, border-color .26s ease;
 }
-.card:hover{
-    transform:translateY(-10px);
-    box-shadow:0 20px 45px rgba(0,0,0,0.25);
+
+#tour .card:hover{
+    transform:translateY(-8px);
+    border-color:#b9d2ff;
+    box-shadow:0 20px 44px rgba(15,23,42,.16);
 }
-.card img{
-    height:200px;
+
+#tour .card img{
+    height:214px;
     object-fit:cover;
 }
 
+#tour .card .badge{
+    font-size:11px;
+}
+
+#tour .card .text-muted.small{
+    min-height:38px;
+}
+
+#tour .card .img-fluid.rounded.border{
+    border-radius:10px !important;
+    border-color:#d9e2ee !important;
+}
+
+section.py-5.bg-white{
+    border-top:1px solid #e5edf7;
+}
 
 .full-vh{
-    height:100vh;
+    min-height:100vh;
+}
+
+@media (max-width: 991.98px){
+    .bg-image{
+        min-height:74vh;
+        padding:95px 0 62px;
+    }
+
+    #tour{
+        padding-top:3.5rem !important;
+        padding-bottom:3.7rem !important;
+    }
+
+    #tour .card img{
+        height:198px;
+    }
+
+    .full-vh{
+        min-height:unset;
+    }
+}
+
+@media (max-width: 575.98px){
+    .bg-image{
+        min-height:68vh;
+        padding:84px 0 54px;
+    }
+
+    .home_div h1{
+        letter-spacing:.2px;
+    }
+
+    .home_div input{
+        height:48px;
+        font-size:14px;
+    }
+
+    .home_div .btn{
+        width:100%;
+        margin-top:10px;
+        height:46px;
+    }
+
+    #tour .card img{
+        height:176px;
+    }
 }

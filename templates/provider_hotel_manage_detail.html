@@ -1,0 +1,394 @@
+{% extends "layout.html" %}
+{% block title %}Manage Hotel{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/provider_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/oyo_hotel_hub.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+{% endblock %}
+
+{% block content %}
+{% set provider_sidebar_active = 'manage_hotel_detail' %}
+<div class="container mt-5 pb-5 dashboard-shell dashboard-page provider-dashboard-page">
+  <div class="provider-shell">
+    {% include "provider_sidebar.html" %}
+    <main class="provider-main">
+      <div class="oyo-page">
+  <div class="oyo-hero d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h2>{{ hotel.hotel_name or 'Manage Hotel' }}</h2>
+      <div class="sub">
+        Edit listing, registration profile, services, terms and media with OYO-style management flow.
+      </div>
+      {% set status = (hotel.listing_status or 'active') %}
+      <span class="oyo-status {{ status }} mt-2 d-inline-block text-capitalize">{{ status }}</span>
+    </div>
+    <div class="oyo-actions">
+      <a href="{{ url_for('provider_add_hotel') }}" class="oyo-btn light"><i class="bi bi-plus-circle"></i> Add Hotel</a>
+      <a href="{{ url_for('provider_hotels_management') }}" class="oyo-btn light"><i class="bi bi-buildings"></i> Manage Hotels</a>
+      <a href="{{ url_for('provider_dashboard') }}" class="oyo-btn outline"><i class="bi bi-grid"></i> Dashboard</a>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div class="alert alert-info border-0 shadow-sm">{{ messages[0] }}</div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h5>Property Profile & Edit</h5>
+      <div class="muted">Update full property details, operations settings and registration details.</div>
+    </div>
+    <div class="panel-body">
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="update_hotel">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="oyo-section-title"><span class="dot"></span> Property Basics</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="oyo-label">Hotel Name</label>
+            <input type="text" name="hotel_name" class="form-control oyo-input" value="{{ hotel.hotel_name or '' }}" required>
+          </div>
+          <div class="col-md-3">
+            <label class="oyo-label">Brand Name</label>
+            <input type="text" name="brand_name" class="form-control oyo-input" value="{{ hotel.brand_name or '' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="oyo-label">Star Rating</label>
+            <select name="star_rating" class="form-select oyo-select">
+              {% for value in [0,1,2,3,4,5] %}
+              <option value="{{ value }}" {% if (hotel.star_rating or 0)|int == value %}selected{% endif %}>{{ value }} Star</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="oyo-label">State</label>
+            <select class="form-select oyo-select js-state-filter" data-city-target="hotelCitySelect" required>
+              <option value="">Select state</option>
+              {% for s in states %}
+              <option value="{{ s.id }}" {% if hotel.city_state_id and hotel.city_state_id == s.id %}selected{% endif %}>{{ s.state_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="oyo-label">City</label>
+            <select name="city_id" id="hotelCitySelect" class="form-select oyo-select" required>
+              <option value="">Select city</option>
+              {% for c in cities %}
+              <option value="{{ c.id }}" data-state-id="{{ c.state_id }}" {% if c.id == hotel.city_id %}selected{% endif %}>{{ c.city_name }} ({{ c.state_name }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="oyo-label">Starting Price</label>
+            <input type="number" step="0.01" name="base_price" class="form-control oyo-input" value="{{ hotel.price or 0 }}" required>
+          </div>
+          <div class="col-md-3">
+            <label class="oyo-label">Hotel Status</label>
+            <select name="listing_status" class="form-select oyo-select">
+              <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+              <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+              <option value="maintenance" {% if status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+            </select>
+          </div>
+
+          <div class="col-12 mt-2">
+            <div class="oyo-section-title"><span class="dot"></span> Address & Geo Details</div>
+          </div>
+          <div class="col-md-6">
+            <label class="oyo-label">Address Line 1</label>
+            <input type="text" name="address_line1" class="form-control oyo-input" value="{{ hotel.address_line1 or '' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="oyo-label">Address Line 2</label>
+            <input type="text" name="address_line2" class="form-control oyo-input" value="{{ hotel.address_line2 or '' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="oyo-label">Locality</label>
+            <input type="text" name="locality" class="form-control oyo-input" value="{{ hotel.locality or '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Landmark</label>
+            <input type="text" name="landmark" class="form-control oyo-input" value="{{ hotel.landmark or '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Pincode</label>
+            <input type="text" name="pincode" class="form-control oyo-input" value="{{ hotel.pincode or '' }}">
+          </div>
+
+          <div class="col-md-2">
+            <label class="oyo-label">Check-In</label>
+            <input type="time" name="check_in_time" class="form-control oyo-input" value="{{ (hotel.check_in_time|string)[:5] if hotel.check_in_time else '' }}">
+          </div>
+          <div class="col-md-2">
+            <label class="oyo-label">Check-Out</label>
+            <input type="time" name="check_out_time" class="form-control oyo-input" value="{{ (hotel.check_out_time|string)[:5] if hotel.check_out_time else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Latitude</label>
+            <input type="text" id="hotelLatitudeInput" name="latitude" class="form-control oyo-input" value="{{ hotel.latitude or '' }}" placeholder="23.0225">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Longitude</label>
+            <input type="text" id="hotelLongitudeInput" name="longitude" class="form-control oyo-input" value="{{ hotel.longitude or '' }}" placeholder="72.5714">
+          </div>
+          <div class="col-12">
+            <div id="hotelLocationMap" class="hotel-location-map"></div>
+            <div class="small-muted mt-1">Click on map to set hotel location inside India.</div>
+          </div>
+
+          <div class="col-12 mt-2">
+            <div class="oyo-section-title"><span class="dot"></span> Registration Details</div>
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Owner Name</label>
+            <input type="text" name="owner_name" class="form-control oyo-input" value="{{ hotel.owner_name or '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Hotel Contact Phone</label>
+            <input type="text" name="hotel_contact_phone" class="form-control oyo-input" value="{{ hotel.hotel_contact_phone or '' }}" placeholder="10 digit number" required>
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Hotel Contact Email</label>
+            <input type="email" name="hotel_contact_email" class="form-control oyo-input" value="{{ hotel.hotel_contact_email or '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">GST Number</label>
+            <input type="text" name="gst_number" class="form-control oyo-input" value="{{ hotel.gst_number or '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Trade License Number</label>
+            <input type="text" name="trade_license_number" class="form-control oyo-input" value="{{ hotel.trade_license_number or '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="oyo-label">Update Registration Document</label>
+            <input type="file" name="registration_doc" class="form-control oyo-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+          </div>
+          <div class="col-12">
+            <div class="oyo-reg-box">
+              <div class="title">Current Registration File</div>
+              <div class="text">
+                {% if hotel.registration_doc_path %}
+                  <a href="{{ url_for('static', filename='uploads/documents/' ~ hotel.registration_doc_path) }}" target="_blank">Open current document</a>
+                {% else %}
+                  No registration document uploaded yet.
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mt-2">
+            <div class="oyo-section-title"><span class="dot"></span> Services & Policies</div>
+          </div>
+          <div class="col-md-12">
+            <label class="oyo-label">Services / Amenities</label>
+            <div class="amenities-box border rounded p-2">
+              {% for a in amenities %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="amenity_ids" value="{{ a.id }}" id="amenity{{ a.id }}" {% if a.id in selected_amenity_ids %}checked{% endif %}>
+                <label class="form-check-label" for="amenity{{ a.id }}">{{ a.amenity_name }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="oyo-label">Hotel Description</label>
+            <textarea name="hotel_description" rows="3" class="form-control oyo-textarea">{{ hotel.hotel_description or '' }}</textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="oyo-label">House Rules</label>
+            <textarea name="house_rules" rows="2" class="form-control oyo-textarea">{{ hotel.house_rules or '' }}</textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="oyo-label">Terms & Conditions</label>
+            <textarea name="terms_conditions" rows="3" class="form-control oyo-textarea">{{ hotel.terms_conditions or '' }}</textarea>
+          </div>
+
+          <div class="col-md-12">
+            <div class="oyo-checkbox-row">
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="couple_friendly" id="cf" {% if hotel.couple_friendly %}checked{% endif %}><label class="form-check-label" for="cf">Couple Friendly</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="pets_allowed" id="pa" {% if hotel.pets_allowed %}checked{% endif %}><label class="form-check-label" for="pa">Pets Allowed</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="parking_available" id="pk" {% if hotel.parking_available %}checked{% endif %}><label class="form-check-label" for="pk">Parking</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="breakfast_available" id="bf" {% if hotel.breakfast_available %}checked{% endif %}><label class="form-check-label" for="bf">Breakfast</label></div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button class="btn btn-danger rounded-pill px-4"><i class="bi bi-save2"></i> Save Hotel Changes</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h6>Room Inventory Snapshot</h6>
+      <div class="muted">Quick view of room categories under this property.</div>
+    </div>
+    <div class="panel-body">
+      {% if room_types %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0 oyo-table">
+          <thead>
+            <tr><th>Room Type</th><th>Price</th><th>Total Rooms</th><th>Available</th></tr>
+          </thead>
+          <tbody>
+            {% for rt in room_types %}
+            <tr>
+              <td>{{ rt.room_type_name }}</td>
+              <td>₹{{ rt.base_price }}</td>
+              <td>{{ rt.total_rooms }}</td>
+              <td>{{ rt.available_rooms }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-light border mb-0">No room types added yet.</div>
+      {% endif %}
+    </div>
+  </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (function () {
+    const indiaBoundsRaw = {
+      south: 6.4627,
+      west: 68.1097,
+      north: 37.0841,
+      east: 97.3956
+    };
+
+    let hotelMap = null;
+    let hotelMarker = null;
+
+    function parseCoord(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function isIndiaCoord(lat, lng) {
+      return lat !== null
+        && lng !== null
+        && lat >= indiaBoundsRaw.south
+        && lat <= indiaBoundsRaw.north
+        && lng >= indiaBoundsRaw.west
+        && lng <= indiaBoundsRaw.east;
+    }
+
+    function setCoordinateInputs(lat, lng) {
+      const latInput = document.getElementById("hotelLatitudeInput");
+      const lngInput = document.getElementById("hotelLongitudeInput");
+      if (!latInput || !lngInput) return;
+      latInput.value = Number(lat).toFixed(6);
+      lngInput.value = Number(lng).toFixed(6);
+    }
+
+    function setMarker(lat, lng, panTo = false) {
+      if (!hotelMap) return;
+      if (!hotelMarker) {
+        hotelMarker = L.marker([lat, lng], { draggable: true }).addTo(hotelMap);
+        hotelMarker.on("dragend", () => {
+          const pos = hotelMarker.getLatLng();
+          if (!isIndiaCoord(pos.lat, pos.lng)) return;
+          setCoordinateInputs(pos.lat, pos.lng);
+        });
+      } else {
+        hotelMarker.setLatLng([lat, lng]);
+      }
+      if (panTo) {
+        hotelMap.panTo([lat, lng]);
+      }
+    }
+
+    function syncMarkerFromInputs() {
+      const latInput = document.getElementById("hotelLatitudeInput");
+      const lngInput = document.getElementById("hotelLongitudeInput");
+      if (!latInput || !lngInput) return;
+      const lat = parseCoord(latInput.value);
+      const lng = parseCoord(lngInput.value);
+      if (!isIndiaCoord(lat, lng)) return;
+      setMarker(lat, lng, false);
+    }
+
+    function initHotelLocationMap() {
+      if (hotelMap || !window.L) return;
+      const mapEl = document.getElementById("hotelLocationMap");
+      if (!mapEl) return;
+
+      const indiaBounds = L.latLngBounds(
+        L.latLng(indiaBoundsRaw.south, indiaBoundsRaw.west),
+        L.latLng(indiaBoundsRaw.north, indiaBoundsRaw.east)
+      );
+      hotelMap = L.map("hotelLocationMap", {
+        maxBounds: indiaBounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 4
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(hotelMap);
+      hotelMap.fitBounds(indiaBounds, { padding: [14, 14] });
+      hotelMap.on("click", (evt) => {
+        const lat = Number(evt.latlng.lat);
+        const lng = Number(evt.latlng.lng);
+        if (!isIndiaCoord(lat, lng)) return;
+        setMarker(lat, lng, true);
+        setCoordinateInputs(lat, lng);
+      });
+
+      const latInput = document.getElementById("hotelLatitudeInput");
+      const lngInput = document.getElementById("hotelLongitudeInput");
+      if (latInput) latInput.addEventListener("input", syncMarkerFromInputs);
+      if (lngInput) lngInput.addEventListener("input", syncMarkerFromInputs);
+
+      syncMarkerFromInputs();
+      hotelMap.invalidateSize();
+    }
+
+    function syncCityOptions(stateSelect) {
+      const citySelect = document.getElementById(stateSelect.dataset.cityTarget || "");
+      if (!citySelect) return;
+      const stateId = (stateSelect.value || "").trim();
+      citySelect.querySelectorAll("option[data-state-id]").forEach((opt) => {
+        const visible = !!stateId && String(opt.dataset.stateId) === String(stateId);
+        opt.hidden = !visible;
+        opt.disabled = !visible;
+        opt.style.display = visible ? "" : "none";
+      });
+      if (!stateId) {
+        citySelect.value = "";
+        citySelect.disabled = true;
+        return;
+      }
+      citySelect.disabled = false;
+      const selected = citySelect.options[citySelect.selectedIndex];
+      if (selected && selected.value && (selected.disabled || String(selected.dataset.stateId || "") !== stateId)) {
+        citySelect.value = "";
+      }
+    }
+
+    document.querySelectorAll(".js-state-filter[data-city-target]").forEach((stateSelect) => {
+      stateSelect.addEventListener("change", () => syncCityOptions(stateSelect));
+      syncCityOptions(stateSelect);
+    });
+
+    initHotelLocationMap();
+  })();
+</script>
+{% endblock %}

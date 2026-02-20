@@ -5,12 +5,19 @@
 <title>TourGen | Create Account</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/signup.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body>
+<a class="back-web-btn" href="{{ url_for('home') }}">
+  <i class="bi bi-arrow-left"></i> Back to Website
+</a>
 <button class="btn btn-outline-light btn-sm rounded-pill theme-toggle-float" type="button" data-theme-toggle>
   <i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
 </button>
@@ -19,63 +26,113 @@
   <div class="subtitle">Create your role-based account</div>
 
   <form method="POST" action="{{ url_for('signup') }}" enctype="multipart/form-data">
+    {% set f = form_values or {} %}
 
     <div class="input-group">
       <i class="bi bi-person"></i>
-      <input type="text" name="full_name" value="{{ request.form.full_name }}" placeholder="Full Name" required>
+      <input type="text" name="full_name" value="{{ f.full_name or '' }}" placeholder="Full Name" required>
     </div>
     {% if errors and errors.get('full_name') %}<div class="field-error">{{ errors['full_name'] }}</div>{% endif %}
 
     <div class="input-group">
       <i class="bi bi-envelope"></i>
-      <input type="email" name="email" value="{{ request.form.email }}" placeholder="Email Address" required>
+      <input type="email" name="email" value="{{ f.email or '' }}" placeholder="Email Address" required>
     </div>
     {% if errors and errors.get('email') %}<div class="field-error">{{ errors['email'] }}</div>{% endif %}
 
     <div class="input-group">
       <i class="bi bi-phone"></i>
-      <input type="text" name="phone" value="{{ request.form.phone }}" placeholder="Mobile Number" required>
+      <input type="text" name="phone" value="{{ f.phone or '' }}" placeholder="Mobile Number" required>
     </div>
     {% if errors and errors.get('phone') %}<div class="field-error">{{ errors['phone'] }}</div>{% endif %}
 
     <div class="input-group">
       <i class="bi bi-diagram-3"></i>
       <select name="role" id="roleSelect" required>
-        <option value="traveler" {% if request.form.role == 'traveler' %}selected{% endif %}>Traveler</option>
-        <option value="organizer" {% if request.form.role == 'organizer' %}selected{% endif %}>Organizer</option>
-        <option value="provider" {% if request.form.role == 'provider' %}selected{% endif %}>Service Provider</option>
-        <option value="admin" {% if request.form.role == 'admin' %}selected{% endif %}>Admin</option>
+        <option value="traveler" {% if (f.role or 'traveler') == 'traveler' %}selected{% endif %}>Traveler</option>
+        <option value="organizer" {% if f.role == 'organizer' %}selected{% endif %}>Organizer</option>
+        <option value="hotel_provider" {% if f.role == 'hotel_provider' %}selected{% endif %}>Hotel & Services Provider</option>
       </select>
     </div>
+    {% if errors and errors.get('role') %}<div class="field-error">{{ errors['role'] }}</div>{% endif %}
 
     <div class="doc-box" id="businessBox">
       <div class="input-group">
         <i class="bi bi-building"></i>
-        <input type="text" name="business_name" value="{{ request.form.business_name }}" placeholder="Organization / Business Name">
+        <input type="text" name="business_name" value="{{ f.business_name or '' }}" placeholder="Organization / Business Name">
       </div>
+      {% if errors and errors.get('business_name') %}<div class="field-error">{{ errors['business_name'] }}</div>{% endif %}
     </div>
 
     <div class="doc-box" id="providerCategoryBox">
       <div class="input-group">
         <i class="bi bi-briefcase"></i>
-        <select name="provider_category">
+        <select name="provider_category" id="providerCategorySelect">
           <option value="">Select service category</option>
-          <option value="Hotel" {% if request.form.provider_category == 'Hotel' %}selected{% endif %}>Hotel</option>
-          <option value="Transport" {% if request.form.provider_category == 'Transport' %}selected{% endif %}>Transport</option>
-          <option value="Guides" {% if request.form.provider_category == 'Guides' %}selected{% endif %}>Guides</option>
-          <option value="Food" {% if request.form.provider_category == 'Food' %}selected{% endif %}>Food</option>
+          <option value="Hotel" {% if f.provider_category == 'Hotel' %}selected{% endif %}>Hotel</option>
+          <option value="Guides" {% if f.provider_category == 'Guides' %}selected{% endif %}>Guides</option>
+          <option value="Food" {% if f.provider_category == 'Food' %}selected{% endif %}>Food</option>
         </select>
       </div>
       {% if errors and errors.get('provider_category') %}<div class="field-error">{{ errors['provider_category'] }}</div>{% endif %}
     </div>
 
     <div class="doc-box" id="documentBox">
-      <div class="input-group doc-input-group">
-        <i class="bi bi-file-earmark-arrow-up"></i>
-        <input type="file" name="document" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png">
+      <div class="role-note mb-2">Role-specific proofs are required before admin approval.</div>
+
+      <div class="kyc-doc-field" data-doc-key="identity_proof_path">
+        <label class="role-note">Identity KYC</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-file-earmark-person"></i>
+          <input type="file" name="identity_proof" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('identity_proof') %}<div class="field-error">{{ errors['identity_proof'] }}</div>{% endif %}
       </div>
-      <div class="role-note">Organizer, Service Provider and Admin require document verification.</div>
-      {% if errors and errors.get('document') %}<div class="field-error">{{ errors['document'] }}</div>{% endif %}
+
+      <div class="kyc-doc-field" data-doc-key="business_proof_path">
+        <label class="role-note">Business Proof</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-file-earmark-text"></i>
+          <input type="file" name="business_proof" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('business_proof') %}<div class="field-error">{{ errors['business_proof'] }}</div>{% endif %}
+      </div>
+
+      <div class="kyc-doc-field" data-doc-key="property_proof_path">
+        <label class="role-note">Property Proof (Hotel Providers)</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-house"></i>
+          <input type="file" name="property_proof" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('property_proof') %}<div class="field-error">{{ errors['property_proof'] }}</div>{% endif %}
+      </div>
+
+      <div class="kyc-doc-field" data-doc-key="bank_proof_path">
+        <label class="role-note">Bank Verification</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-bank"></i>
+          <input type="file" name="bank_proof" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('bank_proof') %}<div class="field-error">{{ errors['bank_proof'] }}</div>{% endif %}
+      </div>
+
+      <div class="kyc-doc-field" data-doc-key="address_proof_path">
+        <label class="role-note">Address Proof</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-geo-alt"></i>
+          <input type="file" name="address_proof" class="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('address_proof') %}<div class="field-error">{{ errors['address_proof'] }}</div>{% endif %}
+      </div>
+
+      <div class="kyc-doc-field" data-doc-key="operational_photo_path">
+        <label class="role-note">Operational Photo</label>
+        <div class="input-group doc-input-group">
+          <i class="bi bi-image"></i>
+          <input type="file" name="operational_photo" class="doc-file-input" accept=".jpg,.jpeg,.png,.webp">
+        </div>
+        {% if errors and errors.get('operational_photo') %}<div class="field-error">{{ errors['operational_photo'] }}</div>{% endif %}
+      </div>
     </div>
 
     <div class="input-group">
@@ -100,14 +157,30 @@
 
 <script>
 function toggleRoleFields(){
-  const role = document.getElementById('roleSelect').value;
-  const needsDoc = role === 'organizer' || role === 'provider' || role === 'admin';
+  const role = (document.getElementById('roleSelect').value || '').toLowerCase();
+  const needsDoc = role === 'organizer' || role === 'hotel_provider';
   document.getElementById('documentBox').style.display = needsDoc ? 'block' : 'none';
   document.getElementById('businessBox').style.display = needsDoc ? 'block' : 'none';
-  document.getElementById('providerCategoryBox').style.display = role === 'provider' ? 'block' : 'none';
+  document.getElementById('providerCategoryBox').style.display = 'none';
+
+  const requiredKeys = new Set();
+  if (role === 'organizer'){
+    ['identity_proof_path','business_proof_path','bank_proof_path','address_proof_path','operational_photo_path'].forEach((k) => requiredKeys.add(k));
+  } else if (role === 'hotel_provider'){
+    ['identity_proof_path','business_proof_path','bank_proof_path','address_proof_path','operational_photo_path','property_proof_path'].forEach((k) => requiredKeys.add(k));
+  }
+
+  document.querySelectorAll('.kyc-doc-field').forEach((box) => {
+    const key = box.getAttribute('data-doc-key');
+    const input = box.querySelector('input[type="file"]');
+    const needed = requiredKeys.has(key);
+    box.style.display = needsDoc ? 'block' : 'none';
+    if (input) input.required = needed;
+  });
 }
 
 document.getElementById('roleSelect').addEventListener('change', toggleRoleFields);
+document.getElementById('providerCategorySelect').addEventListener('change', toggleRoleFields);
 toggleRoleFields();
 </script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>

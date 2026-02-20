@@ -55,15 +55,23 @@
                             <span class="badge bg-light text-success border">{{ tour.food_plan }}</span>
                             {% endif %}
                             {% if tour.linked_hotels_count %}
-                            <span class="badge bg-warning text-dark">{{ tour.linked_hotels_count }} Hotel Options</span>
-                            {% endif %}
-                            {% if tour.linked_transport_count %}
-                            <span class="badge bg-info text-dark">{{ tour.linked_transport_count }} Transport Options</span>
+                            <span class="badge bg-warning text-dark">Stay Included</span>
                             {% endif %}
                             {% if tour.linked_guides_count %}
                             <span class="badge bg-secondary">{{ tour.linked_guides_count }} Guide Options</span>
                             {% endif %}
                         </div>
+                        {% if tour.transport_details %}
+                        <p class="small text-muted mb-2"><span class="fw-semibold">Transport Details:</span> {{ tour.transport_details }}</p>
+                        {% endif %}
+                        {% if tour.transport_vehicle_image %}
+                        {% set tr_img = tour.transport_vehicle_image if tour.transport_vehicle_image.startswith('http://') or tour.transport_vehicle_image.startswith('https://') else url_for('static', filename='uploads/' ~ tour.transport_vehicle_image) %}
+                        <img src="{{ tr_img }}"
+                             class="img-fluid rounded border mb-2"
+                             style="height:72px; width:100%; object-fit:cover;"
+                             alt="Transport vehicle"
+                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+                        {% endif %}
 
                         <p class="fw-bold text-dark">₹{{ tour.price }}</p>
 

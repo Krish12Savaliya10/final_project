@@ -4,25 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard | TourGen</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_approvals.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
-<body>
+<body class="dashboard-shell admin-dashboard">
 <div class="topbar">
   <div class="container d-flex justify-content-between align-items-center">
     <div class="brand"><i class="bi bi-shield-check"></i> Admin Control Center</div>
     <div class="d-flex align-items-center gap-2">
-      <button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-theme-toggle>
-        <i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
-      </button>
+      <div class="dropdown">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="adminProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-person-circle"></i> {{ session.get('username', 'Admin') }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminProfileDropdown">
+          <li class="px-3 py-2">
+            <div class="small text-muted">Signed in as</div>
+            <div class="fw-semibold">{{ session.get('username', 'Admin') }}</div>
+            <div class="small text-uppercase text-muted">{{ session.get('role', 'admin') }}</div>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <button class="dropdown-item" type="button" data-theme-toggle>
+              <i class="bi bi-moon-stars me-1"></i> <span data-theme-label>Dark Mode</span>
+            </button>
+          </li>
+        </ul>
+      </div>
       <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">Logout</a>
     </div>
   </div>
 </div>
 
-<div class="container py-4">
+<div class="container py-4 dashboard-page">
   {% with messages = get_flashed_messages() %}
   {% if messages %}
   <div class="alert alert-info border-0 shadow-sm">{{ messages[0] }}</div>
@@ -34,6 +53,7 @@
       <button class="sidebar-link active" data-section="overview" onclick="showAdminSection('overview')"><i class="bi bi-speedometer2 me-2"></i>Overview</button>
       <button class="sidebar-link" data-section="approvals" onclick="showAdminSection('approvals')"><i class="bi bi-person-check me-2"></i>Approvals</button>
       <button class="sidebar-link" data-section="data" onclick="showAdminSection('data')"><i class="bi bi-table me-2"></i>Data Tables</button>
+      <button class="sidebar-link" data-section="feedback" onclick="showAdminSection('feedback')"><i class="bi bi-chat-left-text me-2"></i>Reviews & Issues</button>
       <button class="sidebar-link" data-section="history" onclick="showAdminSection('history')"><i class="bi bi-clock-history me-2"></i>History</button>
     </aside>
 
@@ -43,11 +63,15 @@
           <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">{{ stats.total_users or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Travelers</div><div class="stat-value">{{ stats.total_travelers or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Organizers</div><div class="stat-value">{{ stats.total_organizers or 0 }}</div></div>
-          <div class="stat-card"><div class="stat-label">Providers</div><div class="stat-value">{{ stats.total_providers or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Hotel & Services Providers</div><div class="stat-value">{{ stats.total_providers or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Admins</div><div class="stat-value">{{ stats.total_admins or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Tours</div><div class="stat-value">{{ tour_stats.total_tours or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Upcoming Tours</div><div class="stat-value">{{ tour_stats.upcoming_tours or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Current Tours</div><div class="stat-value">{{ tour_stats.current_tours or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Completed Tours</div><div class="stat-value">{{ tour_stats.completed_tours or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Services</div><div class="stat-value">{{ service_stats.total_services or 0 }}</div></div>
           <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">Rs {{ payment_stats.total_revenue or 0 }}</div></div>
+          <div class="stat-card"><div class="stat-label">Admin Commission</div><div class="stat-value">Rs {{ payment_stats.total_admin_commission or 0 }}</div></div>
         </div>
         <div class="section h-100">
           <div class="panel-title">Bookings Snapshot</div>
@@ -57,6 +81,7 @@
           <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Pending Bookings</span><strong class="text-warning">{{ booking_stats.pending_bookings or 0 }}</strong></div>
           <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Total Payments</span><strong>{{ payment_stats.total_payments or 0 }}</strong></div>
           <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Nearest Tour Date</span><strong>{{ tour_stats.nearest_tour_date or '-' }}</strong></div>
+          <div class="mb-2 d-flex justify-content-between"><span class="text-muted">Upcoming / Current / Completed</span><strong>{{ tour_stats.upcoming_tours or 0 }} / {{ tour_stats.current_tours or 0 }} / {{ tour_stats.completed_tours or 0 }}</strong></div>
         </div>
       </div>
 
@@ -72,7 +97,8 @@
                   <th>User</th>
                   <th>Role</th>
                   <th>Category</th>
-                  <th>Document</th>
+                  <th>Stage / KYC</th>
+                  <th>Documents</th>
                   <th>Action + Note</th>
                 </tr>
               </thead>
@@ -86,10 +112,32 @@
                   <td><span class="badge bg-secondary role-badge">{{ u.role }}</span></td>
                   <td>{{ u.provider_category or '-' }}</td>
                   <td>
-                    {% if u.document_path %}
-                    <a href="{{ url_for('static', filename='uploads/documents/' + u.document_path) }}" target="_blank" class="btn btn-outline-dark btn-sm">View</a>
+                    <div><strong>Stage:</strong> {{ u.kyc_stage or '-' }}</div>
+                    <div class="mt-1"><strong>KYC:</strong>
+                      {% if u.kyc_completed %}
+                      <span class="badge bg-success">Complete</span>
+                      {% else %}
+                      <span class="badge bg-warning text-dark">Incomplete</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    {% if u.required_documents %}
+                    <div class="small mb-1">
+                      Uploaded {{ u.required_doc_uploaded }}/{{ u.required_doc_total }}
+                    </div>
+                    {% for doc in u.required_documents %}
+                    <div class="small mb-1">
+                      {% if doc.is_uploaded %}
+                      <span class="text-success"><i class="bi bi-check-circle"></i> {{ doc.label }}</span>
+                      <a href="{{ url_for('static', filename='uploads/documents/' + doc.path) }}" target="_blank" class="ms-1">View</a>
+                      {% else %}
+                      <span class="text-danger"><i class="bi bi-x-circle"></i> {{ doc.label }}</span>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
                     {% else %}
-                    -
+                    <small class="text-muted">No mandatory documents for this role.</small>
                     {% endif %}
                   </td>
                   <td>
@@ -112,6 +160,100 @@
           <div class="alert alert-light border mb-0">No pending approval requests.</div>
           {% endif %}
         </div>
+        <div class="section h-100 mt-4">
+          <div class="panel-title">Spot Change Queue</div>
+          <h5 class="mb-3">Organizer Spot/Image Requests ({{ pending_spot_requests|length }})</h5>
+          {% if pending_spot_requests %}
+          <div class="table-responsive scroll">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Organizer</th>
+                  <th>Request</th>
+                  <th>Target</th>
+                  <th>Requested Image</th>
+                  <th>Current Image</th>
+                  <th>Action + Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in pending_spot_requests %}
+                <tr>
+                  <td>
+                    <strong>{{ r.organizer_name }}</strong><br>
+                    <small class="text-muted">{{ r.organizer_email }}</small>
+                  </td>
+                  <td>
+                    {% if r.request_type == 'add_spot' %}
+                    <span class="badge bg-primary">Add Spot</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Update Spot Image</span>
+                    {% endif %}
+                    <div class="small mt-1">#{{ r.id }} | {{ r.created_at }}</div>
+                  </td>
+                  <td>
+                    <div><strong>{{ r.spot_name }}</strong></div>
+                    <div class="small text-muted">
+                      {{ r.city_name or '-' }}{% if r.state_name %}, {{ r.state_name }}{% endif %}
+                    </div>
+                    {% if r.spot_id %}
+                    <div class="small text-muted">Spot ID: {{ r.spot_id }}</div>
+                    {% endif %}
+                    {% if r.latitude and r.longitude %}
+                    <div class="small text-muted">Lat/Lng: {{ r.latitude }}, {{ r.longitude }}</div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.image_url %}
+                      {% if r.photo_source == 'external_url' %}
+                      <img src="{{ r.image_url }}"
+                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+                           width="64" height="64" class="rounded border">
+                      {% else %}
+                      <img src="{{ url_for('static', filename='uploads/' + r.image_url) }}"
+                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+                           width="64" height="64" class="rounded border">
+                      {% endif %}
+                      <div class="small mt-1 text-muted">{{ r.photo_source or 'local_file' }}</div>
+                    {% else %}
+                    <span class="text-muted small">No image</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.current_image_url %}
+                      {% if r.current_photo_source == 'external_url' %}
+                      <img src="{{ r.current_image_url }}"
+                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+                           width="64" height="64" class="rounded border">
+                      {% else %}
+                      <img src="{{ url_for('static', filename='uploads/' + r.current_image_url) }}"
+                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+                           width="64" height="64" class="rounded border">
+                      {% endif %}
+                    {% else %}
+                    <span class="text-muted small">N/A</span>
+                    {% endif %}
+                  </td>
+                  <td style="min-width: 250px;">
+                    <form method="POST" class="d-flex flex-column gap-2">
+                      <input type="hidden" name="spot_request_id" value="{{ r.id }}">
+                      <input type="text" name="note" class="form-control form-control-sm" placeholder="optional note">
+                      <div class="d-flex gap-1 flex-wrap">
+                        <button class="btn btn-success btn-sm" name="action" value="approve_spot_request">Approve</button>
+                        <button class="btn btn-outline-danger btn-sm" name="action" value="reject_spot_request">Reject</button>
+                        <button class="btn btn-outline-secondary btn-sm" name="action" value="set_spot_request_pending">Keep Pending</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-light border mb-0">No pending spot/image requests.</div>
+          {% endif %}
+        </div>
       </div>
 
       <div id="data" class="admin-pane d-none">
@@ -123,7 +265,7 @@
               <div class="table-responsive scroll">
                 <table class="table table-sm align-middle mb-0">
                   <thead>
-                    <tr><th>Name</th><th>Role</th><th>Status</th><th>Contact</th></tr>
+                    <tr><th>Name</th><th>Role</th><th>Status</th><th>KYC</th><th>Contact</th></tr>
                   </thead>
                   <tbody>
                     {% for u in all_users %}
@@ -137,6 +279,14 @@
                           <span class="badge bg-warning text-dark">pending</span>
                         {% else %}
                           <span class="badge bg-danger">rejected</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <small>{{ u.kyc_stage or '-' }}</small><br>
+                        {% if u.verification_badge %}
+                        <span class="badge bg-success">verified</span>
+                        {% else %}
+                        <span class="badge bg-secondary">not verified</span>
                         {% endif %}
                       </td>
                       <td><small>{{ u.email }}</small><br><small>{{ u.phone }}</small></td>
@@ -155,7 +305,7 @@
               <div class="table-responsive scroll">
                 <table class="table table-sm align-middle mb-0">
                   <thead>
-                    <tr><th>Title</th><th>Route</th><th>Date</th><th>Price</th></tr>
+                    <tr><th>Title</th><th>Route</th><th>Date</th><th>Status</th><th>Price</th></tr>
                   </thead>
                   <tbody>
                     {% for t in all_tours %}
@@ -163,6 +313,7 @@
                       <td><strong>{{ t.title }}</strong></td>
                       <td><small>{{ t.start_point }} -> {{ t.end_point }}</small></td>
                       <td><small>{{ t.start_date }} to {{ t.end_date }}</small></td>
+                      <td><span class="badge bg-light text-dark border text-capitalize">{{ t.lifecycle_status }}</span></td>
                       <td>Rs {{ t.price }}</td>
                     </tr>
                     {% endfor %}
@@ -232,6 +383,81 @@
         </div>
       </div>
 
+      <div id="feedback" class="admin-pane d-none">
+        <div class="row g-4">
+          <div class="col-lg-12">
+            <div class="section">
+              <div class="panel-title">Reviews</div>
+              <h5 class="mb-3">Latest User Reviews</h5>
+              {% if all_reviews %}
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>User</th><th>Role</th><th>Target</th><th>Rating</th><th>Review</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for r in all_reviews %}
+                    <tr>
+                      <td>{{ r.user_name }}</td>
+                      <td class="text-capitalize">{{ r.user_role }}</td>
+                      <td class="text-capitalize">{{ r.target_type }}{% if r.target_id %} #{{ r.target_id }}{% endif %}</td>
+                      <td>{{ r.rating }}/5</td>
+                      <td>{{ r.review_text }}</td>
+                      <td><small>{{ r.created_at }}</small></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="alert alert-light border mb-0">No reviews yet.</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-lg-12">
+            <div class="section">
+              <div class="panel-title">Issues</div>
+              <h5 class="mb-3">Reported Problems</h5>
+              {% if all_issues %}
+              <div class="table-responsive scroll">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr><th>User</th><th>Role</th><th>Subject</th><th>Issue</th><th>Status</th><th>Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for i in all_issues %}
+                    <tr>
+                      <td>{{ i.user_name }}</td>
+                      <td class="text-capitalize">{{ i.user_role }}</td>
+                      <td>{{ i.subject }}</td>
+                      <td>{{ i.issue_text }}</td>
+                      <td class="text-capitalize">{{ i.status }}</td>
+                      <td>
+                        <form method="POST" class="d-flex flex-column gap-2">
+                          <input type="hidden" name="issue_id" value="{{ i.id }}">
+                          <input type="text" class="form-control form-control-sm" name="note"
+                                 value="{{ i.admin_note or '' }}" placeholder="Admin note">
+                          <div class="d-flex gap-1">
+                            <button class="btn btn-outline-secondary btn-sm" name="action" value="set_issue_open">Open</button>
+                            <button class="btn btn-outline-primary btn-sm" name="action" value="set_issue_in_progress">In Progress</button>
+                            <button class="btn btn-success btn-sm" name="action" value="set_issue_resolved">Resolved</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="alert alert-light border mb-0">No issues reported yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="history" class="admin-pane d-none">
         <div class="section">
           <div class="panel-title">Approval History</div>
@@ -273,6 +499,7 @@ function showAdminSection(id){
   });
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

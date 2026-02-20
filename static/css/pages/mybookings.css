@@ -1,6 +1,6 @@
 
 body{
-    background:#f1f5f9;
+    background:#f2f6fb;
 }
 
 .page-title{
@@ -10,7 +10,7 @@ body{
 
 .booking-card{
     border-radius:20px;
-    border:none;
+    border:1px solid #dce7f3;
     transition:.25s;
 }
 .booking-card:hover{
@@ -35,16 +35,16 @@ body{
 }
 
 .btn-main{
-    border-radius:40px;
+    border-radius:999px;
     padding:10px 22px;
-    font-weight:600;
+    font-weight:700;
 }
 
 .btn-view{ border:2px solid #2563eb; color:#2563eb; }
 .btn-view:hover{ background:#2563eb; color:white; }
 
-.btn-pay{ background:#2563eb; color:white; }
-.btn-pay:hover{ background:#1d4ed8; color:white; }
+.btn-pay{ background:linear-gradient(135deg,#2563eb,#0ea5e9); color:white; border:none; }
+.btn-pay:hover{ background:linear-gradient(135deg,#1d4ed8,#0284c7); color:white; }
 
 .btn-bill{ background:#111827; color:white; }
 .btn-bill:hover{ background:#000; color:white; }
@@ -52,4 +52,3 @@ body{
 .empty-box{
     margin-top:70px;
 }
-

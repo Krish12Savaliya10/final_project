@@ -5,14 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TourGen Organizer Panel</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 
-<body>
+<body class="dashboard-shell organizer-dashboard">
 
 <div class="admin-topbar d-flex justify-content-between align-items-center">
     <div class="brand">
@@ -20,9 +25,6 @@
     </div>
 
     <div class="d-flex align-items-center topbar-actions">
-        <button class="btn btn-outline-light btn-sm me-2" type="button" data-theme-toggle>
-            <i class="bi bi-moon-stars"></i> <span data-theme-label>Dark Mode</span>
-        </button>
         <div class="dropdown me-2">
             <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle"></i> Profile
@@ -37,6 +39,11 @@
                 <li>
                     <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
                         <i class="bi bi-person-lines-fill me-1"></i> View Profile
+                    </button>
+                </li>
+                <li>
+                    <button class="dropdown-item" type="button" data-theme-toggle>
+                        <i class="bi bi-moon-stars me-1"></i> <span data-theme-label>Dark Mode</span>
                     </button>
                 </li>
             </ul>
@@ -74,12 +81,19 @@
     </button>
 </div>
 
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="alert alert-info">{{ messages[0] }}</div>
+{% endif %}
+{% endwith %}
+
 <div class="row g-4">
 {% for tour in tours %}
 <div class="col-md-4">
 <div class="card shadow-sm h-100">
 
-<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}">
+<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
+     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
 
 <div class="card-body">
 <h5 class="fw-bold">{{ tour.title }}</h5>
@@ -89,11 +103,134 @@
 <span class="text-primary fw-bold">₹{{ tour.price }}</span>
 <span class="badge bg-light text-dark border">{{ tour.start_date }}</span>
 </div>
+<div class="small mt-2">
+Seats: {{ tour.booked_pax or 0 }}{% if tour.max_group_size %} / {{ tour.max_group_size }}{% endif %}
+</div>
+<div class="small">
+Bookings: {{ tour.total_booking_count or 0 }} (App {{ tour.internal_booking_count or 0 }}, External {{ tour.external_booking_count or 0 }})
+</div>
+<div class="small">
+Booked Pax: {{ tour.total_pax_count or 0 }} (App {{ tour.internal_pax or 0 }}, External {{ tour.external_pax or 0 }})
+</div>
+<div class="small">
+Tour Start Message: Minimum {{ tour.min_group_size or 6 }} people
+</div>
+<div class="small">
+Profit: ₹{{ '%.2f'|format((tour.organizer_profit or 0)|float) }}
+</div>
+<div class="small mb-2">
+Status:
+{% set is_full = (tour.max_group_size and (tour.booked_pax or 0) >= tour.max_group_size) or (tour.tour_status == 'full') %}
+<span class="badge {% if is_full %}bg-danger{% elif tour.tour_status == 'closed' %}bg-secondary{% else %}bg-success{% endif %}">
+{{ 'full' if is_full else (tour.tour_status or 'open') }}
+</span>
+</div>
+<form method="POST" class="d-flex gap-2">
+<input type="hidden" name="action" value="update_tour_status">
+<input type="hidden" name="tour_id" value="{{ tour.id }}">
+<select name="tour_status" class="form-select form-select-sm">
+<option value="open" {% if (tour.tour_status or 'open') == 'open' %}selected{% endif %}>Open</option>
+<option value="full" {% if tour.tour_status == 'full' %}selected{% endif %}>Full</option>
+<option value="closed" {% if tour.tour_status == 'closed' %}selected{% endif %}>Closed</option>
+</select>
+<button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
+</form>
+<form method="POST" enctype="multipart/form-data" class="mt-2">
+<input type="hidden" name="action" value="update_tour_image">
+<input type="hidden" name="tour_id" value="{{ tour.id }}">
+<label class="form-label small fw-semibold mb-1">Change Tour Image</label>
+<div class="d-flex gap-2">
+<input type="file" name="tour_image" class="form-control form-control-sm" accept="image/*" required>
+<button class="btn btn-sm btn-outline-success" type="submit">Upload</button>
+</div>
+</form>
 
 </div>
 </div>
 </div>
 {% endfor %}
+</div>
+
+<div class="card p-3 shadow-sm mt-4">
+  <h5 class="fw-bold mb-3">Tour-wise Booking Summary</h5>
+  {% if tour_booking_summaries %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Tour</th>
+          <th>App Bookings</th>
+          <th>App Pax</th>
+          <th>Paid App Bookings</th>
+          <th>Paid App Pax</th>
+          <th>External Bookings</th>
+          <th>External Pax</th>
+          <th>Total Pax</th>
+          <th>Capacity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tour_booking_summaries %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ row.title }}</div>
+            <div class="small text-muted text-capitalize">{{ row.tour_status or 'open' }}</div>
+          </td>
+          <td>{{ row.internal_booking_count }}</td>
+          <td>{{ row.internal_pax }}</td>
+          <td>{{ row.paid_booking_count }}</td>
+          <td>{{ row.paid_pax }}</td>
+          <td>{{ row.external_booking_count }}</td>
+          <td>{{ row.external_pax }}</td>
+          <td><strong>{{ row.total_pax_count }}</strong></td>
+          <td>{% if row.max_group_size %}{{ row.max_group_size }}{% else %}-{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted small">No tours found for booking summary.</div>
+  {% endif %}
+</div>
+
+<div class="card p-3 shadow-sm mt-4">
+  <h5 class="fw-bold mb-3">Add Outside Booking (Manual Entry)</h5>
+  <form method="POST" class="row g-2 align-items-end">
+    <input type="hidden" name="action" value="add_external_booking">
+    <div class="col-md-3">
+      <label class="form-label small">Tour</label>
+      <select name="tour_id" class="form-select" required>
+        <option value="">Select Tour</option>
+        {% for t in tours %}
+        <option value="{{ t.id }}">{{ t.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Traveler Name</label>
+      <input type="text" name="traveler_name" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Contact</label>
+      <input type="text" name="contact_number" class="form-control">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label small">Pax</label>
+      <input type="number" name="pax_count" min="1" class="form-control" value="1" required>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Amount</label>
+      <input type="number" name="amount_received" min="0" step="0.01" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Notes</label>
+      <input type="text" name="notes" class="form-control" maxlength="255">
+    </div>
+    <div class="col-md-12 d-grid">
+      <button class="btn btn-outline-success">Save External Booking</button>
+    </div>
+  </form>
 </div>
 </div>
 
@@ -102,18 +239,56 @@
 <h3 class="fw-bold mb-3">Hierarchy Library</h3>
 
 <div class="row g-3 mb-4">
-<div class="col-md-4">
-<button class="btn btn-dark w-100" data-bs-toggle="modal" data-bs-target="#stateModal">Add State</button>
+<div class="col-md-6">
+<button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#cityModal">Add City</button>
 </div>
-<div class="col-md-4">
-<button class="btn btn-dark w-100" data-bs-toggle="modal" data-bs-target="#cityModal">Add City</button>
-</div>
-<div class="col-md-4">
-<button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#spotModal">Add Spot</button>
+<div class="col-md-6">
+<button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#spotModal">Request New Spot</button>
 </div>
 </div>
 
+<div class="alert alert-info">
+Spot creation and spot image changes now require admin approval. Submit request from here, then wait for admin action.
+</div>
+
+<div class="card p-3 shadow-sm mb-4">
+<h6 class="fw-bold mb-2">Bulk Import Spots (CSV + Photo Filename)</h6>
+<p class="small text-muted mb-2">
+CSV columns: <code>spot_name</code> (required), <code>state_name</code>, <code>city_name</code>, <code>image_file</code> or external <code>image_url</code>, <code>latitude</code>, <code>longitude</code>.
+If using local photo, keep the file in <code>static/uploads/spots/</code> (or <code>static/uploads/</code>) and set <code>image_file</code> to its filename.
+</p>
+<form method="POST" enctype="multipart/form-data" class="row g-2 align-items-end">
+<input type="hidden" name="action" value="add_spots_csv">
+<div class="col-md-5">
+<label class="form-label small">CSV File</label>
+<input type="file" name="spots_csv" class="form-control" accept=".csv" required>
+</div>
+<div class="col-md-3">
+<label class="form-label small">Default State</label>
+<select id="defaultCityState" class="form-select">
+<option value="">Select state</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small">Default City (optional fallback)</label>
+<select name="default_city_id" id="defaultCity" class="form-select" data-require-state="1">
+<option value="">Select city</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-2 d-grid">
+<button class="btn btn-success">Import</button>
+</div>
+</form>
+</div>
+
 <div class="card p-4 shadow-sm">
+<div class="table-responsive">
 <table class="table table-hover align-middle">
 
 <thead class="table-dark">
@@ -122,6 +297,7 @@
 <th>City</th>
 <th>Spot</th>
 <th>Image</th>
+<th>Update Image</th>
 </tr>
 </thead>
 
@@ -132,14 +308,81 @@
 <td>{{ s.city_name }}</td>
 <td>{{ s.spot_name }}</td>
 <td>
-<img src="{{ url_for('static', filename='uploads/' + (s.image_url or 'demo.jpg')) }}"
+{% if s.photo_source == 'external_url' %}
+<img src="{{ s.image_url }}"
+onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
 width="50" height="50" class="rounded">
+{% else %}
+<img src="{{ url_for('static', filename='uploads/' + (s.image_url or 'demo.jpg')) }}"
+onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+width="50" height="50" class="rounded">
+{% endif %}
+</td>
+<td style="min-width:290px;">
+<form method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-1">
+<input type="hidden" name="action" value="update_spot_image">
+<input type="hidden" name="spot_id" value="{{ s.spot_id }}">
+<input type="file" name="spot_image" class="form-control form-control-sm" accept="image/*">
+<input type="url" name="external_image_url" class="form-control form-control-sm" placeholder="Or external image URL">
+<button class="btn btn-sm btn-outline-primary" type="submit">Submit Image Change Request</button>
+</form>
 </td>
 </tr>
 {% endfor %}
 </tbody>
 
 </table>
+</div>
+</div>
+
+<div class="card p-4 shadow-sm mt-4">
+<h6 class="fw-bold mb-2">My Spot/Image Requests</h6>
+{% if spot_requests %}
+<div class="table-responsive">
+<table class="table table-sm table-hover align-middle">
+<thead class="table-light">
+<tr>
+<th>ID</th>
+<th>Request Type</th>
+<th>Spot</th>
+<th>Location</th>
+<th>Status</th>
+<th>Submitted</th>
+<th>Admin Note</th>
+</tr>
+</thead>
+<tbody>
+{% for req in spot_requests %}
+<tr>
+<td>#{{ req.id }}</td>
+<td>
+{% if req.request_type == 'add_spot' %}
+<span class="badge bg-primary">Add Spot</span>
+{% else %}
+<span class="badge bg-warning text-dark">Update Spot Image</span>
+{% endif %}
+</td>
+<td>{{ req.spot_name }}</td>
+<td>{{ req.city_name or '-' }}{% if req.state_name %}, {{ req.state_name }}{% endif %}</td>
+<td>
+{% if req.status == 'approved' %}
+<span class="badge bg-success">approved</span>
+{% elif req.status == 'rejected' %}
+<span class="badge bg-danger">rejected</span>
+{% else %}
+<span class="badge bg-secondary">pending</span>
+{% endif %}
+</td>
+<td><small>{{ req.created_at }}</small></td>
+<td>{{ req.admin_note or '-' }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<div class="text-muted small">No spot/image requests yet.</div>
+{% endif %}
 </div>
 </div>
 
@@ -157,13 +400,25 @@ width="50" height="50" class="rounded">
 <div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Paid</div><div class="fw-bold fs-4">{{ analytics.paid_bookings }}</div></div>
 </div>
 <div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Full Tours</div><div class="fw-bold fs-4">{{ analytics.full_tours }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">External Bookings</div><div class="fw-bold fs-4">{{ analytics.external_bookings }}</div></div>
+</div>
+<div class="col-md-4 col-lg-2">
 <div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Spots</div><div class="fw-bold fs-4">{{ analytics.total_spots }}</div></div>
 </div>
-<div class="col-md-4 col-lg-2">
+<div class="col-md-4 col-lg-1">
 <div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Hotels</div><div class="fw-bold fs-4">{{ analytics.partner_hotels }}</div></div>
 </div>
-<div class="col-md-4 col-lg-2">
-<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Transport</div><div class="fw-bold fs-4">{{ analytics.partner_transport }}</div></div>
+<div class="col-md-4 col-lg-1">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Transport Added</div><div class="fw-bold fs-4">{{ analytics.partner_transport }}</div></div>
+</div>
+<div class="col-md-6 col-lg-3">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Total Organizer Profit</div><div class="fw-bold fs-4">₹{{ analytics.total_profit }}</div></div>
+</div>
+<div class="col-md-6 col-lg-3">
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Admin Commission (1%)</div><div class="fw-bold fs-4">₹{{ analytics.total_admin_commission }}</div></div>
 </div>
 </div>
 
@@ -176,7 +431,9 @@ width="50" height="50" class="rounded">
 <div class="card p-3 shadow-sm h-100">
 <h6 class="fw-bold mb-3">Tours By Month</h6>
 {% if analytics.charts.tours_by_month %}
+<div class="chart-wrap">
 <img class="chart-img" src="data:image/png;base64,{{ analytics.charts.tours_by_month }}" alt="Tours by month chart">
+</div>
 {% else %}
 <div class="text-muted small">Not enough data yet.</div>
 {% endif %}
@@ -186,7 +443,9 @@ width="50" height="50" class="rounded">
 <div class="card p-3 shadow-sm h-100">
 <h6 class="fw-bold mb-3">Booking Status Split</h6>
 {% if analytics.charts.booking_status %}
+<div class="chart-wrap">
 <img class="chart-img" src="data:image/png;base64,{{ analytics.charts.booking_status }}" alt="Booking status chart">
+</div>
 {% else %}
 <div class="text-muted small">Not enough data yet.</div>
 {% endif %}
@@ -196,9 +455,41 @@ width="50" height="50" class="rounded">
 <div class="card p-3 shadow-sm">
 <h6 class="fw-bold mb-3">Travel Mode Distribution</h6>
 {% if analytics.charts.travel_mode %}
+<div class="chart-wrap">
 <img class="chart-img" src="data:image/png;base64,{{ analytics.charts.travel_mode }}" alt="Travel mode chart">
+</div>
 {% else %}
 <div class="text-muted small">Not enough data yet.</div>
+{% endif %}
+</div>
+</div>
+
+<div class="col-12">
+<div class="card p-3 shadow-sm">
+<h6 class="fw-bold mb-3">Outside Booking Entries</h6>
+{% if external_bookings %}
+<div class="table-responsive">
+<table class="table table-sm align-middle mb-0">
+<thead>
+<tr><th>Date</th><th>Tour</th><th>Traveler</th><th>Pax</th><th>Amount</th><th>Commission</th><th>Earning</th></tr>
+</thead>
+<tbody>
+{% for eb in external_bookings[:20] %}
+<tr>
+<td>{{ eb.created_at }}</td>
+<td>{{ eb.title }}</td>
+<td>{{ eb.traveler_name }}</td>
+<td>{{ eb.pax_count }}</td>
+<td>₹{{ eb.amount_received }}</td>
+<td>₹{{ eb.admin_commission }}</td>
+<td>₹{{ eb.organizer_earning }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<div class="text-muted small">No external bookings yet.</div>
 {% endif %}
 </div>
 </div>
@@ -224,21 +515,6 @@ width="50" height="50" class="rounded">
 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 </div>
 </div>
-</div>
-</div>
-
-<div class="modal fade" id="stateModal">
-<div class="modal-dialog">
-<form class="modal-content" method="POST">
-<input type="hidden" name="action" value="add_state">
-<div class="modal-header"><h5>Add State</h5></div>
-<div class="modal-body">
-<input type="text" name="state_name" class="form-control" placeholder="Example: Gujarat" required>
-</div>
-<div class="modal-footer">
-<button class="btn btn-primary">Save</button>
-</div>
-</form>
 </div>
 </div>
 
@@ -270,25 +546,45 @@ width="50" height="50" class="rounded">
 <form class="modal-content" method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="add_spot">
 
-<div class="modal-header"><h5>Add Tourist Spot</h5></div>
+<div class="modal-header"><h5>Request Tourist Spot</h5></div>
 
 <div class="modal-body">
 
-<select name="city_id" class="form-select mb-3" required>
+<select id="spotCityState" class="form-select mb-2" required>
+<option value="">Select State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+
+<select name="city_id" id="spotCity" class="form-select mb-3" data-require-state="1" required>
 <option value="">Select City</option>
 {% for c in cities %}
-<option value="{{ c.id }}">{{ c.state_name }} ➜ {{ c.city_name }}</option>
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
 {% endfor %}
 </select>
 
 <input type="text" name="spot_name" class="form-control mb-3" placeholder="Example: City Palace">
 
+<div class="row g-2 mb-3">
+<div class="col-md-6">
+<input type="text" id="spotLatitudeInput" name="latitude" class="form-control" placeholder="Latitude (optional)">
+</div>
+<div class="col-md-6">
+<input type="text" id="spotLongitudeInput" name="longitude" class="form-control" placeholder="Longitude (optional)">
+</div>
+</div>
+<div id="spotLocationMap" class="spot-location-map mb-2"></div>
+<div class="spot-location-help mb-3">Click on the map to set spot coordinates inside India.</div>
+
 <input type="file" name="spot_image" class="form-control" accept="image/*">
+<input type="url" name="external_image_url" class="form-control mt-2" placeholder="Or paste external image URL (https://...)">
+<div class="small text-muted mt-2">This request will be reviewed by admin before adding to database.</div>
 
 </div>
 
 <div class="modal-footer">
-<button class="btn btn-primary">Save</button>
+<button class="btn btn-primary">Submit Request</button>
 </div>
 </form>
 </div>
@@ -353,7 +649,7 @@ width="50" height="50" class="rounded">
 <div class="row g-3 mb-3">
 <div class="col-md-6">
 <label class="form-label small fw-semibold">Pickup State</label>
-<select name="pickup_state_id" id="pickupState" class="form-select city-state-control">
+<select name="pickup_state_id" id="pickupState" class="form-select city-state-control" required>
 <option value="">Select Pickup State</option>
 {% for s in states %}
 <option value="{{ s.id }}">{{ s.state_name }}</option>
@@ -362,7 +658,7 @@ width="50" height="50" class="rounded">
 </div>
 <div class="col-md-6">
 <label class="form-label small fw-semibold">Pickup City</label>
-<select name="pickup_city_id" id="pickupCity" class="form-select city-control">
+<select name="pickup_city_id" id="pickupCity" class="form-select city-control" data-require-state="1" required>
 <option value="">Select Pickup City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -374,7 +670,7 @@ width="50" height="50" class="rounded">
 <div class="row g-3 mb-3">
 <div class="col-md-6">
 <label class="form-label small fw-semibold">Drop State</label>
-<select name="drop_state_id" id="dropState" class="form-select city-state-control">
+<select name="drop_state_id" id="dropState" class="form-select city-state-control" required>
 <option value="">Select Drop State</option>
 {% for s in states %}
 <option value="{{ s.id }}">{{ s.state_name }}</option>
@@ -383,7 +679,7 @@ width="50" height="50" class="rounded">
 </div>
 <div class="col-md-6">
 <label class="form-label small fw-semibold">Drop City</label>
-<select name="drop_city_id" id="dropCity" class="form-select city-control">
+<select name="drop_city_id" id="dropCity" class="form-select city-control" data-require-state="1" required>
 <option value="">Select Drop City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -417,12 +713,20 @@ width="50" height="50" class="rounded">
 </div>
 <div class="col-md-4">
 <label class="form-label small fw-semibold">Max Group Size</label>
-<input type="number" name="max_group_size" class="form-control" min="1" placeholder="e.g. 20">
+<input type="number" name="max_group_size" class="form-control" min="1" placeholder="e.g. 20" required>
 </div>
 </div>
 
 <div class="row g-3 mb-3">
-<div class="col-md-6">
+<div class="col-md-4">
+<label class="form-label small fw-semibold">Minimum People To Start Tour (Info Only)</label>
+<input type="number" name="start_min_people" class="form-control" min="1" value="6">
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-semibold">Child Price (% of Base Fare)</label>
+<input type="number" name="child_price_percent" class="form-control" min="0" max="100" step="0.01" value="100">
+</div>
+<div class="col-md-4">
 <label class="form-label small fw-semibold">Difficulty</label>
 <select name="difficulty_level" class="form-select">
 <option value="">Select Difficulty</option>
@@ -431,10 +735,23 @@ width="50" height="50" class="rounded">
 <option value="Challenging">Challenging</option>
 </select>
 </div>
+</div>
+
+<div class="row g-3 mb-3">
 <div class="col-md-6">
+<label class="form-label small fw-semibold">Tour Departure Date & Time</label>
+<input type="datetime-local" name="departure_datetime" class="form-control">
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-semibold">Tour Return Date & Time</label>
+<input type="datetime-local" name="return_datetime" class="form-control">
+</div>
+</div>
+
+<div class="mb-3">
 <label class="form-label small fw-semibold">Transport Details</label>
 <input type="text" name="transport_details" class="form-control" placeholder="AC coach + local cab">
-</div>
+<div class="small text-muted mt-1">Optional: if empty, selected partner transport names are auto-saved here.</div>
 </div>
 
 <div class="mb-3">
@@ -448,6 +765,10 @@ width="50" height="50" class="rounded">
 <div>
 <label class="form-label small fw-semibold">Hotel / Stay Notes</label>
 <textarea name="hotel_notes" class="form-control" rows="2" placeholder="Stay category, check-in policy, room sharing..."></textarea>
+</div>
+<div class="mt-3">
+<label class="form-label small fw-semibold">Terms & Conditions (Minimum person, cancellation, etc.)</label>
+<textarea name="terms_conditions" class="form-control" rows="3" placeholder="Mention minimum travelers required, cancellation policy, timing rules..."></textarea>
 </div>
 </div>
 </div>
@@ -472,7 +793,7 @@ width="50" height="50" class="rounded">
 </select>
 </div>
 <div class="col-md-6">
-<select id="hotelFilterCity" class="form-select">
+<select id="hotelFilterCity" class="form-select" data-require-state="1">
 <option value="">Filter Hotels by City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -493,42 +814,14 @@ width="50" height="50" class="rounded">
 {% endif %}
 </div>
 
-<h6 class="fw-bold mb-3">Partner Transport (Optional)</h6>
-<div class="row g-2 mb-3">
-<div class="col-md-6">
-<select id="transportFilterState" class="form-select">
-<option value="">Filter Transport by State</option>
-{% for s in states %}
-<option value="{{ s.id }}">{{ s.state_name }}</option>
-{% endfor %}
-</select>
-</div>
-<div class="col-md-6">
-<select id="transportFilterCity" class="form-select">
-<option value="">Filter Transport by City</option>
-{% for c in cities %}
-<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
-{% endfor %}
-</select>
-</div>
-</div>
-<div id="transportLinkList" class="hotel-link-list border rounded p-2">
-{% if transport_options %}
-{% for t in transport_options %}
-<label class="transport-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ t.state_id or '' }}" data-city-id="{{ t.city_id or '' }}">
-<input class="form-check-input m-0" type="checkbox" name="linked_transport[]" value="{{ t.service_id }}">
-<span class="small">
-{{ t.service_name }} - {{ t.transport_type }}{% if t.vehicle_model %} ({{ t.vehicle_model }}){% endif %}
-{% if t.seating_capacity %} | Seats: {{ t.seating_capacity }}{% endif %}
-{% if t.price_per_day %} | ₹{{ t.price_per_day }}/day{% endif %}
-{% if t.driver_available %} | Driver Included{% endif %}
-</span>
-</label>
-{% endfor %}
-{% else %}
-<div class="text-muted small">No verified transport options found yet.</div>
-{% endif %}
-</div>
+<h6 class="fw-bold mb-2">Night Stay Plan (Required if hotel linked)</h6>
+<p class="small text-muted mb-2">
+Mention exact check-in/check-out dates per hotel. This is shown to travelers on booking page.
+</p>
+<div id="hotel-stay-list"></div>
+<button type="button" class="btn btn-outline-secondary btn-sm mb-4" onclick="addHotelStayRow()">
+  + Add Night Stay
+</button>
 
 <h6 class="fw-bold mt-4 mb-3">Partner Guides (Optional)</h6>
 <div class="row g-2 mb-3">
@@ -541,7 +834,7 @@ width="50" height="50" class="rounded">
 </select>
 </div>
 <div class="col-md-6">
-<select id="guideFilterCity" class="form-select">
+<select id="guideFilterCity" class="form-select" data-require-state="1">
 <option value="">Filter Guides by City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -561,6 +854,48 @@ width="50" height="50" class="rounded">
 <div class="text-muted small">No guide services found yet.</div>
 {% endif %}
 </div>
+
+<h6 class="fw-bold mt-4 mb-3">Partner Transports (Optional)</h6>
+<div class="row g-2 mb-3">
+<div class="col-md-6">
+<select id="transportFilterState" class="form-select">
+<option value="">Filter Transport by State</option>
+{% for s in states %}
+<option value="{{ s.id }}">{{ s.state_name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-6">
+<select id="transportFilterCity" class="form-select" data-require-state="1">
+<option value="">Filter Transport by City</option>
+{% for c in cities %}
+<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+{% endfor %}
+</select>
+</div>
+</div>
+<div id="transportLinkList" class="hotel-link-list border rounded p-2">
+{% if transport_options %}
+{% for tr in transport_options %}
+{% set tr_img = tr.vehicle_image_url if tr.vehicle_image_url and (tr.vehicle_image_url.startswith('http://') or tr.vehicle_image_url.startswith('https://')) else url_for('static', filename='uploads/' ~ (tr.vehicle_image_url or 'demo.jpg')) %}
+<label class="transport-link-item d-flex align-items-center gap-2 mb-2" data-state-id="{{ tr.state_id or '' }}" data-city-id="{{ tr.city_id or '' }}">
+<input class="form-check-input m-0" type="checkbox" name="linked_transports[]" value="{{ tr.service_id }}">
+<img src="{{ tr_img }}" alt="{{ tr.service_name }}" style="width:60px;height:40px;object-fit:cover;border-radius:8px;"
+onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+<span class="small">{{ tr.service_name }}{% if tr.transport_type %} | {{ tr.transport_type }}{% endif %}{% if tr.city_name %} - {{ tr.city_name }}{% endif %}{% if tr.state_name %}, {{ tr.state_name }}{% endif %}</span>
+</label>
+{% endfor %}
+{% else %}
+<div class="text-muted small">No transport services found yet.</div>
+{% endif %}
+</div>
+
+<h6 class="fw-bold mt-4 mb-2">City-wise Schedule (Arrival / Departure Time)</h6>
+<p class="small text-muted mb-2">Optional detailed schedule for route cities.</p>
+<div id="city-schedule-list"></div>
+<button type="button" class="btn btn-outline-secondary btn-sm" onclick="addCityScheduleRow()">
+  + Add City Schedule
+</button>
 </div>
 </div>
 </div>
@@ -584,7 +919,7 @@ width="50" height="50" class="rounded">
 </select>
 </div>
 <div class="col-md-6">
-<select id="spotFilterCity" class="form-select">
+<select id="spotFilterCity" class="form-select" data-require-state="1">
 <option value="">Filter Spots by City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -614,6 +949,7 @@ width="50" height="50" class="rounded">
 </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script id="spots-json" type="application/json">{{ spots|tojson }}</script>
 <script>
 let SPOTS = [];
@@ -636,17 +972,144 @@ el.addEventListener('change', handler);
 }
 }
 
-function updateCityOptions(stateId, citySelectId){
-const citySelect = document.getElementById(citySelectId);
+const INDIA_COORD_BOUNDS = {
+south: 6.4627,
+west: 68.1097,
+north: 37.0841,
+east: 97.3956
+};
+
+function parseCoordinate(value){
+const num = Number(value);
+return Number.isFinite(num) ? num : null;
+}
+
+function isIndiaCoordinate(lat, lng){
+return lat !== null
+&& lng !== null
+&& lat >= INDIA_COORD_BOUNDS.south
+&& lat <= INDIA_COORD_BOUNDS.north
+&& lng >= INDIA_COORD_BOUNDS.west
+&& lng <= INDIA_COORD_BOUNDS.east;
+}
+
+let spotMap = null;
+let spotMarker = null;
+let spotMapIndiaBounds = null;
+
+function getSpotCoordinateInputs(){
+return {
+latInput: document.getElementById('spotLatitudeInput'),
+lngInput: document.getElementById('spotLongitudeInput')
+};
+}
+
+function setSpotCoordinateInputs(lat, lng){
+const { latInput, lngInput } = getSpotCoordinateInputs();
+if(!latInput || !lngInput) return;
+latInput.value = Number(lat).toFixed(6);
+lngInput.value = Number(lng).toFixed(6);
+}
+
+function setSpotMarker(lat, lng, panTo){
+if(!spotMap) return;
+if(!spotMarker){
+spotMarker = L.marker([lat, lng], { draggable: true }).addTo(spotMap);
+spotMarker.on('dragend', function(){
+const point = spotMarker.getLatLng();
+if(!isIndiaCoordinate(point.lat, point.lng)){
+return;
+}
+setSpotCoordinateInputs(point.lat, point.lng);
+});
+}else{
+spotMarker.setLatLng([lat, lng]);
+}
+if(panTo){
+spotMap.panTo([lat, lng]);
+}
+}
+
+function syncSpotMarkerFromInputs(){
+const { latInput, lngInput } = getSpotCoordinateInputs();
+if(!latInput || !lngInput){
+return;
+}
+const lat = parseCoordinate(latInput.value);
+const lng = parseCoordinate(lngInput.value);
+if(!isIndiaCoordinate(lat, lng)){
+return;
+}
+setSpotMarker(lat, lng, false);
+}
+
+function initSpotMap(){
+if(spotMap || !window.L){
+return;
+}
+const mapEl = document.getElementById('spotLocationMap');
+if(!mapEl){
+return;
+}
+spotMapIndiaBounds = L.latLngBounds(
+L.latLng(INDIA_COORD_BOUNDS.south, INDIA_COORD_BOUNDS.west),
+L.latLng(INDIA_COORD_BOUNDS.north, INDIA_COORD_BOUNDS.east)
+);
+spotMap = L.map('spotLocationMap', {
+maxBounds: spotMapIndiaBounds,
+maxBoundsViscosity: 1.0,
+minZoom: 4
+});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+maxZoom: 18,
+attribution: '&copy; OpenStreetMap contributors'
+}).addTo(spotMap);
+spotMap.fitBounds(spotMapIndiaBounds, { padding: [14, 14] });
+spotMap.on('click', function(evt){
+const lat = Number(evt.latlng.lat);
+const lng = Number(evt.latlng.lng);
+if(!isIndiaCoordinate(lat, lng)){
+return;
+}
+setSpotMarker(lat, lng, true);
+setSpotCoordinateInputs(lat, lng);
+});
+
+const { latInput, lngInput } = getSpotCoordinateInputs();
+if(latInput){
+latInput.addEventListener('input', syncSpotMarkerFromInputs);
+}
+if(lngInput){
+lngInput.addEventListener('input', syncSpotMarkerFromInputs);
+}
+syncSpotMarkerFromInputs();
+}
+
+function updateCityOptions(stateId, citySelectRef){
+const citySelect = typeof citySelectRef === 'string'
+? document.getElementById(citySelectRef)
+: citySelectRef;
 if(!citySelect) return;
+const normalizedStateId = String(stateId || '');
+const requireState = citySelect.dataset.requireState === '1';
+const hasState = !!normalizedStateId;
 const options = citySelect.querySelectorAll('option[data-state-id]');
 options.forEach(opt => {
-const visible = !stateId || opt.dataset.stateId === stateId;
+const optionStateId = String(opt.dataset.stateId || '');
+const visible = requireState ? (hasState && optionStateId === normalizedStateId) : (!hasState || optionStateId === normalizedStateId);
 opt.hidden = !visible;
+opt.disabled = !visible;
+opt.style.display = visible ? '' : 'none';
 });
+if(requireState){
+citySelect.disabled = !hasState;
+if(!hasState){
+citySelect.value = '';
+}
+}
 if(citySelect.value){
 const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
-if(selected && selected.hidden){
+if(selected && (selected.hidden || selected.disabled)){
 citySelect.value = '';
 }
 }
@@ -660,15 +1123,35 @@ const stateOk = !stateId || item.dataset.stateId === stateId;
 const cityOk = !cityId || item.dataset.cityId === cityId;
 item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
 });
+refreshHotelStayHotelOptions();
 }
 
-function filterTransportLinks(){
-const stateId = getValueById('transportFilterState');
-const cityId = getValueById('transportFilterCity');
-document.querySelectorAll('#transportLinkList .transport-link-item').forEach((item) => {
-const stateOk = !stateId || item.dataset.stateId === stateId;
-const cityOk = !cityId || item.dataset.cityId === cityId;
-item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+function getCheckedHotelIds(){
+return Array.from(document.querySelectorAll('input[name="linked_hotels[]"]:checked')).map((el) => String(el.value));
+}
+
+function getHotelStayOptionsMarkup(selectedHotel){
+const selectedIds = getCheckedHotelIds();
+const selectedSet = new Set(selectedIds);
+let options = '<option value="">Select Linked Hotel</option>';
+document.querySelectorAll('#hotelLinkList input[name="linked_hotels[]"]').forEach((checkbox) => {
+const label = checkbox.closest('label');
+const textSpan = label ? label.querySelector('span') : null;
+const optionText = textSpan ? textSpan.textContent.trim() : checkbox.value;
+const shouldShow = selectedIds.length === 0 || selectedSet.has(String(checkbox.value));
+if(!shouldShow){
+return;
+}
+const selected = String(selectedHotel || '') === String(checkbox.value) ? ' selected' : '';
+options += `<option value="${checkbox.value}"${selected}>${optionText}</option>`;
+});
+return options;
+}
+
+function refreshHotelStayHotelOptions(){
+document.querySelectorAll('#hotel-stay-list select[name="hotel_stay_service_ids[]"]').forEach((selectEl) => {
+const current = selectEl.value;
+selectEl.innerHTML = getHotelStayOptionsMarkup(current);
 });
 }
 
@@ -676,6 +1159,16 @@ function filterGuideLinks(){
 const stateId = getValueById('guideFilterState');
 const cityId = getValueById('guideFilterCity');
 document.querySelectorAll('#guideLinkList .guide-link-item').forEach((item) => {
+const stateOk = !stateId || item.dataset.stateId === stateId;
+const cityOk = !cityId || item.dataset.cityId === cityId;
+item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+});
+}
+
+function filterTransportLinks(){
+const stateId = getValueById('transportFilterState');
+const cityId = getValueById('transportFilterCity');
+document.querySelectorAll('#transportLinkList .transport-link-item').forEach((item) => {
 const stateOk = !stateId || item.dataset.stateId === stateId;
 const cityOk = !cityId || item.dataset.cityId === cityId;
 item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
@@ -719,7 +1212,7 @@ container.innerHTML+=`
 <div class="row g-2">
 
 <div class="col-md-2">
-<input type="number" name="day_numbers[]" class="form-control" value="1" required>
+<input type="number" name="day_numbers[]" class="form-control" value="1" min="1" required>
 </div>
 
 <div class="col-md-4">
@@ -736,7 +1229,122 @@ container.innerHTML+=`
 refreshItinerarySpotOptions();
 }
 
+function addHotelStayRow(){
+const container = document.getElementById('hotel-stay-list');
+if(!container) return;
+container.innerHTML += `
+<div class="card p-3 mb-2">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Hotel</label>
+      <select name="hotel_stay_service_ids[]" class="form-select" required></select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Check-in</label>
+      <input type="date" name="hotel_stay_check_ins[]" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Check-out</label>
+      <input type="date" name="hotel_stay_check_outs[]" class="form-control" required>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Stay Notes</label>
+      <input type="text" name="hotel_stay_notes[]" class="form-control" maxlength="255"
+             placeholder="Room sharing / meal plan">
+    </div>
+    <div class="col-md-1">
+      <button type="button" class="btn btn-danger w-100" onclick="this.closest('.card').remove()">X</button>
+    </div>
+  </div>
+</div>`;
+refreshHotelStayHotelOptions();
+}
+
+function getCityScheduleStateOptionsMarkup(selectedState){
+  let options = '<option value="">Select State</option>';
+  const seen = new Set();
+  document.querySelectorAll('#spotFilterState option').forEach((opt) => {
+    const stateId = String(opt.value || '');
+    if(!stateId || seen.has(stateId)){
+      return;
+    }
+    seen.add(stateId);
+    const selected = String(selectedState || '') === stateId ? ' selected' : '';
+    options += `<option value="${stateId}"${selected}>${opt.textContent.trim()}</option>`;
+  });
+  return options;
+}
+
+function getCityScheduleOptionsMarkup(selectedCity){
+  let options = '<option value="">Select City</option>';
+  const seen = new Set();
+  document.querySelectorAll('#spotFilterCity option[data-state-id]').forEach((opt) => {
+    const key = String(opt.value || '');
+    const stateId = String(opt.dataset.stateId || '');
+    if(!key || seen.has(key)){
+      return;
+    }
+    seen.add(key);
+    const selected = String(selectedCity || '') === key ? ' selected' : '';
+    options += `<option value="${key}" data-state-id="${stateId}"${selected}>${opt.textContent.trim()}</option>`;
+  });
+  return options;
+}
+
+function bindCityScheduleRowControls(row){
+  const stateSelect = row.querySelector('.schedule-state-select');
+  const citySelect = row.querySelector('select[name="schedule_city_ids[]"]');
+  if(!stateSelect || !citySelect) return;
+  stateSelect.addEventListener('change', () => updateCityOptions(stateSelect.value, citySelect));
+  updateCityOptions(stateSelect.value, citySelect);
+}
+
+function addCityScheduleRow(){
+  const container = document.getElementById('city-schedule-list');
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'card p-3 mb-2';
+  row.innerHTML = `
+    <div class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label small mb-1">State</label>
+        <select class="form-select schedule-state-select" required>
+          ${getCityScheduleStateOptionsMarkup('')}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">City</label>
+        <select name="schedule_city_ids[]" class="form-select" data-require-state="1" required>
+          ${getCityScheduleOptionsMarkup('')}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Arrival</label>
+        <input type="datetime-local" name="schedule_arrivals[]" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Departure</label>
+        <input type="datetime-local" name="schedule_departures[]" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Note</label>
+        <input type="text" name="schedule_notes[]" class="form-control" maxlength="255" placeholder="Optional">
+      </div>
+      <div class="col-md-1">
+        <button type="button" class="btn btn-danger w-100" onclick="this.closest('.card').remove()">X</button>
+      </div>
+    </div>`;
+  container.appendChild(row);
+  bindCityScheduleRowControls(row);
+}
+
 document.addEventListener('DOMContentLoaded', function(){
+bindChange('defaultCityState', function(){
+updateCityOptions(this.value, 'defaultCity');
+});
+bindChange('spotCityState', function(){
+updateCityOptions(this.value, 'spotCity');
+});
 bindChange('pickupState', function(){
 updateCityOptions(this.value, 'pickupCity');
 });
@@ -748,36 +1356,57 @@ updateCityOptions(this.value, 'hotelFilterCity');
 filterHotelLinks();
 });
 bindChange('hotelFilterCity', filterHotelLinks);
-bindChange('transportFilterState', function(){
-updateCityOptions(this.value, 'transportFilterCity');
-filterTransportLinks();
-});
-bindChange('transportFilterCity', filterTransportLinks);
 bindChange('guideFilterState', function(){
 updateCityOptions(this.value, 'guideFilterCity');
 filterGuideLinks();
 });
 bindChange('guideFilterCity', filterGuideLinks);
+bindChange('transportFilterState', function(){
+updateCityOptions(this.value, 'transportFilterCity');
+filterTransportLinks();
+});
+bindChange('transportFilterCity', filterTransportLinks);
 bindChange('spotFilterState', function(){
 updateCityOptions(this.value, 'spotFilterCity');
 refreshItinerarySpotOptions();
 });
 bindChange('spotFilterCity', refreshItinerarySpotOptions);
 
+const spotModalEl = document.getElementById('spotModal');
+if(spotModalEl){
+spotModalEl.addEventListener('shown.bs.modal', function(){
+initSpotMap();
+if(!spotMap){
+return;
+}
+spotMap.invalidateSize();
+syncSpotMarkerFromInputs();
+if(!spotMarker && spotMapIndiaBounds){
+spotMap.fitBounds(spotMapIndiaBounds, { padding: [14, 14] });
+}
+});
+}
+
+updateCityOptions('', 'defaultCity');
+updateCityOptions('', 'spotCity');
 updateCityOptions('', 'pickupCity');
 updateCityOptions('', 'dropCity');
 updateCityOptions('', 'hotelFilterCity');
-updateCityOptions('', 'transportFilterCity');
 updateCityOptions('', 'guideFilterCity');
+updateCityOptions('', 'transportFilterCity');
 updateCityOptions('', 'spotFilterCity');
 filterHotelLinks();
-filterTransportLinks();
 filterGuideLinks();
+filterTransportLinks();
+document.querySelectorAll('input[name="linked_hotels[]"]').forEach((el) => {
+el.addEventListener('change', refreshHotelStayHotelOptions);
+});
+refreshHotelStayHotelOptions();
 });
 
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
 </body>

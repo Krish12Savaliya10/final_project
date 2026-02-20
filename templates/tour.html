@@ -32,7 +32,7 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <select name="city_id" id="tourCityFilter" class="form-select">
+                    <select name="city_id" id="tourCityFilter" class="form-select" {% if not state_id and not city_id %}disabled{% endif %}>
                         <option value="">All Cities</option>
                         {% for c in cities %}
                         <option value="{{ c.id }}" data-state-id="{{ c.state_id }}" {% if city_id == c.id %}selected{% endif %}>
@@ -53,7 +53,8 @@
                 <div class="card h-100 tour-card">
 
                     <img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
-                         class="card-img-top">
+                         class="card-img-top"
+                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
 
                     <div class="card-body d-flex flex-column">
 
@@ -70,8 +71,13 @@
                         </p>
 
                         <p class="text-muted small flex-grow-1">
-                            {{ tour.description[:120] }}...
+                            {{ (tour.description or '')[:90] }}{% if tour.description and tour.description|length > 90 %}...{% endif %}
                         </p>
+
+                        <div class="tour-points mb-3">
+                            <div class="small"><span class="text-muted">Departure:</span> <span class="fw-semibold">{{ tour.pickup_city_name or tour.start_point }}{% if tour.pickup_state_name %}, {{ tour.pickup_state_name }}{% endif %}</span></div>
+                            <div class="small"><span class="text-muted">Destination:</span> <span class="fw-semibold">{{ tour.drop_city_name or tour.end_point }}{% if tour.drop_state_name %}, {{ tour.drop_state_name }}{% endif %}</span></div>
+                        </div>
 
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             {% if tour.travel_mode %}
@@ -81,22 +87,23 @@
                             <span class="badge bg-light text-success border">Meals: {{ tour.food_plan }}</span>
                             {% endif %}
                             {% if tour.linked_hotels_count %}
-                            <span class="badge bg-warning text-dark">Hotels: {{ tour.linked_hotels_count }}</span>
-                            {% endif %}
-                            {% if tour.linked_transport_count %}
-                            <span class="badge bg-info text-dark">Transport: {{ tour.linked_transport_count }}</span>
+                            <span class="badge bg-warning text-dark">Stay Included</span>
                             {% endif %}
                             {% if tour.linked_guides_count %}
                             <span class="badge bg-secondary">Guides: {{ tour.linked_guides_count }}</span>
                             {% endif %}
                         </div>
-
-                        <p class="text-muted small mb-2">
-                            <i class="bi bi-signpost-2"></i>
-                            {{ tour.pickup_city_name or tour.start_point }}{% if tour.pickup_state_name %}, {{ tour.pickup_state_name }}{% endif %}
-                            →
-                            {{ tour.drop_city_name or tour.end_point }}{% if tour.drop_state_name %}, {{ tour.drop_state_name }}{% endif %}
-                        </p>
+                        {% if tour.transport_details %}
+                        <div class="small text-muted mb-2"><span class="fw-semibold">Transport Details:</span> {{ tour.transport_details }}</div>
+                        {% endif %}
+                        {% if tour.transport_vehicle_image %}
+                        {% set tr_img = tour.transport_vehicle_image if tour.transport_vehicle_image.startswith('http://') or tour.transport_vehicle_image.startswith('https://') else url_for('static', filename='uploads/' ~ tour.transport_vehicle_image) %}
+                        <img src="{{ tr_img }}"
+                             class="img-fluid rounded border mb-2"
+                             style="height:72px; width:100%; object-fit:cover;"
+                             alt="Transport vehicle"
+                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+                        {% endif %}
 
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
 
@@ -106,7 +113,7 @@
                             </div>
 
                             <a href="{{ url_for('booking', tour_id=tour.id) }}" class="btn join-btn">
-                                Join Tour
+                                View Full Details
                             </a>
 
                         </div>
@@ -129,15 +136,34 @@
 
 <script>
 function updateTourCityFilter(){
-const stateId = document.getElementById('tourStateFilter')?.value || '';
+const stateSelect = document.getElementById('tourStateFilter');
 const citySelect = document.getElementById('tourCityFilter');
-if(!citySelect) return;
+if(!stateSelect || !citySelect) return;
+
+let stateId = stateSelect.value || '';
+if(!stateId && citySelect.value){
+const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
+if(selected && selected.dataset.stateId){
+stateId = selected.dataset.stateId;
+stateSelect.value = stateId;
+}
+}
+
+const hasState = !!stateId;
 citySelect.querySelectorAll('option[data-state-id]').forEach((opt) => {
-opt.hidden = !!stateId && opt.dataset.stateId !== stateId;
+const visible = hasState && opt.dataset.stateId === stateId;
+opt.hidden = !visible;
+opt.disabled = !visible;
+opt.style.display = visible ? '' : 'none';
 });
+citySelect.disabled = !hasState;
+if(!hasState){
+citySelect.value = '';
+return;
+}
 if(citySelect.value){
 const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
-if(selected && selected.hidden){
+if(selected && (selected.hidden || selected.disabled)){
 citySelect.value = '';
 }
 }

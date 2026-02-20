@@ -1,0 +1,171 @@
+{% extends "layout.html" %}
+{% block title %}TourGen | Feedback & Issues{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Feedback & Issue Desk</h2>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div class="alert alert-info">{{ messages[0] }}</div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">Submit Review</h5>
+          <form method="POST" class="row g-2">
+            <input type="hidden" name="action" value="submit_review">
+            <div class="col-md-5">
+              <label class="form-label">Target Type</label>
+              <select name="target_type" id="reviewTargetType" class="form-select">
+                <option value="platform">Platform</option>
+                <option value="tour">Tour</option>
+                <option value="hotel">Hotel</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Rating</label>
+              <select name="rating" class="form-select" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Target</label>
+              <select name="target_id" id="reviewTargetId" class="form-select">
+                <option value="">Platform (General)</option>
+              </select>
+              <script id="tour-targets-json" type="application/json">{{ tour_targets|tojson }}</script>
+              <script id="hotel-targets-json" type="application/json">{{ hotel_targets|tojson }}</script>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Review</label>
+              <textarea name="review_text" class="form-control" rows="3" maxlength="500" required
+                        placeholder="Write your review..."></textarea>
+            </div>
+            <div class="col-12 d-grid">
+              <button class="btn btn-primary">Submit Review</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">Report Issue</h5>
+          <form method="POST" class="row g-2">
+            <input type="hidden" name="action" value="submit_issue">
+            <div class="col-12">
+              <label class="form-label">Subject</label>
+              <input type="text" name="subject" class="form-control" maxlength="160" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Issue Details</label>
+              <textarea name="issue_text" class="form-control" rows="4" required
+                        placeholder="Explain your problem in detail..."></textarea>
+            </div>
+            <div class="col-12 d-grid">
+              <button class="btn btn-outline-danger">Submit Issue</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">My Recent Reviews</h5>
+          {% if my_reviews %}
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr><th>Type</th><th>Rating</th><th>Review</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {% for r in my_reviews %}
+                <tr>
+                  <td class="text-capitalize">{{ r.target_type }}</td>
+                  <td>{{ r.rating }}/5</td>
+                  <td>{{ r.review_text }}</td>
+                  <td>{{ r.created_at }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted">No reviews submitted yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">My Reported Issues</h5>
+          {% if my_issues %}
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr><th>Subject</th><th>Status</th><th>Issue</th><th>Admin Note</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {% for i in my_issues %}
+                <tr>
+                  <td>{{ i.subject }}</td>
+                  <td class="text-capitalize">{{ i.status }}</td>
+                  <td>{{ i.issue_text }}</td>
+                  <td>{{ i.admin_note or '-' }}</td>
+                  <td>{{ i.created_at }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted">No issues reported yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function loadTargets(){
+  const typeEl = document.getElementById('reviewTargetType');
+  const idEl = document.getElementById('reviewTargetId');
+  if(!typeEl || !idEl) return;
+  const kind = (typeEl.value || 'platform').toLowerCase();
+  let source = [];
+  if(kind === 'tour'){
+    source = JSON.parse(document.getElementById('tour-targets-json').textContent || '[]');
+  } else if(kind === 'hotel'){
+    source = JSON.parse(document.getElementById('hotel-targets-json').textContent || '[]');
+  }
+  if(kind === 'platform'){
+    idEl.innerHTML = '<option value="">Platform (General)</option>';
+    return;
+  }
+  let html = '<option value="">Select target</option>';
+  source.forEach((row) => {
+    html += `<option value="${row.id}">${row.title}</option>`;
+  });
+  idEl.innerHTML = html;
+}
+document.getElementById('reviewTargetType').addEventListener('change', loadTargets);
+loadTargets();
+</script>
+{% endblock %}

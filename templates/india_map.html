@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}India Map{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+  .india-map-wrap{
+    margin-top: 84px;
+    margin-bottom: 30px;
+  }
+  .india-map-card{
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    background: #fff;
+  }
+  #indiaMap{
+    width: 100%;
+    height: min(72vh, 700px);
+    min-height: 380px;
+    background: #f8fafc;
+  }
+  .india-map-head{
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f9fafb;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container india-map-wrap">
+  <div class="india-map-card">
+    <div class="india-map-head d-flex justify-content-between align-items-center gap-2">
+      <div>
+        <h4 class="mb-0 fw-bold">India Map</h4>
+        <div class="small text-muted">Map is locked to Indian boundaries.</div>
+      </div>
+      <a class="btn btn-outline-primary btn-sm rounded-pill" href="{{ url_for('home') }}">Back</a>
+    </div>
+    <div id="indiaMap"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (() => {
+    const mapEl = document.getElementById('indiaMap');
+    if (!mapEl || !window.L) return;
+
+    const indiaBounds = L.latLngBounds(
+      L.latLng(6.4627, 68.1097),
+      L.latLng(37.0841, 97.3956)
+    );
+
+    const map = L.map('indiaMap', {
+      zoomControl: true,
+      maxBounds: indiaBounds,
+      maxBoundsViscosity: 1.0,
+      minZoom: 4
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    map.fitBounds(indiaBounds, { padding: [12, 12] });
+  })();
+</script>
+{% endblock %}

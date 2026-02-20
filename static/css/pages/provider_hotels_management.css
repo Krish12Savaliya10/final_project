@@ -9,3 +9,31 @@
 .inv-note-input{
     max-width:230px;
 }
+
+html[data-theme="dark"] .inv-count-input,
+html[data-theme="dark"] .inv-note-input,
+body.dark-mode .inv-count-input,
+body.dark-mode .inv-note-input{
+    border-color:#334155;
+}
+
+@media (max-width: 767.98px){
+    .inv-count-input{
+        max-width:none;
+        width:100%;
+    }
+
+    .inv-note-input{
+        max-width:none;
+        width:100%;
+    }
+
+    .table td form{
+        width:100%;
+    }
+
+    .table td form .btn,
+    .table td form .form-control{
+        width:100%;
+    }
+}

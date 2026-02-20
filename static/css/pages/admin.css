@@ -77,8 +77,19 @@ body{
 
 .chart-img{
     width:100%;
+    height:clamp(200px, 30vw, 360px);
+    object-fit:contain;
+    display:block;
     border-radius:10px;
     border:1px solid #e2e8f0;
+    background:#ffffff;
+}
+
+.chart-wrap{
+    min-height:220px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
 .tour-builder-accordion .accordion-item{
@@ -151,6 +162,19 @@ body{
     background:#f1f5f9;
 }
 
+.spot-location-map{
+    height:260px;
+    border:1px solid #d1d5db;
+    border-radius:12px;
+    overflow:hidden;
+    background:#f8fafc;
+}
+
+.spot-location-help{
+    font-size:0.78rem;
+    color:#64748b;
+}
+
 body.dark-mode{
     background:#0b1220;
     color:#e2e8f0;
@@ -181,6 +205,7 @@ body.dark-mode .sidebar-link.active{
 
 body.dark-mode .chart-img{
     border-color:#334155;
+    background:#0f172a;
 }
 
 body.dark-mode .tour-builder-accordion .accordion-item{
@@ -231,6 +256,11 @@ body.dark-mode #itinerary-list .card{
 body.dark-mode .hotel-link-list{
     background:#0f172a;
     border-color:#334155 !important;
+}
+
+body.dark-mode .spot-location-map{
+    border-color:#334155;
+    background:#0f172a;
 }
 
 body.dark-mode .hotel-link-item:hover{
@@ -298,6 +328,56 @@ body.dark-mode .btn-close{
 
     .admin-main{
         padding:14px;
+    }
+}
+
+@media (max-width: 767.98px){
+    .admin-topbar{
+        padding:10px 12px;
+        flex-wrap:wrap;
+        gap:8px;
+    }
+
+    .admin-topbar .brand{
+        font-size:18px;
+    }
+
+    .topbar-actions{
+        width:100%;
+        display:flex !important;
+        flex-wrap:wrap;
+        justify-content:flex-start;
+        gap:8px;
+    }
+
+    .admin-topbar .btn{
+        margin-right:0 !important;
+    }
+
+    .admin-main .card{
+        overflow-x:auto;
+    }
+
+    .admin-main .table{
+        min-width:720px;
+    }
+
+    .chart-img{
+        height:clamp(180px, 48vw, 300px);
+    }
+}
+
+@media (max-width: 575.98px){
+    .admin-main{
+        padding:10px;
+    }
+
+    .admin-sidebar{
+        padding:10px;
+    }
+
+    .card img{
+        height:150px;
     }
 }
 

@@ -1,7 +1,7 @@
 
 body{
-    background:#eef2f7;
-    font-family:Arial, Helvetica, sans-serif;
+    background:#f2f6fb;
+    font-family:'Plus Jakarta Sans','Segoe UI',sans-serif;
     padding-top:80px;
 }
 
@@ -19,7 +19,8 @@ body{
     max-width:850px;
     margin:auto;
     padding:40px;
-    border-radius:10px;
+    border:1px solid #dbe6f2;
+    border-radius:14px;
     box-shadow:0 10px 30px rgba(0,0,0,.12);
 }
 
@@ -51,6 +52,37 @@ body{
     margin-top:20px;
 }
 
+@media (max-width: 767.98px){
+    body{
+        padding-top:72px;
+    }
+
+    .invoice-box{
+        max-width:100%;
+        padding:24px 16px;
+    }
+
+    .invoice-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:10px;
+    }
+
+    .meta{
+        text-align:left;
+    }
+}
+
+@media (max-width: 575.98px){
+    .company{
+        font-size:22px;
+    }
+
+    .total{
+        font-size:19px;
+    }
+}
+
 @media print{
 
     nav,
@@ -70,4 +102,3 @@ body{
         padding:0;
     }
 }
-

@@ -1,0 +1,12 @@
+<aside class="provider-sidebar">
+  <div class="provider-sidebar-head">Business Navigation</div>
+  <a class="provider-side-link {% if provider_sidebar_active == 'dashboard' %}active{% endif %}" href="{{ url_for('provider_dashboard') }}">
+    <i class="bi bi-grid"></i> Dashboard
+  </a>
+  <a class="provider-side-link {% if provider_sidebar_active == 'add_hotel' %}active{% endif %}" href="{{ url_for('provider_add_hotel') }}">
+    <i class="bi bi-plus-circle"></i> Add Hotel
+  </a>
+  <a class="provider-side-link {% if provider_sidebar_active in ['manage_hotels', 'manage_hotel_detail'] %}active{% endif %}" href="{{ url_for('provider_hotels_management') }}">
+    <i class="bi bi-buildings"></i> Manage Hotels
+  </a>
+</aside>

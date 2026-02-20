@@ -1,0 +1,416 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap");
+
+:root {
+    --oyo-red: #ee2e24;
+    --oyo-red-dark: #c91f17;
+    --oyo-ink: #111827;
+    --oyo-soft-ink: #4b5563;
+    --oyo-bg: #f8fafc;
+    --oyo-panel: #ffffff;
+    --oyo-border: #e5e7eb;
+    --oyo-chip: #fff1f0;
+}
+
+.oyo-page {
+    font-family: "Sora", "Segoe UI", sans-serif;
+    background:
+        radial-gradient(circle at 90% -20%, #ffd8d5 0%, transparent 45%),
+        radial-gradient(circle at -10% 130%, #ffe7d5 0%, transparent 40%),
+        var(--oyo-bg);
+    border-radius: 24px;
+    padding: 20px 16px 28px;
+}
+
+.oyo-hero {
+    background: linear-gradient(135deg, #ff5a4f 0%, #e3221a 55%, #bb1d16 100%);
+    color: #fff;
+    border-radius: 20px;
+    padding: 20px 22px;
+    box-shadow: 0 18px 36px rgba(238, 46, 36, 0.28);
+    margin-bottom: 18px;
+}
+
+.oyo-hero h2 {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.oyo-hero .sub {
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.88rem;
+}
+
+.oyo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.oyo-btn {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+.oyo-btn.light {
+    background: #fff;
+    color: var(--oyo-red-dark);
+}
+
+.oyo-btn.light:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.56);
+}
+
+.oyo-btn.outline {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.58);
+}
+
+.oyo-btn.outline:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+.oyo-panel {
+    background: var(--oyo-panel);
+    border: 1px solid var(--oyo-border);
+    border-radius: 18px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
+    margin-bottom: 16px;
+}
+
+.oyo-panel .panel-head {
+    padding: 16px 18px 0;
+}
+
+.oyo-panel .panel-head h5,
+.oyo-panel .panel-head h6 {
+    margin: 0;
+    font-weight: 700;
+    color: var(--oyo-ink);
+}
+
+.oyo-panel .panel-head .muted {
+    margin-top: 4px;
+    color: var(--oyo-soft-ink);
+    font-size: 0.8rem;
+}
+
+.oyo-panel .panel-body {
+    padding: 14px 18px 18px;
+}
+
+.oyo-section-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 4px 0 10px;
+}
+
+.oyo-section-title .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--oyo-red);
+    display: inline-block;
+}
+
+.oyo-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.oyo-input,
+.oyo-select,
+.oyo-textarea {
+    border-radius: 12px;
+    border: 1px solid #d1d5db;
+    font-size: 0.9rem;
+}
+
+.oyo-input:focus,
+.oyo-select:focus,
+.oyo-textarea:focus {
+    border-color: #fb8a82;
+    box-shadow: 0 0 0 0.22rem rgba(238, 46, 36, 0.18);
+}
+
+.oyo-checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.oyo-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.oyo-kpi {
+    background: #fff;
+    border: 1px solid var(--oyo-border);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.oyo-kpi .label {
+    font-size: 0.74rem;
+    color: #6b7280;
+}
+
+.oyo-kpi .value {
+    font-size: 1.4rem;
+    color: #0f172a;
+    font-weight: 800;
+    margin-top: 4px;
+}
+
+.oyo-hotel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.oyo-hotel-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #fff;
+    padding: 13px;
+}
+
+.oyo-hotel-card .name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.oyo-hotel-card .meta {
+    color: #6b7280;
+    font-size: 0.76rem;
+    margin-top: 5px;
+}
+
+.oyo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--oyo-chip);
+    color: var(--oyo-red-dark);
+    border: 1px solid #ffc8c4;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.oyo-status {
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.oyo-status.active {
+    background: #ecfdf3;
+    color: #116534;
+    border: 1px solid #b7f7cd;
+}
+
+.oyo-status.inactive {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.oyo-status.maintenance {
+    background: #fff8eb;
+    color: #92400e;
+    border: 1px solid #fed7aa;
+}
+
+.oyo-gallery-img {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.oyo-reg-box {
+    background: #fff7f7;
+    border: 1px dashed #f3b4b0;
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.hotel-location-map {
+    height: 260px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+html[data-theme="dark"] .hotel-location-map,
+body.dark-mode .hotel-location-map {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+.oyo-reg-box .title {
+    font-size: 0.76rem;
+    color: #7f1d1d;
+    font-weight: 700;
+}
+
+.oyo-reg-box .text {
+    font-size: 0.74rem;
+    color: #7a4441;
+    margin-top: 3px;
+}
+
+.oyo-table thead th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+    border-top: 0;
+}
+
+.oyo-table tbody td {
+    vertical-align: middle;
+}
+
+.amenities-box {
+    max-height: 180px;
+    overflow: auto;
+}
+
+html[data-theme="dark"] .oyo-page,
+body.dark-mode .oyo-page {
+    background:
+        radial-gradient(circle at 90% -20%, rgba(238, 46, 36, 0.2) 0%, transparent 45%),
+        radial-gradient(circle at -10% 130%, rgba(251, 146, 60, 0.14) 0%, transparent 40%),
+        #0b1220;
+}
+
+html[data-theme="dark"] .oyo-panel,
+html[data-theme="dark"] .oyo-kpi,
+html[data-theme="dark"] .oyo-hotel-card,
+body.dark-mode .oyo-panel,
+body.dark-mode .oyo-kpi,
+body.dark-mode .oyo-hotel-card {
+    background: #111827;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .oyo-panel .panel-head h5,
+html[data-theme="dark"] .oyo-panel .panel-head h6,
+html[data-theme="dark"] .oyo-section-title,
+html[data-theme="dark"] .oyo-kpi .value,
+html[data-theme="dark"] .oyo-hotel-card .name,
+body.dark-mode .oyo-panel .panel-head h5,
+body.dark-mode .oyo-panel .panel-head h6,
+body.dark-mode .oyo-section-title,
+body.dark-mode .oyo-kpi .value,
+body.dark-mode .oyo-hotel-card .name {
+    color: #e2e8f0;
+}
+
+html[data-theme="dark"] .oyo-panel .panel-head .muted,
+html[data-theme="dark"] .oyo-label,
+html[data-theme="dark"] .oyo-kpi .label,
+html[data-theme="dark"] .oyo-hotel-card .meta,
+html[data-theme="dark"] .small-muted,
+body.dark-mode .oyo-panel .panel-head .muted,
+body.dark-mode .oyo-label,
+body.dark-mode .oyo-kpi .label,
+body.dark-mode .oyo-hotel-card .meta,
+body.dark-mode .small-muted {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .oyo-input,
+html[data-theme="dark"] .oyo-select,
+html[data-theme="dark"] .oyo-textarea,
+body.dark-mode .oyo-input,
+body.dark-mode .oyo-select,
+body.dark-mode .oyo-textarea {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .oyo-input::placeholder,
+html[data-theme="dark"] .oyo-textarea::placeholder,
+body.dark-mode .oyo-input::placeholder,
+body.dark-mode .oyo-textarea::placeholder {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .oyo-reg-box,
+body.dark-mode .oyo-reg-box {
+    background: #0f172a;
+    border-color: #7f1d1d;
+}
+
+html[data-theme="dark"] .oyo-reg-box .title,
+body.dark-mode .oyo-reg-box .title {
+    color: #fecaca;
+}
+
+html[data-theme="dark"] .oyo-reg-box .text,
+body.dark-mode .oyo-reg-box .text {
+    color: #fca5a5;
+}
+
+html[data-theme="dark"] .oyo-table thead th,
+body.dark-mode .oyo-table thead th {
+    color: #cbd5e1;
+    border-top-color: #334155;
+}
+
+@media (max-width: 991.98px) {
+    .oyo-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .oyo-hotel-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .oyo-page {
+        padding: 12px 8px 20px;
+    }
+
+    .oyo-hero {
+        padding: 16px;
+    }
+
+    .oyo-hero h2 {
+        font-size: 1.2rem;
+    }
+
+    .oyo-kpi-grid,
+    .oyo-hotel-grid {
+        grid-template-columns: 1fr;
+    }
+}

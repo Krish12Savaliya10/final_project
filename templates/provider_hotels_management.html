@@ -1,15 +1,28 @@
 {% extends "layout.html" %}
-{% block title %}Manage Hotel Rooms{% endblock %}
+{% block title %}Manage Hotels{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/provider_hotels_management.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/oyo_hotel_hub.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5 pb-5">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h2 class="fw-bold mb-0">Hotel Room Availability Management</h2>
-    <a href="{{ url_for('provider_dashboard') }}" class="btn btn-outline-primary rounded-pill">Back to Provider Dashboard</a>
+{% set provider_sidebar_active = 'manage_hotels' %}
+<div class="container mt-5 pb-5 dashboard-shell dashboard-page provider-dashboard-page">
+  <div class="provider-shell">
+    {% include "provider_sidebar.html" %}
+    <main class="provider-main">
+      <div class="oyo-page">
+  <div class="oyo-hero d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h2>Hotel Management Hub</h2>
+      <div class="sub">Monitor portfolio, registration readiness, room inventory and update each hotel like a channel manager.</div>
+    </div>
+    <div class="oyo-actions">
+      <a href="{{ url_for('provider_add_hotel') }}" class="oyo-btn light"><i class="bi bi-plus-circle"></i> Add Hotel</a>
+      <a href="{{ url_for('provider_dashboard') }}" class="oyo-btn outline"><i class="bi bi-grid"></i> Dashboard</a>
+    </div>
   </div>
 
   {% with messages = get_flashed_messages() %}
@@ -18,104 +31,133 @@
   {% endif %}
   {% endwith %}
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="cardx p-3"><div class="small-muted">Total Hotels</div><div class="stat">{{ hotel_stats.total_hotels or 0 }}</div></div></div>
-    <div class="col-md-4"><div class="cardx p-3"><div class="small-muted">Total Rooms</div><div class="stat">{{ hotel_stats.total_rooms or 0 }}</div></div></div>
-    <div class="col-md-4"><div class="cardx p-3"><div class="small-muted">Available Rooms</div><div class="stat text-success">{{ hotel_stats.available_rooms or 0 }}</div></div></div>
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h5>Portfolio Snapshot</h5>
+      <div class="muted">Quick operational summary of your current hotel inventory.</div>
+    </div>
+    <div class="panel-body">
+      <div class="oyo-kpi-grid">
+        <div class="oyo-kpi"><div class="label">Total Hotels</div><div class="value">{{ hotel_stats.total_hotels or 0 }}</div></div>
+        <div class="oyo-kpi"><div class="label">Total Rooms</div><div class="value">{{ hotel_stats.total_rooms or 0 }}</div></div>
+        <div class="oyo-kpi"><div class="label">Available Rooms</div><div class="value text-success">{{ hotel_stats.available_rooms or 0 }}</div></div>
+        <div class="oyo-kpi"><div class="label">Occupancy Signal</div><div class="value">{% if hotel_stats.total_rooms %}{{ (((hotel_stats.total_rooms - (hotel_stats.available_rooms or 0)) / hotel_stats.total_rooms) * 100) | round(0) | int }}%{% else %}0%{% endif %}</div></div>
+      </div>
+    </div>
   </div>
 
-  <div class="cardx p-3 mb-4">
-    <h5 class="fw-bold mb-3">All Hotels Overview</h5>
-    {% if hotels %}
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead>
-          <tr><th>Hotel</th><th>Location</th><th>Star</th><th>Price</th><th>Total</th><th>Available</th><th>Public View</th></tr>
-        </thead>
-        <tbody>
-          {% for h in hotels %}
-          <tr>
-            <td><strong>{{ h.hotel_name }}</strong></td>
-            <td><small>{{ h.locality or h.address_line1 }}<br>{{ h.city_name or '-' }}</small></td>
-            <td>{{ h.star_rating }}★</td>
-            <td>Rs {{ h.min_price }}</td>
-            <td>{{ h.total_rooms }}</td>
-            <td>
-              {% if h.available_rooms > 0 %}
-                <span class="badge bg-success">{{ h.available_rooms }}</span>
-              {% else %}
-                <span class="badge bg-danger">0</span>
-              {% endif %}
-            </td>
-            <td><a href="{{ url_for('hotel_detail', service_id=h.service_id) }}" class="btn btn-sm btn-outline-dark">Open</a></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h5>Hotel Cards</h5>
+      <div class="muted">Each hotel shows status, registration readiness and shortcuts for edit/public view.</div>
     </div>
-    {% else %}
+    <div class="panel-body">
+      {% if hotels %}
+      <div class="oyo-hotel-grid">
+        {% for h in hotels %}
+        <div class="oyo-hotel-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="name">{{ h.hotel_name }}</div>
+            <span class="oyo-chip">{{ h.star_rating or 0 }}★</span>
+          </div>
+          <div class="meta">{{ h.city_name or '-' }}{% if h.locality %} • {{ h.locality }}{% endif %}</div>
+          {% set status = (h.listing_status or 'active') %}
+          <div class="mt-2">
+            <span class="oyo-status {{ status }} text-capitalize">{{ status }}</span>
+          </div>
+          <div class="meta mt-2">Price from ₹{{ h.min_price }}</div>
+          <div class="meta">Rooms {{ h.available_rooms }} / {{ h.total_rooms }}</div>
+          <div class="meta mt-1">
+            {% if h.owner_name and h.hotel_contact_phone and (h.gst_number or h.trade_license_number) %}
+              <span class="text-success">Registration: Ready</span>
+            {% else %}
+              <span class="text-warning">Registration: Pending details</span>
+            {% endif %}
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <a href="{{ url_for('provider_hotel_manage_detail', service_id=h.service_id) }}" class="btn btn-sm btn-danger rounded-pill">Manage</a>
+            <a href="{{ url_for('hotel_detail', service_id=h.service_id) }}" class="btn btn-sm btn-outline-dark rounded-pill">Public View</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
       <div class="alert alert-light border mb-0">No hotel listings available.</div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
-  <div class="cardx p-3 mb-4">
-    <h5 class="fw-bold mb-3">Update Room Availability (Type-wise)</h5>
-    {% if room_types %}
-    <div class="table-responsive">
-      <table class="table table-striped align-middle mb-0">
-        <thead>
-          <tr><th>Hotel</th><th>Room Type</th><th>Total</th><th>Current Available</th><th>Set New Count</th></tr>
-        </thead>
-        <tbody>
-          {% for r in room_types %}
-          <tr>
-            <td>{{ r.hotel_name }}</td>
-            <td>{{ r.room_type_name }}</td>
-            <td>{{ r.total_rooms }}</td>
-            <td><span class="badge bg-info text-dark">{{ r.available_rooms }}</span></td>
-            <td>
-              <form method="POST" class="d-flex flex-wrap gap-2">
-                <input type="hidden" name="room_type_id" value="{{ r.id }}">
-                <input type="number" name="new_available" min="0" max="{{ r.total_rooms }}" value="{{ r.available_rooms }}" class="form-control form-control-sm inv-count-input" required>
-                <input type="text" name="note" class="form-control form-control-sm inv-note-input" placeholder="note (optional)">
-                <button class="btn btn-primary btn-sm">Save</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h5>Update Room Availability (Type-wise)</h5>
+      <div class="muted">Real-time stock updates for room categories.</div>
     </div>
-    {% else %}
+    <div class="panel-body">
+      {% if room_types %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0 oyo-table">
+          <thead>
+            <tr><th>Hotel</th><th>Room Type</th><th>Total</th><th>Current Available</th><th>Set New Count</th></tr>
+          </thead>
+          <tbody>
+            {% for r in room_types %}
+            <tr>
+              <td>{{ r.hotel_name }}</td>
+              <td>{{ r.room_type_name }}</td>
+              <td>{{ r.total_rooms }}</td>
+              <td><span class="badge bg-info text-dark">{{ r.available_rooms }}</span></td>
+              <td>
+                <form method="POST" class="d-flex flex-wrap gap-2">
+                  <input type="hidden" name="room_type_id" value="{{ r.id }}">
+                  <input type="number" name="new_available" min="0" max="{{ r.total_rooms }}" value="{{ r.available_rooms }}" class="form-control form-control-sm inv-count-input" required>
+                  <input type="text" name="note" class="form-control form-control-sm inv-note-input" placeholder="note (optional)">
+                  <button class="btn btn-danger btn-sm">Save</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
       <div class="alert alert-light border mb-0">No room types found.</div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 
-  <div class="cardx p-3">
-    <h5 class="fw-bold mb-3">Recent Availability Changes</h5>
-    {% if logs %}
-    <div class="table-responsive">
-      <table class="table table-sm align-middle mb-0">
-        <thead>
-          <tr><th>Date</th><th>Hotel</th><th>Room Type</th><th>Old</th><th>New</th><th>Note</th></tr>
-        </thead>
-        <tbody>
-          {% for l in logs %}
-          <tr>
-            <td><small>{{ l.created_at }}</small></td>
-            <td>{{ l.hotel_name }}</td>
-            <td>{{ l.room_type_name }}</td>
-            <td>{{ l.old_available }}</td>
-            <td>{{ l.new_available }}</td>
-            <td>{{ l.note or '-' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="oyo-panel">
+    <div class="panel-head">
+      <h5>Recent Availability Changes</h5>
+      <div class="muted">Track inventory edits made from management pages.</div>
     </div>
-    {% else %}
+    <div class="panel-body">
+      {% if logs %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 oyo-table">
+          <thead>
+            <tr><th>Date</th><th>Hotel</th><th>Room Type</th><th>Old</th><th>New</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            {% for l in logs %}
+            <tr>
+              <td><small>{{ l.created_at }}</small></td>
+              <td>{{ l.hotel_name }}</td>
+              <td>{{ l.room_type_name }}</td>
+              <td>{{ l.old_available }}</td>
+              <td>{{ l.new_available }}</td>
+              <td>{{ l.note or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
       <div class="alert alert-light border mb-0">No inventory updates yet.</div>
-    {% endif %}
+      {% endif %}
+    </div>
+  </div>
+      </div>
+    </main>
   </div>
 </div>
 {% endblock %}
