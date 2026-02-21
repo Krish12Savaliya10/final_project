@@ -97,8 +97,7 @@
 {% set tour_image_src = url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) %}
 <a href="{{ tour_image_src }}" target="_blank" rel="noopener" class="tour-photo-link" title="Open full image">
 <img src="{{ tour_image_src }}"
-     class="tour-card-img"
-     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+     class="tour-card-img">
 </a>
 	
 <div class="card-body">
@@ -390,14 +389,12 @@ If using local photo, keep the file in <code>static/uploads/spots/</code> (or <c
 {% if s.photo_source == 'external_url' %}
 <a href="{{ s.image_url }}" target="_blank" rel="noopener" class="dashboard-thumb-link" title="Open full image">
 <img src="{{ s.image_url }}"
-     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
      class="dashboard-thumb-img">
 </a>
 {% else %}
 {% set spot_image_src = url_for('static', filename='uploads/' + (s.image_url or 'demo.jpg')) %}
 <a href="{{ spot_image_src }}" target="_blank" rel="noopener" class="dashboard-thumb-link" title="Open full image">
 <img src="{{ spot_image_src }}"
-     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
      class="dashboard-thumb-img">
 </a>
 {% endif %}

@@ -27,7 +27,7 @@
                    data-bs-toggle="modal"
                    data-bs-target="#allPhotosModal"
                    data-gallery-index="{{ loop.index0 }}"
-                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+                  >
             </div>
             {% endfor %}
           </div>
@@ -87,8 +87,7 @@
                 data-bs-target="#hotelHeroCarousel"
                 data-bs-slide-to="{{ loop.index0 }}"
                 aria-label="Hotel photo {{ loop.index }}">
-          <img src="{{ thumb_src }}" class="thumb-img" alt="{{ hotel.hotel_name }}"
-               onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+          <img src="{{ thumb_src }}" class="thumb-img" alt="{{ hotel.hotel_name }}">
         </button>
       </div>
       {% endfor %}
@@ -115,8 +114,7 @@
             {% for img in images %}
             {% set details_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
             <div class="carousel-item {% if loop.first %}active{% endif %}">
-              <img src="{{ details_src }}" class="d-block w-100 details-carousel-img" alt="{{ hotel.hotel_name }}"
-                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+              <img src="{{ details_src }}" class="d-block w-100 details-carousel-img" alt="{{ hotel.hotel_name }}">
             </div>
             {% endfor %}
           </div>
@@ -300,8 +298,7 @@
             {% for img in images %}
             {% set modal_src = img.image_url if img.image_url and (img.image_url.startswith('http://') or img.image_url.startswith('https://')) else url_for('static', filename='uploads/' + (img.image_url or 'demo.jpg')) %}
             <div class="carousel-item {% if loop.first %}active{% endif %}">
-              <img src="{{ modal_src }}" class="d-block w-100 rounded modal-img" alt="{{ hotel.hotel_name }}"
-                   onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+              <img src="{{ modal_src }}" class="d-block w-100 rounded modal-img" alt="{{ hotel.hotel_name }}">
             </div>
             {% endfor %}
           </div>

@@ -81,8 +81,7 @@
       <div class="col-md-6 col-lg-4">
         <div class="hotel-card h-100">
           {% set cover_src = h.cover_image if h.cover_image and (h.cover_image.startswith('http://') or h.cover_image.startswith('https://')) else url_for('static', filename='uploads/' + (h.cover_image or 'demo.jpg')) %}
-          <img src="{{ cover_src }}" class="hotel-img" alt="{{ h.hotel_name }}"
-               onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+          <img src="{{ cover_src }}" class="hotel-img" alt="{{ h.hotel_name }}">
           <div class="p-3">
             <div class="d-flex justify-content-between align-items-start">
               <h5 class="fw-bold mb-1">{{ h.hotel_name }}</h5>

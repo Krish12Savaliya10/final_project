@@ -208,11 +208,9 @@
                     {% if r.image_url %}
                       {% if r.photo_source == 'external_url' %}
                       <img src="{{ r.image_url }}"
-                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                            width="64" height="64" class="rounded border">
                       {% else %}
                       <img src="{{ url_for('static', filename='uploads/' + r.image_url) }}"
-                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                            width="64" height="64" class="rounded border">
                       {% endif %}
                       <div class="small mt-1 text-muted">{{ r.photo_source or 'local_file' }}</div>
@@ -224,11 +222,9 @@
                     {% if r.current_image_url %}
                       {% if r.current_photo_source == 'external_url' %}
                       <img src="{{ r.current_image_url }}"
-                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                            width="64" height="64" class="rounded border">
                       {% else %}
                       <img src="{{ url_for('static', filename='uploads/' + r.current_image_url) }}"
-                           onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                            width="64" height="64" class="rounded border">
                       {% endif %}
                     {% else %}

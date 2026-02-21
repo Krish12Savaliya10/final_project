@@ -113,8 +113,7 @@
                 <div class="card h-100 tour-card">
 
                     <img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
-                         class="card-img-top"
-                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+                         class="card-img-top" alt="{{ tour.title }}">
 
                     <div class="card-body d-flex flex-column">
 

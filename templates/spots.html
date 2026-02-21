@@ -209,7 +209,6 @@
             aria-label="Open photo for {{ s.spot_name }}"
           >
             <img src="{{ spot_img_src }}" class="card-img-top spot-card-img"
-                 onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                  alt="{{ s.spot_name }}">
           </button>
           {% set image_ns.idx = image_ns.idx + 1 %}
@@ -270,17 +269,6 @@
 </div>
 
 <script>
-const spotFallbackImage = {{ url_for('static', filename='uploads/demo.jpg')|tojson }};
-const spotGallery = [
-  {% for s in spots if s.image_url %}
-  {
-    name: {{ s.spot_name|tojson }},
-    city: {{ s.city_name|tojson }},
-    state: {{ s.state_name|tojson }},
-    src: {% if s.photo_source == 'external_url' %}{{ s.image_url|tojson }}{% else %}{{ url_for('static', filename='uploads/' + s.image_url)|tojson }}{% endif %}
-  }{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
 
 function buildSpotsPhotoCarousel(){
   const inner = document.getElementById('spotsPhotoCarouselInner');

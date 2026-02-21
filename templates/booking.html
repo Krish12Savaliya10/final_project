@@ -51,8 +51,7 @@
 </nav>
 
 <div class="hero">
-<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
-     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}">
 <div class="hero-content">
 <div class="hero-title">{{ tour.title }}</div>
 <div class="hero-meta mt-2">
@@ -185,8 +184,7 @@
       <div class="carousel-item {% if loop.first %}active{% endif %}">
         <img src="{{ h_img_src }}"
              class="d-block w-100 media-slide-img"
-             alt="{{ h.hotel_name }}"
-             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+             alt="{{ h.hotel_name }}">
         <div class="media-caption">{{ 'Main Photo' if himg.is_cover else 'Sub Photo' }}</div>
       </div>
       {% endfor %}
@@ -362,8 +360,7 @@
       <div class="carousel-item {% if is_first_slide %}active{% endif %}">
         <img src="{{ spot_img_src }}"
              class="d-block w-100 media-slide-img"
-             alt="{{ item.spot_name }}"
-             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
+             alt="{{ item.spot_name }}">
         <div class="media-caption">Day {{ item.day_number }} • {{ item.spot_name }}</div>
       </div>
       {% endif %}
