@@ -6,10 +6,7 @@ from core.helpers import (
     is_allowed_document_filename,
     is_allowed_image_filename,
     is_non_negative_amount,
-    is_within_india_bounds,
     is_valid_email,
-    is_valid_latitude,
-    is_valid_longitude,
     is_valid_phone,
     is_valid_pincode,
     save_upload,
@@ -19,6 +16,9 @@ from core.helpers import (
 
 
 def register_routes(app):
+    MAX_HOTEL_PHOTOS = 20
+    MAX_HOTEL_ROOM_ROWS = 20
+
     def _load_hotel_form_options():
         amenities = query_db("SELECT * FROM amenity_master ORDER BY amenity_name ASC")
         states = query_db(
@@ -38,6 +38,168 @@ def register_routes(app):
         )
         return amenities, states, cities
 
+    def _save_hotel_photo_files(file_items, require_any=False):
+        uploaded_photo_paths = []
+        selected_count = 0
+        for file_obj in file_items or []:
+            if not file_obj or not (file_obj.filename or "").strip():
+                continue
+            selected_count += 1
+            if selected_count > MAX_HOTEL_PHOTOS:
+                return None, f"You can upload maximum {MAX_HOTEL_PHOTOS} hotel photos."
+            if not is_allowed_image_filename(file_obj.filename):
+                return None, "Hotel photos must be PNG, JPG, JPEG, or WEBP."
+            saved_name = save_upload(file_obj, app.config["UPLOAD_FOLDER"])
+            if not saved_name:
+                return None, "Unable to upload hotel photo."
+            uploaded_photo_paths.append(saved_name)
+        if require_any and selected_count <= 0:
+            return None, "Please upload at least one hotel photo."
+        if require_any and not uploaded_photo_paths:
+            return None, "Unable to upload hotel photo."
+        return uploaded_photo_paths, None
+
+    def _insert_hotel_images(cur, service_id, image_paths, image_title=None):
+        if not image_paths:
+            return 0
+
+        cover_exists = False
+        cur.execute(
+            "SELECT id FROM hotel_images WHERE service_id=%s AND is_cover=1 LIMIT 1",
+            (service_id,),
+        )
+        if cur.fetchone():
+            cover_exists = True
+
+        next_sort_order = 1
+        try:
+            cur.execute(
+                "SELECT COALESCE(MAX(sort_order), 0) AS max_sort_order FROM hotel_images WHERE service_id=%s",
+                (service_id,),
+            )
+            sort_row = cur.fetchone()
+            if sort_row:
+                next_sort_order = to_int(sort_row[0], 0) + 1
+        except Exception:
+            next_sort_order = 1
+
+        uploaded_count = 0
+        for idx, image_path in enumerate(image_paths):
+            is_cover = 1 if (not cover_exists and uploaded_count == 0) else 0
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO hotel_images(service_id, image_url, image_title, is_cover, sort_order)
+                    VALUES(%s,%s,%s,%s,%s)
+                    """,
+                    (service_id, image_path, image_title, is_cover, next_sort_order + idx),
+                )
+            except Exception:
+                cur.execute(
+                    "INSERT INTO hotel_images(service_id, image_url, is_cover) VALUES(%s,%s,%s)",
+                    (service_id, image_path, is_cover),
+                )
+            uploaded_count += 1
+
+        return uploaded_count
+
+    def _parse_hotel_room_rows(require_at_least_one=True):
+        room_type_names = request.form.getlist("room_type_name[]")
+        room_base_prices = request.form.getlist("room_base_price[]")
+        room_total_rooms = request.form.getlist("room_total_rooms[]")
+        room_available_rooms = request.form.getlist("room_available_rooms[]")
+        room_max_guests = request.form.getlist("room_max_guests[]")
+        room_bed_types = request.form.getlist("room_bed_type[]")
+        room_descriptions = request.form.getlist("room_description[]")
+
+        row_count = max(
+            len(room_type_names),
+            len(room_base_prices),
+            len(room_total_rooms),
+            len(room_available_rooms),
+            len(room_max_guests),
+            len(room_bed_types),
+            len(room_descriptions),
+        )
+        if row_count > MAX_HOTEL_ROOM_ROWS:
+            return None, f"You can add maximum {MAX_HOTEL_ROOM_ROWS} room types."
+        room_rows = []
+        seen_room_types = set()
+        for idx in range(row_count):
+            row_number = idx + 1
+            room_type_name = (room_type_names[idx] if idx < len(room_type_names) else "").strip()
+            room_base_price = (room_base_prices[idx] if idx < len(room_base_prices) else "").strip()
+            total_rooms_raw = (room_total_rooms[idx] if idx < len(room_total_rooms) else "").strip()
+            available_rooms_raw = (room_available_rooms[idx] if idx < len(room_available_rooms) else "").strip()
+            max_guests_raw = (room_max_guests[idx] if idx < len(room_max_guests) else "").strip()
+            room_bed_type = (room_bed_types[idx] if idx < len(room_bed_types) else "").strip()
+            room_description = (room_descriptions[idx] if idx < len(room_descriptions) else "").strip()
+
+            has_any_value = any(
+                [
+                    room_type_name,
+                    room_base_price,
+                    total_rooms_raw,
+                    available_rooms_raw,
+                    max_guests_raw,
+                    room_bed_type,
+                    room_description,
+                ]
+            )
+            if not has_any_value:
+                continue
+
+            if not room_type_name:
+                return None, f"Room type name is required in row {row_number}."
+            if len(room_type_name) > 120:
+                return None, f"Room type name is too long in row {row_number} (max 120 chars)."
+            room_type_key = room_type_name.lower()
+            if room_type_key in seen_room_types:
+                return None, f"Duplicate room type name in row {row_number}."
+            seen_room_types.add(room_type_key)
+            if room_bed_type and len(room_bed_type) > 120:
+                return None, f"Bed type is too long in row {row_number} (max 120 chars)."
+            if room_description and len(room_description) > 1000:
+                return None, f"Room description is too long in row {row_number} (max 1000 chars)."
+            if not is_non_negative_amount(room_base_price):
+                return None, f"Invalid base price in row {row_number}."
+
+            total_rooms = to_int(total_rooms_raw, 0)
+            if total_rooms < 1:
+                return None, f"Total rooms must be at least 1 in row {row_number}."
+
+            if available_rooms_raw == "":
+                available_rooms = total_rooms
+            else:
+                available_rooms = to_int(available_rooms_raw, -1)
+                if available_rooms < 0:
+                    return None, f"Available rooms cannot be negative in row {row_number}."
+            if available_rooms > total_rooms:
+                return None, f"Available rooms cannot be more than total rooms in row {row_number}."
+
+            if max_guests_raw == "":
+                max_guests = 2
+            else:
+                max_guests = to_int(max_guests_raw, 0)
+                if max_guests < 1 or max_guests > 20:
+                    return None, f"Max guests must be between 1 and 20 in row {row_number}."
+
+            room_rows.append(
+                {
+                    "room_type_name": room_type_name,
+                    "bed_type": room_bed_type or None,
+                    "base_price": room_base_price,
+                    "total_rooms": total_rooms,
+                    "available_rooms": available_rooms,
+                    "max_guests": max_guests,
+                    "room_description": room_description or None,
+                }
+            )
+
+        if require_at_least_one and not room_rows:
+            return None, "Please add at least one room type for this hotel."
+        return room_rows, None
+
     def _create_hotel_listing(redirect_endpoint):
         hotel_name = request.form.get("hotel_name", "").strip()
         brand_name = request.form.get("brand_name", "").strip()
@@ -48,8 +210,6 @@ def register_routes(app):
         locality = request.form.get("locality", "").strip()
         landmark = request.form.get("landmark", "").strip()
         pincode = request.form.get("pincode", "").strip()
-        latitude = (request.form.get("latitude") or "").strip() or None
-        longitude = (request.form.get("longitude") or "").strip() or None
         check_in_time = request.form.get("check_in_time") or None
         check_out_time = request.form.get("check_out_time") or None
         hotel_description = request.form.get("hotel_description", "").strip()
@@ -68,6 +228,7 @@ def register_routes(app):
         breakfast_available = 1 if request.form.get("breakfast_available") else 0
         amenity_ids = request.form.getlist("amenity_ids")
         base_price = request.form.get("base_price", "0").strip() or "0"
+        photo_files = request.files.getlist("hotel_photos")
 
         if not (hotel_name and city_id and address_line1):
             flash("Hotel name, city and address are required.")
@@ -114,22 +275,18 @@ def register_routes(app):
         if pincode and not is_valid_pincode(pincode):
             flash("Pincode must be 6 digits.")
             return redirect(url_for(redirect_endpoint))
-        has_lat = bool(latitude)
-        has_lng = bool(longitude)
-        if has_lat != has_lng:
-            flash("Enter both latitude and longitude together, or leave both blank.")
-            return redirect(url_for(redirect_endpoint))
-        if latitude and not is_valid_latitude(latitude):
-            flash("Latitude must be between -90 and 90.")
-            return redirect(url_for(redirect_endpoint))
-        if longitude and not is_valid_longitude(longitude):
-            flash("Longitude must be between -180 and 180.")
-            return redirect(url_for(redirect_endpoint))
-        if has_lat and has_lng and not is_within_india_bounds(latitude, longitude):
-            flash("Hotel coordinates must be inside India.")
-            return redirect(url_for(redirect_endpoint))
         if not is_non_negative_amount(base_price):
             flash("Base price must be a non-negative number.")
+            return redirect(url_for(redirect_endpoint))
+
+        room_rows, room_error = _parse_hotel_room_rows(require_at_least_one=True)
+        if room_error:
+            flash(room_error)
+            return redirect(url_for(redirect_endpoint))
+
+        uploaded_photo_paths, photo_error = _save_hotel_photo_files(photo_files, require_any=True)
+        if photo_error:
+            flash(photo_error)
             return redirect(url_for(redirect_endpoint))
 
         registration_doc_path = None
@@ -159,66 +316,104 @@ def register_routes(app):
 
         db = get_db()
         cur = db.cursor()
-        cur.execute(
-            """
-            INSERT INTO services(provider_id, service_type, service_name, price, description, city_id)
-            VALUES(%s,'Hotel',%s,%s,%s,%s)
-            """,
-            (session["user_id"], hotel_name, base_price, hotel_description, city_id),
-        )
-        service_id = cur.lastrowid
-
-        cur.execute(
-            """
-            INSERT INTO hotel_profiles(
-                service_id, hotel_name, brand_name, star_rating, address_line1, address_line2,
-                locality, landmark, pincode, latitude, longitude, check_in_time, check_out_time,
-                hotel_description, house_rules, couple_friendly, pets_allowed, parking_available,
-                breakfast_available, listing_status, terms_conditions, owner_name, hotel_contact_phone,
-                hotel_contact_email, gst_number, trade_license_number, registration_doc_path
-            )
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            """,
-            (
-                service_id,
-                hotel_name,
-                brand_name or None,
-                star_rating,
-                address_line1,
-                address_line2 or None,
-                locality or None,
-                landmark or None,
-                pincode or None,
-                latitude,
-                longitude,
-                check_in_time,
-                check_out_time,
-                hotel_description or None,
-                house_rules or None,
-                couple_friendly,
-                pets_allowed,
-                parking_available,
-                breakfast_available,
-                listing_status,
-                terms_conditions or None,
-                owner_name,
-                hotel_contact_phone,
-                hotel_contact_email or None,
-                gst_number or None,
-                trade_license_number or None,
-                registration_doc_path,
-            ),
-        )
-
-        for amenity_id in valid_amenity_ids:
+        try:
             cur.execute(
-                "INSERT IGNORE INTO hotel_amenities(service_id, amenity_id) VALUES(%s,%s)",
-                (service_id, amenity_id),
+                """
+                INSERT INTO services(provider_id, service_type, service_name, price, description, city_id)
+                VALUES(%s,'Hotel',%s,%s,%s,%s)
+                """,
+                (session["user_id"], hotel_name, base_price, hotel_description, city_id),
+            )
+            service_id = cur.lastrowid
+
+            cur.execute(
+                """
+                INSERT INTO hotel_profiles(
+                    service_id, hotel_name, brand_name, star_rating, address_line1, address_line2,
+                    locality, landmark, pincode, check_in_time, check_out_time,
+                    hotel_description, house_rules, couple_friendly, pets_allowed, parking_available,
+                    breakfast_available, listing_status, terms_conditions, owner_name, hotel_contact_phone,
+                    hotel_contact_email, gst_number, trade_license_number, registration_doc_path
+                )
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (
+                    service_id,
+                    hotel_name,
+                    brand_name or None,
+                    star_rating,
+                    address_line1,
+                    address_line2 or None,
+                    locality or None,
+                    landmark or None,
+                    pincode or None,
+                    check_in_time,
+                    check_out_time,
+                    hotel_description or None,
+                    house_rules or None,
+                    couple_friendly,
+                    pets_allowed,
+                    parking_available,
+                    breakfast_available,
+                    listing_status,
+                    terms_conditions or None,
+                    owner_name,
+                    hotel_contact_phone,
+                    hotel_contact_email or None,
+                    gst_number or None,
+                    trade_license_number or None,
+                    registration_doc_path,
+                ),
             )
 
-        db.commit()
-        cur.close()
-        db.close()
+            for amenity_id in valid_amenity_ids:
+                cur.execute(
+                    "INSERT IGNORE INTO hotel_amenities(service_id, amenity_id) VALUES(%s,%s)",
+                    (service_id, amenity_id),
+                )
+
+            for room_row in room_rows:
+                cur.execute(
+                    """
+                    INSERT INTO hotel_room_types(
+                        service_id, room_type_name, bed_type, room_size_sqft, max_guests,
+                        total_rooms, available_rooms, base_price, strike_price, tax_percent,
+                        breakfast_included, ac_available, wifi_available, refundable,
+                        cancellation_policy, room_description
+                    )
+                    VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """,
+                    (
+                        service_id,
+                        room_row["room_type_name"],
+                        room_row["bed_type"],
+                        None,
+                        room_row["max_guests"],
+                        room_row["total_rooms"],
+                        room_row["available_rooms"],
+                        room_row["base_price"],
+                        None,
+                        "0",
+                        0,
+                        1,
+                        1,
+                        0,
+                        None,
+                        room_row["room_description"],
+                    ),
+                )
+
+            _insert_hotel_images(cur, service_id, uploaded_photo_paths, image_title=hotel_name or None)
+
+            db.commit()
+        except Exception:
+            db.rollback()
+            flash("Unable to create hotel right now. Please try again.")
+            return redirect(url_for(redirect_endpoint))
+        finally:
+            cur.close()
+            db.close()
+
         flash("Hotel listing created successfully.")
         return redirect(url_for("provider_hotels_management"))
 
@@ -329,10 +524,6 @@ def register_routes(app):
                 )
                 flash("Room type added.")
 
-            elif action == "add_transport":
-                flash("Transport listing is disabled in this app version.")
-                return redirect(url_for("provider_dashboard"))
-
             elif action == "update_inventory":
                 room_type_id = to_int(request.form.get("room_type_id"), 0)
                 new_available = to_int(request.form.get("new_available"), 0)
@@ -347,10 +538,6 @@ def register_routes(app):
                     note=note,
                 )
                 flash(msg)
-
-            elif action == "update_transport_inventory":
-                flash("Transport inventory is disabled in this app version.")
-                return redirect(url_for("provider_dashboard"))
 
             elif action == "update_hotel_booking_status":
                 booking_id = to_int(request.form.get("booking_id"), 0)
@@ -417,8 +604,6 @@ def register_routes(app):
             """,
             (session["user_id"],),
         )
-        transport_services = []
-        transport_logs = []
         hotel_bookings = query_db(
             """
             SELECT
@@ -471,11 +656,9 @@ def register_routes(app):
             services=services,
             hotel_services=hotel_services,
             room_types=room_types,
-            transport_services=transport_services,
             states=states,
             cities=cities,
             profile=profile,
-            transport_logs=transport_logs,
             hotel_bookings=hotel_bookings,
         )
 
@@ -520,35 +703,54 @@ def register_routes(app):
             flash(msg)
             return redirect(url_for("provider_hotels_management"))
 
-        hotel_stats = query_db(
-            """
-            SELECT
-                COUNT(DISTINCT s.id) AS total_hotels,
-                COALESCE(SUM(rt.total_rooms), 0) AS total_rooms,
-                COALESCE(SUM(rt.available_rooms), 0) AS available_rooms
-            FROM services s
-            LEFT JOIN hotel_room_types rt ON rt.service_id=s.id
-            WHERE s.provider_id=%s AND s.service_type='Hotel'
-            """,
-            (session["user_id"],),
-            one=True,
-        )
         hotels = query_db(
             """
             SELECT
-                s.id AS service_id, hp.hotel_name, hp.star_rating,
-                c.city_name, hp.locality, hp.address_line1,
-                hp.listing_status, hp.owner_name, hp.hotel_contact_phone,
-                hp.gst_number, hp.trade_license_number,
+                s.id AS service_id,
+                hp.hotel_name,
+                hp.star_rating,
+                c.city_name,
+                st.state_name,
+                hp.locality,
+                hp.address_line1,
+                hp.listing_status,
+                hp.owner_name,
+                hp.hotel_contact_phone,
+                hp.hotel_contact_email,
                 COALESCE(MIN(rt.base_price), s.price, 0) AS min_price,
                 COALESCE(SUM(rt.total_rooms), 0) AS total_rooms,
-                COALESCE(SUM(rt.available_rooms), 0) AS available_rooms
+                COALESCE(SUM(rt.available_rooms), 0) AS available_rooms,
+                (
+                    SELECT COUNT(*)
+                    FROM hotel_images hi_count
+                    WHERE hi_count.service_id=s.id
+                ) AS photo_count,
+                (
+                    SELECT hi.image_url
+                    FROM hotel_images hi
+                    WHERE hi.service_id=s.id
+                    ORDER BY hi.is_cover DESC, hi.id ASC
+                    LIMIT 1
+                ) AS cover_image
             FROM services s
             JOIN hotel_profiles hp ON hp.service_id=s.id
             LEFT JOIN cities c ON c.id=s.city_id
+            LEFT JOIN states st ON st.id=c.state_id
             LEFT JOIN hotel_room_types rt ON rt.service_id=s.id
             WHERE s.provider_id=%s AND s.service_type='Hotel'
-            GROUP BY s.id, hp.hotel_name, hp.star_rating, c.city_name, hp.locality, hp.address_line1, hp.listing_status, hp.owner_name, hp.hotel_contact_phone, hp.gst_number, hp.trade_license_number, s.price
+            GROUP BY
+                s.id,
+                hp.hotel_name,
+                hp.star_rating,
+                c.city_name,
+                st.state_name,
+                hp.locality,
+                hp.address_line1,
+                hp.listing_status,
+                hp.owner_name,
+                hp.hotel_contact_phone,
+                hp.hotel_contact_email,
+                s.price
             ORDER BY s.id DESC
             """,
             (session["user_id"],),
@@ -564,28 +766,11 @@ def register_routes(app):
             """,
             (session["user_id"],),
         )
-        logs = query_db(
-            """
-            SELECT
-                l.created_at, l.old_available, l.new_available, l.note,
-                rt.room_type_name, hp.hotel_name
-            FROM hotel_room_inventory_logs l
-            JOIN hotel_room_types rt ON rt.id=l.room_type_id
-            JOIN hotel_profiles hp ON hp.service_id=rt.service_id
-            JOIN services s ON s.id=rt.service_id
-            WHERE s.provider_id=%s
-            ORDER BY l.id DESC
-            LIMIT 50
-            """,
-            (session["user_id"],),
-        )
 
         return render_template(
             "provider_hotels_management.html",
-            hotel_stats=hotel_stats,
             hotels=hotels,
             room_types=room_types,
-            logs=logs,
         )
 
     @app.route("/provider/hotels-management/<int:service_id>", methods=["GET", "POST"])
@@ -601,10 +786,13 @@ def register_routes(app):
                 s.price,
                 s.service_name,
                 hp.*,
-                c.state_id AS city_state_id
+                c.state_id AS city_state_id,
+                c.city_name,
+                st.state_name
             FROM services s
             JOIN hotel_profiles hp ON hp.service_id=s.id
             LEFT JOIN cities c ON c.id=s.city_id
+            LEFT JOIN states st ON st.id=c.state_id
             WHERE s.id=%s AND s.provider_id=%s AND s.service_type='Hotel'
             """,
             (service_id, session["user_id"]),
@@ -617,8 +805,108 @@ def register_routes(app):
         if request.method == "POST":
             action = (request.form.get("action") or "update_hotel").strip()
 
-            if action in {"add_images", "replace_image", "set_cover_image"}:
-                flash("Hotel image update options are removed.")
+            if action == "add_photos":
+                photo_files = request.files.getlist("hotel_photos")
+                uploaded_photo_paths, photo_error = _save_hotel_photo_files(photo_files, require_any=True)
+                if photo_error:
+                    flash(photo_error)
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+                db = get_db()
+                cur = db.cursor()
+                try:
+                    uploaded_count = _insert_hotel_images(
+                        cur,
+                        service_id,
+                        uploaded_photo_paths,
+                        image_title=hotel.get("hotel_name") or None,
+                    )
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    flash("Unable to upload hotel photos.")
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+                finally:
+                    cur.close()
+                    db.close()
+
+                flash(f"{uploaded_count} hotel photo(s) uploaded.")
+                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+            if action == "set_cover_photo":
+                image_id = to_int(request.form.get("image_id"), 0)
+                if image_id <= 0:
+                    flash("Invalid photo selected.")
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+                db = get_db()
+                cur = db.cursor()
+                try:
+                    cur.execute(
+                        "SELECT id FROM hotel_images WHERE id=%s AND service_id=%s LIMIT 1",
+                        (image_id, service_id),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        flash("Photo not found.")
+                        return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+                    cur.execute("UPDATE hotel_images SET is_cover=0 WHERE service_id=%s", (service_id,))
+                    cur.execute("UPDATE hotel_images SET is_cover=1 WHERE id=%s", (image_id,))
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    flash("Unable to update cover photo.")
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+                finally:
+                    cur.close()
+                    db.close()
+
+                flash("Cover photo updated.")
+                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+            if action == "delete_photo":
+                image_id = to_int(request.form.get("image_id"), 0)
+                if image_id <= 0:
+                    flash("Invalid photo selected.")
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+                db = get_db()
+                cur = db.cursor()
+                try:
+                    cur.execute(
+                        "SELECT id, is_cover FROM hotel_images WHERE id=%s AND service_id=%s LIMIT 1",
+                        (image_id, service_id),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        flash("Photo not found.")
+                        return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+                    was_cover = bool(to_int(row[1], 0))
+                    cur.execute("DELETE FROM hotel_images WHERE id=%s AND service_id=%s", (image_id, service_id))
+
+                    if was_cover:
+                        cur.execute("SELECT id FROM hotel_images WHERE service_id=%s ORDER BY id ASC LIMIT 1", (service_id,))
+                        next_row = cur.fetchone()
+                        if next_row:
+                            cur.execute("UPDATE hotel_images SET is_cover=0 WHERE service_id=%s", (service_id,))
+                            cur.execute("UPDATE hotel_images SET is_cover=1 WHERE id=%s", (next_row[0],))
+
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    flash("Unable to delete photo.")
+                    return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+                finally:
+                    cur.close()
+                    db.close()
+
+                flash("Photo deleted.")
+                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
+
+            if action != "update_hotel":
+                flash("Invalid action.")
                 return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
 
             hotel_name = request.form.get("hotel_name", "").strip()
@@ -626,14 +914,20 @@ def register_routes(app):
             star_rating = to_int(request.form.get("star_rating"), 0)
             city_id = to_int(request.form.get("city_id"), 0)
             address_line1 = request.form.get("address_line1", "").strip()
-            address_line2 = request.form.get("address_line2", "").strip()
+            address_line2 = request.form.get("address_line2", hotel.get("address_line2") or "").strip()
             locality = request.form.get("locality", "").strip()
-            landmark = request.form.get("landmark", "").strip()
+            landmark = request.form.get("landmark", hotel.get("landmark") or "").strip()
             pincode = request.form.get("pincode", "").strip()
-            latitude = (request.form.get("latitude") or "").strip() or None
-            longitude = (request.form.get("longitude") or "").strip() or None
-            check_in_time = request.form.get("check_in_time") or None
-            check_out_time = request.form.get("check_out_time") or None
+            check_in_time = request.form.get("check_in_time")
+            if check_in_time is None:
+                check_in_time = hotel.get("check_in_time")
+            else:
+                check_in_time = check_in_time or None
+            check_out_time = request.form.get("check_out_time")
+            if check_out_time is None:
+                check_out_time = hotel.get("check_out_time")
+            else:
+                check_out_time = check_out_time or None
             base_price = request.form.get("base_price", "0").strip() or "0"
             hotel_description = request.form.get("hotel_description", "").strip()
             house_rules = request.form.get("house_rules", "").strip()
@@ -642,8 +936,8 @@ def register_routes(app):
             owner_name = request.form.get("owner_name", "").strip()
             hotel_contact_phone = request.form.get("hotel_contact_phone", "").strip()
             hotel_contact_email = request.form.get("hotel_contact_email", "").strip().lower()
-            gst_number = request.form.get("gst_number", "").strip().upper()
-            trade_license_number = request.form.get("trade_license_number", "").strip()
+            gst_number = request.form.get("gst_number", hotel.get("gst_number") or "").strip().upper()
+            trade_license_number = request.form.get("trade_license_number", hotel.get("trade_license_number") or "").strip()
             registration_doc = request.files.get("registration_doc")
             couple_friendly = 1 if request.form.get("couple_friendly") else 0
             pets_allowed = 1 if request.form.get("pets_allowed") else 0
@@ -695,20 +989,6 @@ def register_routes(app):
                 return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
             if pincode and not is_valid_pincode(pincode):
                 flash("Pincode must be 6 digits.")
-                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
-            has_lat = bool(latitude)
-            has_lng = bool(longitude)
-            if has_lat != has_lng:
-                flash("Enter both latitude and longitude together, or leave both blank.")
-                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
-            if latitude and not is_valid_latitude(latitude):
-                flash("Latitude must be between -90 and 90.")
-                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
-            if longitude and not is_valid_longitude(longitude):
-                flash("Longitude must be between -180 and 180.")
-                return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
-            if has_lat and has_lng and not is_within_india_bounds(latitude, longitude):
-                flash("Hotel coordinates must be inside India.")
                 return redirect(url_for("provider_hotel_manage_detail", service_id=service_id))
             if not is_non_negative_amount(base_price):
                 flash("Base price must be a non-negative number.")
@@ -768,8 +1048,6 @@ def register_routes(app):
                     locality=%s,
                     landmark=%s,
                     pincode=%s,
-                    latitude=%s,
-                    longitude=%s,
                     check_in_time=%s,
                     check_out_time=%s,
                     hotel_description=%s,
@@ -797,8 +1075,6 @@ def register_routes(app):
                     locality or None,
                     landmark or None,
                     pincode or None,
-                    latitude,
-                    longitude,
                     check_in_time,
                     check_out_time,
                     hotel_description or None,
@@ -837,6 +1113,26 @@ def register_routes(app):
             (service_id,),
         )
         selected_amenity_ids = {to_int(row.get("amenity_id"), 0) for row in selected_amenity_rows}
+        selected_amenity_name_rows = query_db(
+            """
+            SELECT am.amenity_name
+            FROM hotel_amenities ha
+            JOIN amenity_master am ON am.id=ha.amenity_id
+            WHERE ha.service_id=%s
+            ORDER BY am.amenity_name ASC
+            """,
+            (service_id,),
+        )
+        selected_amenity_names = [row.get("amenity_name") for row in selected_amenity_name_rows if row.get("amenity_name")]
+        hotel_images = query_db(
+            """
+            SELECT id, image_url, image_title, is_cover
+            FROM hotel_images
+            WHERE service_id=%s
+            ORDER BY is_cover DESC, id ASC
+            """,
+            (service_id,),
+        )
         room_types = query_db(
             """
             SELECT id, room_type_name, base_price, total_rooms, available_rooms
@@ -852,7 +1148,9 @@ def register_routes(app):
             hotel=hotel,
             amenities=amenities,
             selected_amenity_ids=selected_amenity_ids,
+            selected_amenity_names=selected_amenity_names,
             states=states,
             cities=cities,
+            hotel_images=hotel_images,
             room_types=room_types,
         )

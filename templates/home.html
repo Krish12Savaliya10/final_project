@@ -14,7 +14,7 @@
 
         <form action="{{ url_for('tour') }}" method="GET" class="col-md-6 mx-auto">
             <div class="mb-3">
-                <input type="text" name="search" class="form-control shadow"
+                <input type="text" name="search" class="form-control shadow hero-search-input"
                     placeholder="Where is your dream destination?">
             </div>
             <button type="submit" class="btn btn-primary btn-lg w-75 rounded-pill shadow">
@@ -61,18 +61,6 @@
                             <span class="badge bg-secondary">{{ tour.linked_guides_count }} Guide Options</span>
                             {% endif %}
                         </div>
-                        {% if tour.transport_details %}
-                        <p class="small text-muted mb-2"><span class="fw-semibold">Transport Details:</span> {{ tour.transport_details }}</p>
-                        {% endif %}
-                        {% if tour.transport_vehicle_image %}
-                        {% set tr_img = tour.transport_vehicle_image if tour.transport_vehicle_image.startswith('http://') or tour.transport_vehicle_image.startswith('https://') else url_for('static', filename='uploads/' ~ tour.transport_vehicle_image) %}
-                        <img src="{{ tr_img }}"
-                             class="img-fluid rounded border mb-2"
-                             style="height:72px; width:100%; object-fit:cover;"
-                             alt="Transport vehicle"
-                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
-                        {% endif %}
-
                         <p class="fw-bold text-dark">₹{{ tour.price }}</p>
 
                         <a href="{{ url_for('booking', tour_id=tour.id) }}"

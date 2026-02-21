@@ -85,9 +85,6 @@
 </button>
 
 {% if session.get('role') == 'customer' %}
-<a href="{{ url_for('my_trip_planner') }}">
-<i class="bi bi-map"></i> My Trip Planner
-</a>
 <a href="{{ url_for('mybookings') }}">
 <i class="bi bi-ticket-perforated"></i> My Bookings
 </a>

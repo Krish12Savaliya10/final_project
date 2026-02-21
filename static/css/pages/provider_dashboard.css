@@ -10,6 +10,17 @@
     letter-spacing: 0.1px;
 }
 
+.provider-dashboard-page .dashboard-toolbar-card .btn {
+    font-weight: 600;
+}
+
+.provider-dashboard-page .provider-header {
+    border-radius: 16px;
+    border: 1px solid var(--provider-line);
+    background: var(--provider-surface);
+    padding: 14px 16px;
+}
+
 .provider-dashboard-page .panel-card {
     border-radius: 16px;
     border: 1px solid var(--provider-line);
@@ -74,6 +85,12 @@ body.dark-mode .provider-dashboard-page {
 
 html[data-theme="dark"] .provider-dashboard-page .panel-card,
 body.dark-mode .provider-dashboard-page .panel-card {
+    background: var(--provider-surface);
+    border-color: var(--provider-line);
+}
+
+html[data-theme="dark"] .provider-dashboard-page .provider-header,
+body.dark-mode .provider-dashboard-page .provider-header {
     background: var(--provider-surface);
     border-color: var(--provider-line);
 }

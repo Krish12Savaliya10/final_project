@@ -10,8 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
@@ -19,44 +18,47 @@
 
 <body class="dashboard-shell organizer-dashboard">
 
-<div class="admin-topbar d-flex justify-content-between align-items-center">
-    <div class="brand">
-        <i class="bi bi-compass"></i> TourGen Organizer
-    </div>
-
-    <div class="d-flex align-items-center topbar-actions">
-        <div class="dropdown me-2">
-            <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-person-circle"></i> Profile
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                <li class="px-3 py-2 profile-summary">
-                    <div class="small text-muted">Signed in as</div>
-                    <div class="fw-semibold">{{ session.get('username', 'Organizer') }}</div>
-                    <div class="small text-uppercase text-muted">{{ session.get('role', 'organizer') }}</div>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
-                        <i class="bi bi-person-lines-fill me-1"></i> View Profile
-                    </button>
-                </li>
-                <li>
-                    <button class="dropdown-item" type="button" data-theme-toggle>
-                        <i class="bi bi-moon-stars me-1"></i> <span data-theme-label>Dark Mode</span>
-                    </button>
-                </li>
-            </ul>
+<div class="admin-topbar dashboard-topbar">
+    <div class="container-fluid d-flex justify-content-between align-items-center gap-2">
+        <div class="dashboard-brand">
+            <i class="bi bi-compass"></i> TourGen {{ panel_title or 'Organizer Panel' }}
         </div>
-        <a href="{{ url_for('home') }}" class="btn btn-outline-light btn-sm me-2">
-            <i class="bi bi-globe"></i> View Public Website
-        </a>
-        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">
-            Logout
-        </a>
+
+        <div class="d-flex align-items-center topbar-actions">
+            <div class="dropdown me-2">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle"></i> Profile
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                    <li class="px-3 py-2 profile-summary">
+                        <div class="small text-muted">Signed in as</div>
+                        <div class="fw-semibold">{{ session.get('username', 'Organizer') }}</div>
+                        <div class="small text-uppercase text-muted">{{ session.get('role', 'organizer') }}</div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
+                            <i class="bi bi-person-lines-fill me-1"></i> View Profile
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" type="button" data-theme-toggle>
+                            <i class="bi bi-moon-stars me-1"></i> <span data-theme-label>Dark Mode</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <a href="{{ url_for('home') }}" class="btn btn-outline-light btn-sm me-2">
+                <i class="bi bi-globe"></i> View Public Website
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">
+                Logout
+            </a>
+        </div>
     </div>
 </div>
 
+<div class="container py-4 dashboard-page">
 <div class="admin-layout">
 <aside class="admin-sidebar">
     <button class="sidebar-link active" data-section="tours" onclick="showSection('tours')">
@@ -90,18 +92,24 @@
 <div class="row g-4">
 {% for tour in tours %}
 <div class="col-md-4">
-<div class="card shadow-sm h-100">
-
-<img src="{{ url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) }}"
+<div class="card shadow-sm h-100 tour-card">
+	
+{% set tour_image_src = url_for('static', filename='uploads/' + (tour.image_path or 'demo.jpg')) %}
+<a href="{{ tour_image_src }}" target="_blank" rel="noopener" class="tour-photo-link" title="Open full image">
+<img src="{{ tour_image_src }}"
+     class="tour-card-img"
      onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
-
+</a>
+	
 <div class="card-body">
 <h5 class="fw-bold">{{ tour.title }}</h5>
 <p class="text-muted small">{{ tour.start_point }} ➜ {{ tour.end_point }}</p>
+<div class="small mb-1"><span class="text-muted">Departure City:</span> <span class="fw-semibold">{{ tour.pickup_city_name or '-' }}{% if tour.pickup_state_name %}, {{ tour.pickup_state_name }}{% endif %}</span></div>
+<div class="small mb-2"><span class="text-muted">Destination City:</span> <span class="fw-semibold">{{ tour.drop_city_name or '-' }}{% if tour.drop_state_name %}, {{ tour.drop_state_name }}{% endif %}</span></div>
 
 <div class="d-flex justify-content-between align-items-center">
 <span class="text-primary fw-bold">₹{{ tour.price }}</span>
-<span class="badge bg-light text-dark border">{{ tour.start_date }}</span>
+<span class="badge bg-light text-dark border">{{ tour.departure_datetime or tour.start_date or '-' }}</span>
 </div>
 <div class="small mt-2">
 Seats: {{ tour.booked_pax or 0 }}{% if tour.max_group_size %} / {{ tour.max_group_size }}{% endif %}
@@ -159,6 +167,7 @@ Status:
       <thead>
         <tr>
           <th>Tour</th>
+          <th>City Route</th>
           <th>App Bookings</th>
           <th>App Pax</th>
           <th>Paid App Bookings</th>
@@ -176,6 +185,10 @@ Status:
             <div class="fw-semibold">{{ row.title }}</div>
             <div class="small text-muted text-capitalize">{{ row.tour_status or 'open' }}</div>
           </td>
+          <td>
+            <div class="small">{{ row.pickup_city_name or '-' }}{% if row.pickup_state_name %}, {{ row.pickup_state_name }}{% endif %}</div>
+            <div class="small text-muted">to {{ row.drop_city_name or '-' }}{% if row.drop_state_name %}, {{ row.drop_state_name }}{% endif %}</div>
+          </td>
           <td>{{ row.internal_booking_count }}</td>
           <td>{{ row.internal_pax }}</td>
           <td>{{ row.paid_booking_count }}</td>
@@ -191,6 +204,72 @@ Status:
   </div>
   {% else %}
   <div class="text-muted small">No tours found for booking summary.</div>
+  {% endif %}
+</div>
+
+<div class="card p-3 shadow-sm mt-4">
+  <h5 class="fw-bold mb-3">Joined Travelers Details (App Bookings)</h5>
+  {% if joined_travelers %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Tour</th>
+          <th>Booking</th>
+          <th>Traveler</th>
+          <th>Age</th>
+          <th>Category</th>
+          <th>Contact</th>
+          <th>ID Proof</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tr in joined_travelers %}
+        <tr>
+          <td>{{ tr.booking_date }}</td>
+          <td>{{ tr.tour_title }}</td>
+          <td>#{{ tr.booking_id }}</td>
+          <td>
+            <div class="fw-semibold">{{ tr.traveler_name }}</div>
+            <div class="small text-muted">Lead: {{ tr.lead_traveler_name }}</div>
+          </td>
+          <td>{{ tr.age or '-' }}</td>
+          <td>
+            {% if tr.is_child %}
+            <span class="badge bg-info text-dark">Child</span>
+            {% else %}
+            <span class="badge bg-secondary">Adult</span>
+            {% endif %}
+          </td>
+          <td>{{ tr.contact_number or tr.lead_traveler_phone or '-' }}</td>
+          <td>
+            {% if tr.id_proof_type or tr.id_proof_number %}
+            {{ tr.id_proof_type or 'ID' }}{% if tr.id_proof_number %}: {{ tr.id_proof_number }}{% endif %}
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td>
+            {% set row_status = (tr.booking_status or '').lower() %}
+            {% if row_status == 'paid' %}
+            <span class="badge bg-success">paid</span>
+            {% elif row_status == 'pending' %}
+            <span class="badge bg-warning text-dark">pending</span>
+            {% elif row_status == 'cancelled' %}
+            <span class="badge bg-danger">cancelled</span>
+            {% else %}
+            <span class="badge bg-secondary">{{ tr.booking_status or '-' }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted small">No joined traveler details found yet.</div>
   {% endif %}
 </div>
 
@@ -309,13 +388,18 @@ If using local photo, keep the file in <code>static/uploads/spots/</code> (or <c
 <td>{{ s.spot_name }}</td>
 <td>
 {% if s.photo_source == 'external_url' %}
+<a href="{{ s.image_url }}" target="_blank" rel="noopener" class="dashboard-thumb-link" title="Open full image">
 <img src="{{ s.image_url }}"
-onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
-width="50" height="50" class="rounded">
+     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+     class="dashboard-thumb-img">
+</a>
 {% else %}
-<img src="{{ url_for('static', filename='uploads/' + (s.image_url or 'demo.jpg')) }}"
-onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
-width="50" height="50" class="rounded">
+{% set spot_image_src = url_for('static', filename='uploads/' + (s.image_url or 'demo.jpg')) %}
+<a href="{{ spot_image_src }}" target="_blank" rel="noopener" class="dashboard-thumb-link" title="Open full image">
+<img src="{{ spot_image_src }}"
+     onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
+     class="dashboard-thumb-img">
+</a>
 {% endif %}
 </td>
 <td style="min-width:290px;">
@@ -337,6 +421,14 @@ width="50" height="50" class="rounded">
 
 <div class="card p-4 shadow-sm mt-4">
 <h6 class="fw-bold mb-2">My Spot/Image Requests</h6>
+<div class="row g-2 mb-3">
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Total</div><div class="fw-bold">{{ request_stats.total }}</div></div></div>
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Pending</div><div class="fw-bold text-secondary">{{ request_stats.pending }}</div></div></div>
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Approved</div><div class="fw-bold text-success">{{ request_stats.approved }}</div></div></div>
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Rejected</div><div class="fw-bold text-danger">{{ request_stats.rejected }}</div></div></div>
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Add Spot</div><div class="fw-bold">{{ request_stats.add_spot }}</div></div></div>
+<div class="col-6 col-md-2"><div class="border rounded p-2"><div class="small text-muted">Image Update</div><div class="fw-bold">{{ request_stats.update_image }}</div></div></div>
+</div>
 {% if spot_requests %}
 <div class="table-responsive">
 <table class="table table-sm table-hover align-middle">
@@ -412,7 +504,7 @@ width="50" height="50" class="rounded">
 <div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Hotels</div><div class="fw-bold fs-4">{{ analytics.partner_hotels }}</div></div>
 </div>
 <div class="col-md-4 col-lg-1">
-<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Transport Added</div><div class="fw-bold fs-4">{{ analytics.partner_transport }}</div></div>
+<div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Requests</div><div class="fw-bold fs-4">{{ analytics.spot_requests }}</div></div>
 </div>
 <div class="col-md-6 col-lg-3">
 <div class="card p-3 shadow-sm stat-box"><div class="small text-muted">Total Organizer Profit</div><div class="fw-bold fs-4">₹{{ analytics.total_profit }}</div></div>
@@ -422,48 +514,7 @@ width="50" height="50" class="rounded">
 </div>
 </div>
 
-{% if analytics.chart_error %}
-<div class="alert alert-warning">{{ analytics.chart_error }}</div>
-{% endif %}
-
 <div class="row g-4">
-<div class="col-lg-8">
-<div class="card p-3 shadow-sm h-100">
-<h6 class="fw-bold mb-3">Tours By Month</h6>
-{% if analytics.charts.tours_by_month %}
-<div class="chart-wrap">
-<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.tours_by_month }}" alt="Tours by month chart">
-</div>
-{% else %}
-<div class="text-muted small">Not enough data yet.</div>
-{% endif %}
-</div>
-</div>
-<div class="col-lg-4">
-<div class="card p-3 shadow-sm h-100">
-<h6 class="fw-bold mb-3">Booking Status Split</h6>
-{% if analytics.charts.booking_status %}
-<div class="chart-wrap">
-<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.booking_status }}" alt="Booking status chart">
-</div>
-{% else %}
-<div class="text-muted small">Not enough data yet.</div>
-{% endif %}
-</div>
-</div>
-<div class="col-12">
-<div class="card p-3 shadow-sm">
-<h6 class="fw-bold mb-3">Travel Mode Distribution</h6>
-{% if analytics.charts.travel_mode %}
-<div class="chart-wrap">
-<img class="chart-img" src="data:image/png;base64,{{ analytics.charts.travel_mode }}" alt="Travel mode chart">
-</div>
-{% else %}
-<div class="text-muted small">Not enough data yet.</div>
-{% endif %}
-</div>
-</div>
-
 <div class="col-12">
 <div class="card p-3 shadow-sm">
 <h6 class="fw-bold mb-3">Outside Booking Entries</h6>
@@ -497,6 +548,7 @@ width="50" height="50" class="rounded">
 </div>
 
 </main>
+</div>
 </div>
 
 <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
@@ -574,8 +626,6 @@ width="50" height="50" class="rounded">
 <input type="text" id="spotLongitudeInput" name="longitude" class="form-control" placeholder="Longitude (optional)">
 </div>
 </div>
-<div id="spotLocationMap" class="spot-location-map mb-2"></div>
-<div class="spot-location-help mb-3">Click on the map to set spot coordinates inside India.</div>
 
 <input type="file" name="spot_image" class="form-control" accept="image/*">
 <input type="url" name="external_image_url" class="form-control mt-2" placeholder="Or paste external image URL (https://...)">
@@ -600,86 +650,40 @@ width="50" height="50" class="rounded">
 </div>
 
 <div class="modal-body">
-<div class="accordion tour-builder-accordion" id="tourBuilderAccordion">
-<div class="accordion-item">
-<h2 class="accordion-header" id="tourBasicHeading">
-<button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tourBasicSection" aria-expanded="true" aria-controls="tourBasicSection">
-1. Basic Info
-</button>
-</h2>
-<div id="tourBasicSection" class="accordion-collapse collapse show" aria-labelledby="tourBasicHeading" data-bs-parent="#tourBuilderAccordion">
-<div class="accordion-body">
+<div class="tour-builder-single">
+<h6 class="fw-bold mb-3">1. Basic Info</h6>
 <div class="row g-3 mb-3">
-<div class="col-md-8">
-<input type="text" name="title" class="form-control" placeholder="Tour Title" required>
+<div class="col-md-6">
+<input type="text" name="title" class="form-control" placeholder="Tour Name" required>
 </div>
-<div class="col-md-4">
-<input type="number" name="price" class="form-control" placeholder="Base Price" required>
+<div class="col-md-3">
+<input type="number" name="price" class="form-control" placeholder="Adult Base Price" min="0" step="0.01" required>
+</div>
+<div class="col-md-3">
+<input type="number" name="child_price_amount" id="childPriceAmount" class="form-control" placeholder="Children Price" min="0" step="0.01" required>
 </div>
 </div>
+<input type="hidden" name="child_price_percent" id="childPricePercent" value="100">
+<input type="hidden" name="start_point" id="startPointHidden">
+<input type="hidden" name="end_point" id="endPointHidden">
+<div class="small text-muted mb-3">Child fare ratio: <span id="childPercentPreview">0.00%</span> of adult fare.</div>
 <textarea name="description" class="form-control mb-3" placeholder="Tour Description"></textarea>
-<div class="row g-3 mb-3">
-<div class="col-md-6">
-<input type="text" name="start_point" class="form-control" placeholder="Start Point" required>
-</div>
-<div class="col-md-6">
-<input type="text" name="end_point" class="form-control" placeholder="End Point" required>
-</div>
-</div>
-<div class="row g-3">
-<div class="col-md-6">
-<input type="date" name="start_date" class="form-control" required>
-</div>
-<div class="col-md-6">
-<input type="date" name="end_date" class="form-control" required>
-</div>
-</div>
-</div>
-</div>
-</div>
 
-<div class="accordion-item">
-<h2 class="accordion-header" id="tourEssentialsHeading">
-<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourEssentialsSection" aria-expanded="false" aria-controls="tourEssentialsSection">
-2. Tour Essentials
-</button>
-</h2>
-<div id="tourEssentialsSection" class="accordion-collapse collapse" aria-labelledby="tourEssentialsHeading" data-bs-parent="#tourBuilderAccordion">
-<div class="accordion-body">
+<hr class="my-4">
+<h6 class="fw-bold mb-3">2. Route & Schedule</h6>
 <div class="row g-3 mb-3">
 <div class="col-md-6">
-<label class="form-label small fw-semibold">Pickup State</label>
-<select name="pickup_state_id" id="pickupState" class="form-select city-state-control" required>
-<option value="">Select Pickup State</option>
-{% for s in states %}
-<option value="{{ s.id }}">{{ s.state_name }}</option>
-{% endfor %}
-</select>
-</div>
-<div class="col-md-6">
-<label class="form-label small fw-semibold">Pickup City</label>
-<select name="pickup_city_id" id="pickupCity" class="form-select city-control" data-require-state="1" required>
+<label class="form-label small fw-semibold">Primary Departure City</label>
+<select name="pickup_city_id" id="pickupCity" class="form-select city-control" required>
 <option value="">Select Pickup City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
 {% endfor %}
 </select>
 </div>
-</div>
-
-<div class="row g-3 mb-3">
 <div class="col-md-6">
-<label class="form-label small fw-semibold">Drop State</label>
-<select name="drop_state_id" id="dropState" class="form-select city-state-control" required>
-<option value="">Select Drop State</option>
-{% for s in states %}
-<option value="{{ s.id }}">{{ s.state_name }}</option>
-{% endfor %}
-</select>
-</div>
-<div class="col-md-6">
-<label class="form-label small fw-semibold">Drop City</label>
-<select name="drop_city_id" id="dropCity" class="form-select city-control" data-require-state="1" required>
+<label class="form-label small fw-semibold">Destination City</label>
+<select name="drop_city_id" id="dropCity" class="form-select city-control" required>
 <option value="">Select Drop City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -690,9 +694,9 @@ width="50" height="50" class="rounded">
 
 <div class="row g-3 mb-3">
 <div class="col-md-4">
-<label class="form-label small fw-semibold">Travel Mode</label>
-<select name="travel_mode" class="form-select">
-<option value="">Select Travel Mode</option>
+<label class="form-label small fw-semibold">Transport Vehicle Type</label>
+<select name="travel_mode" class="form-select" required>
+<option value="">Select Vehicle Type</option>
 <option value="Bus">Bus</option>
 <option value="Train">Train</option>
 <option value="Flight">Flight</option>
@@ -723,195 +727,83 @@ width="50" height="50" class="rounded">
 <input type="number" name="start_min_people" class="form-control" min="1" value="6">
 </div>
 <div class="col-md-4">
-<label class="form-label small fw-semibold">Child Price (% of Base Fare)</label>
-<input type="number" name="child_price_percent" class="form-control" min="0" max="100" step="0.01" value="100">
+<label class="form-label small fw-semibold">Tour Departure Date & Time</label>
+<input type="datetime-local" id="tourDepartureDateTime" name="departure_datetime" class="form-control" required>
 </div>
 <div class="col-md-4">
-<label class="form-label small fw-semibold">Difficulty</label>
-<select name="difficulty_level" class="form-select">
-<option value="">Select Difficulty</option>
-<option value="Easy">Easy</option>
-<option value="Moderate">Moderate</option>
-<option value="Challenging">Challenging</option>
-</select>
-</div>
-</div>
-
-<div class="row g-3 mb-3">
-<div class="col-md-6">
-<label class="form-label small fw-semibold">Tour Departure Date & Time</label>
-<input type="datetime-local" name="departure_datetime" class="form-control">
-</div>
-<div class="col-md-6">
 <label class="form-label small fw-semibold">Tour Return Date & Time</label>
-<input type="datetime-local" name="return_datetime" class="form-control">
+<input type="datetime-local" id="tourReturnDateTime" name="return_datetime" class="form-control" required>
 </div>
-</div>
-
-<div class="mb-3">
-<label class="form-label small fw-semibold">Transport Details</label>
-<input type="text" name="transport_details" class="form-control" placeholder="AC coach + local cab">
-<div class="small text-muted mt-1">Optional: if empty, selected partner transport names are auto-saved here.</div>
 </div>
 
 <div class="mb-3">
 <label class="form-label small fw-semibold">Inclusions</label>
-<textarea name="inclusions" class="form-control" rows="2" placeholder="Stay, meals, transfers, permits..."></textarea>
+<input type="hidden" name="inclusions" id="inclusionsInput" value="">
+<div class="row g-2">
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Hotel Stay"> Hotel Stay</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Breakfast"> Breakfast</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Dinner"> Dinner</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Local Transport"> Local Transport</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Sightseeing"> Sightseeing</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Guide"> Guide</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Entry Tickets"> Entry Tickets</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Permits"> Permits</label></div>
+<div class="col-md-4"><label class="form-check small"><input class="form-check-input inclusion-check" type="checkbox" name="inclusion_options[]" value="Pickup & Drop"> Pickup & Drop</label></div>
+</div>
 </div>
 <div class="mb-3">
 <label class="form-label small fw-semibold">Exclusions</label>
 <textarea name="exclusions" class="form-control" rows="2" placeholder="Flights, personal expenses..."></textarea>
 </div>
-<div>
-<label class="form-label small fw-semibold">Hotel / Stay Notes</label>
-<textarea name="hotel_notes" class="form-control" rows="2" placeholder="Stay category, check-in policy, room sharing..."></textarea>
-</div>
 <div class="mt-3">
 <label class="form-label small fw-semibold">Terms & Conditions (Minimum person, cancellation, etc.)</label>
 <textarea name="terms_conditions" class="form-control" rows="3" placeholder="Mention minimum travelers required, cancellation policy, timing rules..."></textarea>
 </div>
-</div>
-</div>
-</div>
 
-<div class="accordion-item">
-<h2 class="accordion-header" id="tourPartnerHeading">
-<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourPartnerSection" aria-expanded="false" aria-controls="tourPartnerSection">
-3. Partner Services
-</button>
-</h2>
-<div id="tourPartnerSection" class="accordion-collapse collapse" aria-labelledby="tourPartnerHeading" data-bs-parent="#tourBuilderAccordion">
-<div class="accordion-body">
-<h6 class="fw-bold mb-3">Partner Hotels (Optional)</h6>
+<hr class="my-4">
+<h6 class="fw-bold mb-3">3. Partner Services</h6>
+<h6 class="fw-bold mb-3">Partner Hotels (Destination State)</h6>
 <div class="row g-2 mb-3">
-<div class="col-md-6">
-<select id="hotelFilterState" class="form-select">
+<div class="col-md-12">
+<select id="hotelFilterState" class="form-select" disabled>
 <option value="">Filter Hotels by State</option>
 {% for s in states %}
 <option value="{{ s.id }}">{{ s.state_name }}</option>
 {% endfor %}
 </select>
 </div>
-<div class="col-md-6">
-<select id="hotelFilterCity" class="form-select" data-require-state="1">
-<option value="">Filter Hotels by City</option>
-{% for c in cities %}
-<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
-{% endfor %}
-</select>
 </div>
-</div>
-<div id="hotelLinkList" class="hotel-link-list border rounded p-2 mb-4">
+<div class="small text-muted mb-2">Hotels are auto-restricted to destination state only.</div>
+<div class="mb-4">
+<label class="form-label small fw-semibold">Select Hotel</label>
+<div class="input-group">
+<select id="hotelSelect" class="form-select" disabled>
+<option value="">Select Hotel</option>
 {% if hotel_options %}
 {% for h in hotel_options %}
-<label class="hotel-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ h.state_id or '' }}" data-city-id="{{ h.city_id or '' }}">
-<input class="form-check-input m-0" type="checkbox" name="linked_hotels[]" value="{{ h.service_id }}">
-<span class="small">{{ h.hotel_name }}{% if h.city_name %} - {{ h.city_name }}{% endif %}{% if h.state_name %}, {{ h.state_name }}{% endif %}</span>
-</label>
+<option value="{{ h.service_id }}" data-state-id="{{ h.state_id or '' }}">
+{{ h.hotel_name }}{% if h.city_name %} - {{ h.city_name }}{% endif %}{% if h.state_name %}, {{ h.state_name }}{% endif %}{% if h.owner_email %} | Owner Email: {{ h.owner_email }}{% endif %}
+</option>
 {% endfor %}
 {% else %}
-<div class="text-muted small">No published hotels found yet.</div>
+<option value="" disabled>No published hotels found yet.</option>
 {% endif %}
-</div>
-
-<h6 class="fw-bold mb-2">Night Stay Plan (Required if hotel linked)</h6>
-<p class="small text-muted mb-2">
-Mention exact check-in/check-out dates per hotel. This is shown to travelers on booking page.
-</p>
-<div id="hotel-stay-list"></div>
-<button type="button" class="btn btn-outline-secondary btn-sm mb-4" onclick="addHotelStayRow()">
-  + Add Night Stay
-</button>
-
-<h6 class="fw-bold mt-4 mb-3">Partner Guides (Optional)</h6>
-<div class="row g-2 mb-3">
-<div class="col-md-6">
-<select id="guideFilterState" class="form-select">
-<option value="">Filter Guides by State</option>
-{% for s in states %}
-<option value="{{ s.id }}">{{ s.state_name }}</option>
-{% endfor %}
 </select>
+<button type="button" id="addHotelBtn" class="btn btn-outline-primary">Add</button>
 </div>
-<div class="col-md-6">
-<select id="guideFilterCity" class="form-select" data-require-state="1">
-<option value="">Filter Guides by City</option>
-{% for c in cities %}
-<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
-{% endfor %}
-</select>
-</div>
-</div>
-<div id="guideLinkList" class="hotel-link-list border rounded p-2">
-{% if guide_options %}
-{% for g in guide_options %}
-<label class="guide-link-item d-flex align-items-center gap-2 mb-1" data-state-id="{{ g.state_id or '' }}" data-city-id="{{ g.city_id or '' }}">
-<input class="form-check-input m-0" type="checkbox" name="linked_guides[]" value="{{ g.service_id }}">
-<span class="small">{{ g.service_name }}{% if g.city_name %} - {{ g.city_name }}{% endif %}{% if g.state_name %}, {{ g.state_name }}{% endif %}{% if g.price %} | ₹{{ g.price }}{% endif %}</span>
-</label>
-{% endfor %}
-{% else %}
-<div class="text-muted small">No guide services found yet.</div>
-{% endif %}
-</div>
-
-<h6 class="fw-bold mt-4 mb-3">Partner Transports (Optional)</h6>
-<div class="row g-2 mb-3">
-<div class="col-md-6">
-<select id="transportFilterState" class="form-select">
-<option value="">Filter Transport by State</option>
-{% for s in states %}
-<option value="{{ s.id }}">{{ s.state_name }}</option>
-{% endfor %}
-</select>
-</div>
-<div class="col-md-6">
-<select id="transportFilterCity" class="form-select" data-require-state="1">
-<option value="">Filter Transport by City</option>
-{% for c in cities %}
-<option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
-{% endfor %}
-</select>
-</div>
-</div>
-<div id="transportLinkList" class="hotel-link-list border rounded p-2">
-{% if transport_options %}
-{% for tr in transport_options %}
-{% set tr_img = tr.vehicle_image_url if tr.vehicle_image_url and (tr.vehicle_image_url.startswith('http://') or tr.vehicle_image_url.startswith('https://')) else url_for('static', filename='uploads/' ~ (tr.vehicle_image_url or 'demo.jpg')) %}
-<label class="transport-link-item d-flex align-items-center gap-2 mb-2" data-state-id="{{ tr.state_id or '' }}" data-city-id="{{ tr.city_id or '' }}">
-<input class="form-check-input m-0" type="checkbox" name="linked_transports[]" value="{{ tr.service_id }}">
-<img src="{{ tr_img }}" alt="{{ tr.service_name }}" style="width:60px;height:40px;object-fit:cover;border-radius:8px;"
-onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
-<span class="small">{{ tr.service_name }}{% if tr.transport_type %} | {{ tr.transport_type }}{% endif %}{% if tr.city_name %} - {{ tr.city_name }}{% endif %}{% if tr.state_name %}, {{ tr.state_name }}{% endif %}</span>
-</label>
-{% endfor %}
-{% else %}
-<div class="text-muted small">No transport services found yet.</div>
-{% endif %}
-</div>
-
-<h6 class="fw-bold mt-4 mb-2">City-wise Schedule (Arrival / Departure Time)</h6>
-<p class="small text-muted mb-2">Optional detailed schedule for route cities.</p>
-<div id="city-schedule-list"></div>
-<button type="button" class="btn btn-outline-secondary btn-sm" onclick="addCityScheduleRow()">
-  + Add City Schedule
-</button>
-</div>
+<div class="small text-muted mt-1">Only destination-state hotels are available.</div>
+<div id="selectedHotelList" class="border rounded p-2 mt-2">
+<div id="selectedHotelEmpty" class="small text-muted">No hotel selected.</div>
 </div>
 </div>
 
-<div class="accordion-item">
-<h2 class="accordion-header" id="tourItineraryHeading">
-<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tourItinerarySection" aria-expanded="false" aria-controls="tourItinerarySection">
-4. Itinerary & Media
-</button>
-</h2>
-<div id="tourItinerarySection" class="accordion-collapse collapse" aria-labelledby="tourItineraryHeading" data-bs-parent="#tourBuilderAccordion">
-<div class="accordion-body">
+<hr class="my-4">
+<h6 class="fw-bold mb-3">4. Day-wise Spots & Media</h6>
 <h6 class="fw-bold">Itinerary</h6>
+<p class="small text-muted mb-2">Spots are auto-filtered from destination city only.</p>
 <div class="row g-2 mb-2">
 <div class="col-md-6">
-<select id="spotFilterState" class="form-select">
+<select id="spotFilterState" class="form-select" disabled>
 <option value="">Filter Spots by State</option>
 {% for s in states %}
 <option value="{{ s.id }}">{{ s.state_name }}</option>
@@ -919,7 +811,7 @@ onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo
 </select>
 </div>
 <div class="col-md-6">
-<select id="spotFilterCity" class="form-select" data-require-state="1">
+<select id="spotFilterCity" class="form-select" data-require-state="1" disabled>
 <option value="">Filter Spots by City</option>
 {% for c in cities %}
 <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
@@ -931,10 +823,8 @@ onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo
 <button type="button" class="btn btn-outline-primary mt-2" onclick="addItineraryRow()">+ Add Spot</button>
 
 <div class="mt-3">
-<label class="form-label small fw-semibold">Cover Image</label>
-<input type="file" name="tour_image" class="form-control">
-</div>
-</div>
+<label class="form-label small fw-semibold">Main Tour Image</label>
+<input type="file" name="tour_image" class="form-control" accept="image/*" required>
 </div>
 </div>
 </div>
@@ -949,7 +839,6 @@ onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo
 </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script id="spots-json" type="application/json">{{ spots|tojson }}</script>
 <script>
 let SPOTS = [];
@@ -970,119 +859,6 @@ const el = document.getElementById(id);
 if(el){
 el.addEventListener('change', handler);
 }
-}
-
-const INDIA_COORD_BOUNDS = {
-south: 6.4627,
-west: 68.1097,
-north: 37.0841,
-east: 97.3956
-};
-
-function parseCoordinate(value){
-const num = Number(value);
-return Number.isFinite(num) ? num : null;
-}
-
-function isIndiaCoordinate(lat, lng){
-return lat !== null
-&& lng !== null
-&& lat >= INDIA_COORD_BOUNDS.south
-&& lat <= INDIA_COORD_BOUNDS.north
-&& lng >= INDIA_COORD_BOUNDS.west
-&& lng <= INDIA_COORD_BOUNDS.east;
-}
-
-let spotMap = null;
-let spotMarker = null;
-let spotMapIndiaBounds = null;
-
-function getSpotCoordinateInputs(){
-return {
-latInput: document.getElementById('spotLatitudeInput'),
-lngInput: document.getElementById('spotLongitudeInput')
-};
-}
-
-function setSpotCoordinateInputs(lat, lng){
-const { latInput, lngInput } = getSpotCoordinateInputs();
-if(!latInput || !lngInput) return;
-latInput.value = Number(lat).toFixed(6);
-lngInput.value = Number(lng).toFixed(6);
-}
-
-function setSpotMarker(lat, lng, panTo){
-if(!spotMap) return;
-if(!spotMarker){
-spotMarker = L.marker([lat, lng], { draggable: true }).addTo(spotMap);
-spotMarker.on('dragend', function(){
-const point = spotMarker.getLatLng();
-if(!isIndiaCoordinate(point.lat, point.lng)){
-return;
-}
-setSpotCoordinateInputs(point.lat, point.lng);
-});
-}else{
-spotMarker.setLatLng([lat, lng]);
-}
-if(panTo){
-spotMap.panTo([lat, lng]);
-}
-}
-
-function syncSpotMarkerFromInputs(){
-const { latInput, lngInput } = getSpotCoordinateInputs();
-if(!latInput || !lngInput){
-return;
-}
-const lat = parseCoordinate(latInput.value);
-const lng = parseCoordinate(lngInput.value);
-if(!isIndiaCoordinate(lat, lng)){
-return;
-}
-setSpotMarker(lat, lng, false);
-}
-
-function initSpotMap(){
-if(spotMap || !window.L){
-return;
-}
-const mapEl = document.getElementById('spotLocationMap');
-if(!mapEl){
-return;
-}
-spotMapIndiaBounds = L.latLngBounds(
-L.latLng(INDIA_COORD_BOUNDS.south, INDIA_COORD_BOUNDS.west),
-L.latLng(INDIA_COORD_BOUNDS.north, INDIA_COORD_BOUNDS.east)
-);
-spotMap = L.map('spotLocationMap', {
-maxBounds: spotMapIndiaBounds,
-maxBoundsViscosity: 1.0,
-minZoom: 4
-});
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-maxZoom: 18,
-attribution: '&copy; OpenStreetMap contributors'
-}).addTo(spotMap);
-spotMap.fitBounds(spotMapIndiaBounds, { padding: [14, 14] });
-spotMap.on('click', function(evt){
-const lat = Number(evt.latlng.lat);
-const lng = Number(evt.latlng.lng);
-if(!isIndiaCoordinate(lat, lng)){
-return;
-}
-setSpotMarker(lat, lng, true);
-setSpotCoordinateInputs(lat, lng);
-});
-
-const { latInput, lngInput } = getSpotCoordinateInputs();
-if(latInput){
-latInput.addEventListener('input', syncSpotMarkerFromInputs);
-}
-if(lngInput){
-lngInput.addEventListener('input', syncSpotMarkerFromInputs);
-}
-syncSpotMarkerFromInputs();
 }
 
 function updateCityOptions(stateId, citySelectRef){
@@ -1115,78 +891,257 @@ citySelect.value = '';
 }
 }
 
-function filterHotelLinks(){
-const stateId = getValueById('hotelFilterState');
-const cityId = getValueById('hotelFilterCity');
-document.querySelectorAll('#hotelLinkList .hotel-link-item').forEach((item) => {
-const stateOk = !stateId || item.dataset.stateId === stateId;
-const cityOk = !cityId || item.dataset.cityId === cityId;
-item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
-});
-refreshHotelStayHotelOptions();
-}
-
-function getCheckedHotelIds(){
-return Array.from(document.querySelectorAll('input[name="linked_hotels[]"]:checked')).map((el) => String(el.value));
-}
-
-function getHotelStayOptionsMarkup(selectedHotel){
-const selectedIds = getCheckedHotelIds();
-const selectedSet = new Set(selectedIds);
-let options = '<option value="">Select Linked Hotel</option>';
-document.querySelectorAll('#hotelLinkList input[name="linked_hotels[]"]').forEach((checkbox) => {
-const label = checkbox.closest('label');
-const textSpan = label ? label.querySelector('span') : null;
-const optionText = textSpan ? textSpan.textContent.trim() : checkbox.value;
-const shouldShow = selectedIds.length === 0 || selectedSet.has(String(checkbox.value));
-if(!shouldShow){
+function updateChildPriceMeta(){
+const basePriceInput = document.querySelector('input[name="price"]');
+const childPriceInput = document.getElementById('childPriceAmount');
+const childPercentInput = document.getElementById('childPricePercent');
+const preview = document.getElementById('childPercentPreview');
+if(!basePriceInput || !childPriceInput || !childPercentInput){
 return;
 }
-const selected = String(selectedHotel || '') === String(checkbox.value) ? ' selected' : '';
-options += `<option value="${checkbox.value}"${selected}>${optionText}</option>`;
-});
-return options;
+const base = Number.parseFloat(basePriceInput.value || '0');
+const normalizedBase = Number.isFinite(base) && base > 0 ? base : 0;
+const child = Number.parseFloat(childPriceInput.value || '0');
+const normalizedChild = Number.isFinite(child) && child >= 0 ? child : 0;
+const percent = normalizedBase > 0 ? (normalizedChild / normalizedBase) * 100 : 0;
+const normalizedPercent = Number.isFinite(percent) && percent >= 0 ? percent : 0;
+childPercentInput.value = normalizedPercent.toFixed(2);
+if(preview){
+preview.textContent = `${normalizedPercent.toFixed(2)}%`;
+}
 }
 
-function refreshHotelStayHotelOptions(){
-document.querySelectorAll('#hotel-stay-list select[name="hotel_stay_service_ids[]"]').forEach((selectEl) => {
-const current = selectEl.value;
-selectEl.innerHTML = getHotelStayOptionsMarkup(current);
+function syncInclusionsField(){
+const inclusionsInput = document.getElementById('inclusionsInput');
+if(!inclusionsInput){
+return;
+}
+const values = Array.from(document.querySelectorAll('input[name="inclusion_options[]"]:checked'))
+.map((el) => (el.value || '').trim())
+.filter(Boolean);
+inclusionsInput.value = values.join(', ');
+}
+
+function syncRoutePointFields(){
+const pickupCity = document.getElementById('pickupCity');
+const dropCity = document.getElementById('dropCity');
+const startPoint = document.getElementById('startPointHidden');
+const endPoint = document.getElementById('endPointHidden');
+if(pickupCity && startPoint){
+const selected = pickupCity.options[pickupCity.selectedIndex];
+startPoint.value = selected && selected.value ? selected.textContent.trim() : '';
+}
+if(dropCity && endPoint){
+const selected = dropCity.options[dropCity.selectedIndex];
+endPoint.value = selected && selected.value ? selected.textContent.trim() : '';
+}
+}
+
+function syncTourScheduleBounds(){
+const departureInput = document.getElementById('tourDepartureDateTime');
+const returnInput = document.getElementById('tourReturnDateTime');
+if(!departureInput || !returnInput){
+return;
+}
+returnInput.min = departureInput.value || '';
+returnInput.setCustomValidity('');
+if(departureInput.value && returnInput.value && returnInput.value <= departureInput.value){
+returnInput.setCustomValidity('Return date/time must be after departure date/time.');
+}
+}
+
+function validateTourScheduleBounds(event){
+const departureInput = document.getElementById('tourDepartureDateTime');
+const returnInput = document.getElementById('tourReturnDateTime');
+if(!departureInput || !returnInput){
+return true;
+}
+syncTourScheduleBounds();
+if(departureInput.value && returnInput.value && returnInput.value <= departureInput.value){
+if(event){
+event.preventDefault();
+}
+returnInput.reportValidity();
+return false;
+}
+return true;
+}
+
+function syncDestinationDrivenFilters(){
+const dropCity = document.getElementById('dropCity');
+const hotelState = document.getElementById('hotelFilterState');
+const spotState = document.getElementById('spotFilterState');
+const spotCity = document.getElementById('spotFilterCity');
+if(!dropCity){
+return;
+}
+
+const selectedOption = dropCity.options[dropCity.selectedIndex];
+const destinationCityId = String(dropCity.value || '');
+const destinationStateId = selectedOption ? String(selectedOption.dataset.stateId || '') : '';
+
+if(!destinationCityId || !destinationStateId){
+if(spotState){
+spotState.value = '';
+spotState.disabled = true;
+}
+if(spotCity){
+updateCityOptions('', spotCity);
+spotCity.value = '';
+spotCity.disabled = true;
+}
+if(hotelState){
+hotelState.value = '';
+hotelState.disabled = true;
+}
+refreshItinerarySpotOptions();
+filterHotelLinks();
+return;
+}
+
+if(spotState){
+spotState.value = destinationStateId;
+spotState.disabled = true;
+}
+if(spotCity){
+updateCityOptions(destinationStateId, spotCity);
+spotCity.value = destinationCityId;
+spotCity.disabled = true;
+}
+
+if(hotelState){
+hotelState.value = destinationStateId;
+hotelState.disabled = true;
+}
+
+refreshItinerarySpotOptions();
+filterHotelLinks();
+}
+
+function filterHotelLinks(){
+const stateId = getValueById('hotelFilterState');
+const hotelSelect = document.getElementById('hotelSelect');
+if(!hotelSelect){
+return;
+}
+const hasState = !!stateId;
+hotelSelect.disabled = !hasState;
+Array.from(hotelSelect.options).forEach((opt) => {
+const value = String(opt.value || '');
+if(!value){
+opt.hidden = false;
+opt.disabled = false;
+return;
+}
+const stateOk = hasState && String(opt.dataset.stateId || '') === stateId;
+opt.hidden = !stateOk;
+opt.disabled = !stateOk;
+});
+if(hotelSelect.value){
+const selected = hotelSelect.querySelector(`option[value="${hotelSelect.value}"]`);
+if(!selected || selected.disabled || selected.hidden){
+hotelSelect.value = '';
+}
+}
+pruneSelectedHotelsByState(stateId);
+toggleSelectedHotelEmpty();
+}
+
+function getSelectedHotelIds(){
+return Array.from(document.querySelectorAll('#selectedHotelList input[name="linked_hotels[]"]'))
+.map((el) => String(el.value || ''));
+}
+
+function toggleSelectedHotelEmpty(){
+const empty = document.getElementById('selectedHotelEmpty');
+if(!empty){
+return;
+}
+empty.style.display = getSelectedHotelIds().length ? 'none' : 'block';
+}
+
+function pruneSelectedHotelsByState(stateId){
+const state = String(stateId || '');
+document.querySelectorAll('#selectedHotelList .selected-hotel-item').forEach((item) => {
+if(!state || String(item.dataset.stateId || '') !== state){
+item.remove();
+}
 });
 }
 
-function filterGuideLinks(){
-const stateId = getValueById('guideFilterState');
-const cityId = getValueById('guideFilterCity');
-document.querySelectorAll('#guideLinkList .guide-link-item').forEach((item) => {
-const stateOk = !stateId || item.dataset.stateId === stateId;
-const cityOk = !cityId || item.dataset.cityId === cityId;
-item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
-});
+function addSelectedHotel(){
+const hotelSelect = document.getElementById('hotelSelect');
+const selectedHotelList = document.getElementById('selectedHotelList');
+if(!hotelSelect || !selectedHotelList){
+return;
+}
+const serviceId = String(hotelSelect.value || '');
+if(!serviceId){
+return;
+}
+if(getSelectedHotelIds().includes(serviceId)){
+hotelSelect.value = '';
+toggleSelectedHotelEmpty();
+return;
+}
+const selectedOption = hotelSelect.querySelector(`option[value="${serviceId}"]`);
+if(!selectedOption || selectedOption.disabled || selectedOption.hidden){
+return;
 }
 
-function filterTransportLinks(){
-const stateId = getValueById('transportFilterState');
-const cityId = getValueById('transportFilterCity');
-document.querySelectorAll('#transportLinkList .transport-link-item').forEach((item) => {
-const stateOk = !stateId || item.dataset.stateId === stateId;
-const cityOk = !cityId || item.dataset.cityId === cityId;
-item.style.display = (stateOk && cityOk) ? 'flex' : 'none';
+const row = document.createElement('div');
+row.className = 'selected-hotel-item d-flex justify-content-between align-items-center gap-2 border rounded px-2 py-1 mb-1';
+row.dataset.stateId = String(selectedOption.dataset.stateId || '');
+
+const label = document.createElement('span');
+label.className = 'small';
+label.textContent = selectedOption.textContent.trim();
+
+const hidden = document.createElement('input');
+hidden.type = 'hidden';
+hidden.name = 'linked_hotels[]';
+hidden.value = serviceId;
+
+const removeBtn = document.createElement('button');
+removeBtn.type = 'button';
+removeBtn.className = 'btn btn-sm btn-outline-danger';
+removeBtn.textContent = 'Remove';
+removeBtn.addEventListener('click', () => {
+row.remove();
+toggleSelectedHotelEmpty();
 });
+
+row.appendChild(label);
+row.appendChild(hidden);
+row.appendChild(removeBtn);
+selectedHotelList.appendChild(row);
+hotelSelect.value = '';
+toggleSelectedHotelEmpty();
 }
 
 function getSpotOptionsMarkup(selectedSpot){
 const filterState = getValueById('spotFilterState');
 const filterCity = getValueById('spotFilterCity');
+const selectedSpotId = String(selectedSpot || '');
 let options = '<option value="">Select Spot</option>';
+let selectedVisible = false;
 SPOTS.forEach((spot) => {
 const stateOk = !filterState || String(spot.state_id) === String(filterState);
 const cityOk = !filterCity || String(spot.city_id) === String(filterCity);
 if(stateOk && cityOk){
-const selected = String(selectedSpot || '') === String(spot.spot_id) ? ' selected' : '';
+const selected = selectedSpotId && selectedSpotId === String(spot.spot_id) ? ' selected' : '';
+if(selected){
+selectedVisible = true;
+}
 options += `<option value="${spot.spot_id}"${selected}>${spot.state_name} ➜ ${spot.city_name} ➜ ${spot.spot_name}</option>`;
 }
 });
+if(selectedSpotId && !selectedVisible && !filterState && !filterCity){
+const selectedSpotRow = SPOTS.find((spot) => String(spot.spot_id) === selectedSpotId);
+if(selectedSpotRow){
+options += `<option value="${selectedSpotRow.spot_id}" selected>${selectedSpotRow.state_name} ➜ ${selectedSpotRow.city_name} ➜ ${selectedSpotRow.spot_name} (selected)</option>`;
+}
+}
 return options;
 }
 
@@ -1207,8 +1162,10 @@ btn.classList.toggle('active', btn.dataset.section === id);
 
 function addItineraryRow(){
 const container=document.getElementById('itinerary-list');
-container.innerHTML+=`
-<div class="card p-3 mb-2">
+if(!container) return;
+const row = document.createElement('div');
+row.className = 'card p-3 mb-2';
+row.innerHTML = `
 <div class="row g-2">
 
 <div class="col-md-2">
@@ -1224,118 +1181,12 @@ container.innerHTML+=`
 <button type="button" class="btn btn-danger w-100" onclick="this.closest('.card').remove()">Remove</button>
 </div>
 
-</div>
 </div>`;
-refreshItinerarySpotOptions();
+container.appendChild(row);
+const spotSelect = row.querySelector('select[name="spots[]"]');
+if(spotSelect){
+spotSelect.innerHTML = getSpotOptionsMarkup('');
 }
-
-function addHotelStayRow(){
-const container = document.getElementById('hotel-stay-list');
-if(!container) return;
-container.innerHTML += `
-<div class="card p-3 mb-2">
-  <div class="row g-2 align-items-end">
-    <div class="col-md-4">
-      <label class="form-label small mb-1">Hotel</label>
-      <select name="hotel_stay_service_ids[]" class="form-select" required></select>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label small mb-1">Check-in</label>
-      <input type="date" name="hotel_stay_check_ins[]" class="form-control" required>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label small mb-1">Check-out</label>
-      <input type="date" name="hotel_stay_check_outs[]" class="form-control" required>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label small mb-1">Stay Notes</label>
-      <input type="text" name="hotel_stay_notes[]" class="form-control" maxlength="255"
-             placeholder="Room sharing / meal plan">
-    </div>
-    <div class="col-md-1">
-      <button type="button" class="btn btn-danger w-100" onclick="this.closest('.card').remove()">X</button>
-    </div>
-  </div>
-</div>`;
-refreshHotelStayHotelOptions();
-}
-
-function getCityScheduleStateOptionsMarkup(selectedState){
-  let options = '<option value="">Select State</option>';
-  const seen = new Set();
-  document.querySelectorAll('#spotFilterState option').forEach((opt) => {
-    const stateId = String(opt.value || '');
-    if(!stateId || seen.has(stateId)){
-      return;
-    }
-    seen.add(stateId);
-    const selected = String(selectedState || '') === stateId ? ' selected' : '';
-    options += `<option value="${stateId}"${selected}>${opt.textContent.trim()}</option>`;
-  });
-  return options;
-}
-
-function getCityScheduleOptionsMarkup(selectedCity){
-  let options = '<option value="">Select City</option>';
-  const seen = new Set();
-  document.querySelectorAll('#spotFilterCity option[data-state-id]').forEach((opt) => {
-    const key = String(opt.value || '');
-    const stateId = String(opt.dataset.stateId || '');
-    if(!key || seen.has(key)){
-      return;
-    }
-    seen.add(key);
-    const selected = String(selectedCity || '') === key ? ' selected' : '';
-    options += `<option value="${key}" data-state-id="${stateId}"${selected}>${opt.textContent.trim()}</option>`;
-  });
-  return options;
-}
-
-function bindCityScheduleRowControls(row){
-  const stateSelect = row.querySelector('.schedule-state-select');
-  const citySelect = row.querySelector('select[name="schedule_city_ids[]"]');
-  if(!stateSelect || !citySelect) return;
-  stateSelect.addEventListener('change', () => updateCityOptions(stateSelect.value, citySelect));
-  updateCityOptions(stateSelect.value, citySelect);
-}
-
-function addCityScheduleRow(){
-  const container = document.getElementById('city-schedule-list');
-  if(!container) return;
-  const row = document.createElement('div');
-  row.className = 'card p-3 mb-2';
-  row.innerHTML = `
-    <div class="row g-2 align-items-end">
-      <div class="col-md-2">
-        <label class="form-label small mb-1">State</label>
-        <select class="form-select schedule-state-select" required>
-          ${getCityScheduleStateOptionsMarkup('')}
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">City</label>
-        <select name="schedule_city_ids[]" class="form-select" data-require-state="1" required>
-          ${getCityScheduleOptionsMarkup('')}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Arrival</label>
-        <input type="datetime-local" name="schedule_arrivals[]" class="form-control" required>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Departure</label>
-        <input type="datetime-local" name="schedule_departures[]" class="form-control" required>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Note</label>
-        <input type="text" name="schedule_notes[]" class="form-control" maxlength="255" placeholder="Optional">
-      </div>
-      <div class="col-md-1">
-        <button type="button" class="btn btn-danger w-100" onclick="this.closest('.card').remove()">X</button>
-      </div>
-    </div>`;
-  container.appendChild(row);
-  bindCityScheduleRowControls(row);
 }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -1345,63 +1196,58 @@ updateCityOptions(this.value, 'defaultCity');
 bindChange('spotCityState', function(){
 updateCityOptions(this.value, 'spotCity');
 });
-bindChange('pickupState', function(){
-updateCityOptions(this.value, 'pickupCity');
+bindChange('hotelFilterState', filterHotelLinks);
+bindChange('pickupCity', syncRoutePointFields);
+bindChange('dropCity', function(){
+syncRoutePointFields();
+syncDestinationDrivenFilters();
 });
-bindChange('dropState', function(){
-updateCityOptions(this.value, 'dropCity');
-});
-bindChange('hotelFilterState', function(){
-updateCityOptions(this.value, 'hotelFilterCity');
-filterHotelLinks();
-});
-bindChange('hotelFilterCity', filterHotelLinks);
-bindChange('guideFilterState', function(){
-updateCityOptions(this.value, 'guideFilterCity');
-filterGuideLinks();
-});
-bindChange('guideFilterCity', filterGuideLinks);
-bindChange('transportFilterState', function(){
-updateCityOptions(this.value, 'transportFilterCity');
-filterTransportLinks();
-});
-bindChange('transportFilterCity', filterTransportLinks);
 bindChange('spotFilterState', function(){
 updateCityOptions(this.value, 'spotFilterCity');
 refreshItinerarySpotOptions();
 });
 bindChange('spotFilterCity', refreshItinerarySpotOptions);
-
-const spotModalEl = document.getElementById('spotModal');
-if(spotModalEl){
-spotModalEl.addEventListener('shown.bs.modal', function(){
-initSpotMap();
-if(!spotMap){
-return;
-}
-spotMap.invalidateSize();
-syncSpotMarkerFromInputs();
-if(!spotMarker && spotMapIndiaBounds){
-spotMap.fitBounds(spotMapIndiaBounds, { padding: [14, 14] });
-}
+bindChange('childPriceAmount', updateChildPriceMeta);
+bindChange('tourDepartureDateTime', syncTourScheduleBounds);
+bindChange('tourReturnDateTime', function(){
+syncTourScheduleBounds();
+validateTourScheduleBounds();
 });
+
+const basePriceInput = document.querySelector('input[name="price"]');
+if(basePriceInput){
+basePriceInput.addEventListener('input', updateChildPriceMeta);
 }
+const addHotelBtn = document.getElementById('addHotelBtn');
+if(addHotelBtn){
+addHotelBtn.addEventListener('click', addSelectedHotel);
+}
+const hotelSelect = document.getElementById('hotelSelect');
+if(hotelSelect){
+hotelSelect.addEventListener('dblclick', addSelectedHotel);
+}
+const tourForm = document.querySelector('#tourModal form');
+if(tourForm){
+tourForm.addEventListener('submit', validateTourScheduleBounds);
+}
+document.querySelectorAll('input[name="inclusion_options[]"]').forEach((el) => {
+el.addEventListener('change', syncInclusionsField);
+});
 
 updateCityOptions('', 'defaultCity');
 updateCityOptions('', 'spotCity');
 updateCityOptions('', 'pickupCity');
 updateCityOptions('', 'dropCity');
-updateCityOptions('', 'hotelFilterCity');
-updateCityOptions('', 'guideFilterCity');
-updateCityOptions('', 'transportFilterCity');
 updateCityOptions('', 'spotFilterCity');
+syncRoutePointFields();
+syncDestinationDrivenFilters();
 filterHotelLinks();
-filterGuideLinks();
-filterTransportLinks();
-document.querySelectorAll('input[name="linked_hotels[]"]').forEach((el) => {
-el.addEventListener('change', refreshHotelStayHotelOptions);
-});
-refreshHotelStayHotelOptions();
+updateChildPriceMeta();
+syncTourScheduleBounds();
+syncInclusionsField();
+if(!document.querySelector('#itinerary-list .card')){
+addItineraryRow();
+}
 });
 
 </script>

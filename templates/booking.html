@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/booking.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
@@ -56,7 +56,7 @@
 <div class="hero-content">
 <div class="hero-title">{{ tour.title }}</div>
 <div class="hero-meta mt-2">
-<span><i class="bi bi-calendar-event"></i> {{ tour.start_date }}</span>
+<span><i class="bi bi-calendar-event"></i> {{ tour.departure_datetime or tour.start_date or '-' }}</span>
 <span><i class="bi bi-geo-alt"></i> {{ tour.start_point }} → {{ tour.end_point }}</span>
 </div>
 </div>
@@ -73,7 +73,7 @@
 <div class="col-md-6">
 <p><b>Passenger:</b> {{ session.username }}</p>
 <p><b>Tour:</b> {{ tour.title }}</p>
-<p><b>Departure:</b> {{ tour.start_date }}</p>
+<p><b>Departure:</b> {{ tour.departure_datetime or tour.start_date or '-' }}</p>
 </div>
 <div class="col-md-6">
 <p><b>Status:</b> Confirmed</p>
@@ -101,7 +101,7 @@
 <h3 class="fw-bold mb-4">Trip Essentials</h3>
 <div class="row g-3">
 <div class="col-md-4">
-<div class="meta-box"><small class="text-muted d-block">Travel Mode</small><strong>{{ tour.travel_mode or 'Will be shared by organizer' }}</strong></div>
+<div class="meta-box"><small class="text-muted d-block">Transport Vehicle Type</small><strong>{{ tour.travel_mode or 'Will be shared by organizer' }}</strong></div>
 </div>
 <div class="col-md-4">
 <div class="meta-box"><small class="text-muted d-block">Food Plan</small><strong>{{ tour.food_plan or 'Custom / Optional' }}</strong></div>
@@ -138,10 +138,35 @@
 </div>
 {% endif %}
 </div>
-{% if tour.transport_details %}
-<p class="mt-3 mb-0"><span class="fw-semibold">Transport:</span> {{ tour.transport_details }}</p>
-{% endif %}
 </div>
+
+{% if city_schedules %}
+<div class="section-card mb-5">
+<h3 class="fw-bold mb-4">Departure City Timings</h3>
+<div class="table-responsive">
+<table class="table table-sm align-middle mb-0">
+<thead>
+<tr>
+<th scope="col">City</th>
+<th scope="col">Arrival</th>
+<th scope="col">Departure</th>
+<th scope="col">Note</th>
+</tr>
+</thead>
+<tbody>
+{% for schedule in city_schedules %}
+<tr>
+<td>{{ schedule.city_name }}{% if schedule.state_name %}, {{ schedule.state_name }}{% endif %}</td>
+<td>{{ schedule.arrival_datetime or '-' }}</td>
+<td>{{ schedule.departure_datetime or '-' }}</td>
+<td>{{ schedule.note or '-' }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endif %}
 
 {% if linked_hotels %}
 <div class="section-card mb-5">
@@ -255,75 +280,9 @@
 </div>
 {% endif %}
 <div class="d-flex flex-wrap gap-2 mt-2">
-  {% if h.latitude is not none and h.longitude is not none %}
-  <a class="btn btn-sm btn-outline-secondary"
-     target="_blank"
-     rel="noopener"
-     href="https://www.google.com/maps?q={{ h.latitude }},{{ h.longitude }}">
-    Open in Maps
-  </a>
-  {% endif %}
   <a class="btn btn-sm btn-outline-primary" href="{{ url_for('hotel_detail', service_id=h.service_id) }}">
     View Full Hotel Page
   </a>
-</div>
-</div>
-</div>
-{% endfor %}
-</div>
-</div>
-{% endif %}
-
-{% if linked_transports %}
-<div class="section-card mb-5">
-<h3 class="fw-bold mb-4">Transport Details For This Tour</h3>
-<div class="row g-3">
-{% for tr in linked_transports %}
-<div class="col-12">
-<div class="hotel-mini-card h-100">
-{% set tr_img = tr.vehicle_image_url if tr.vehicle_image_url and (tr.vehicle_image_url.startswith('http://') or tr.vehicle_image_url.startswith('https://')) else url_for('static', filename='uploads/' ~ (tr.vehicle_image_url or 'demo.jpg')) %}
-<div class="transport-split">
-  <div class="transport-split-details">
-    <h6 class="fw-bold mb-1">{{ tr.service_name }}</h6>
-    <p class="small text-muted mb-1">{{ tr.transport_type }}{% if tr.vehicle_model %} - {{ tr.vehicle_model }}{% endif %}</p>
-    <div class="transport-detail-item">
-      <span>Route City</span>
-      <strong>{{ tr.city_name or '' }}{% if tr.state_name %}, {{ tr.state_name }}{% endif %}</strong>
-    </div>
-    <div class="transport-detail-item">
-      <span>Registration</span>
-      <strong>{{ tr.registration_number or 'N/A' }}</strong>
-    </div>
-    <div class="transport-detail-item">
-      <span>Capacity</span>
-      <strong>{{ tr.seating_capacity or 0 }} seats{% if tr.luggage_capacity %} | Luggage {{ tr.luggage_capacity }}{% endif %}</strong>
-    </div>
-    <div class="transport-detail-item">
-      <span>Features</span>
-      <strong>AC {{ 'Yes' if tr.ac_available else 'No' }} | Driver {{ 'Included' if tr.driver_available else 'No' }}</strong>
-    </div>
-    <div class="transport-detail-item">
-      <span>Driver</span>
-      <strong>{{ tr.driver_name or 'N/A' }}{% if tr.driver_phone %} ({{ tr.driver_phone }}){% endif %}</strong>
-    </div>
-    <div class="transport-detail-item">
-      <span>Price Benchmark</span>
-      <strong>₹{{ tr.price_per_day or 0 }}/day, ₹{{ tr.price_per_km or 0 }}/km</strong>
-    </div>
-    {% if tr.description %}
-    <p class="small text-muted mb-1"><span class="fw-semibold text-dark">Description:</span> {{ tr.description }}</p>
-    {% endif %}
-    {% if tr.notes %}
-    <p class="small text-muted mb-1"><span class="fw-semibold text-dark">Notes:</span> {{ tr.notes }}</p>
-    {% endif %}
-    <div class="small fw-semibold mt-2 text-success">Included in tour package</div>
-  </div>
-  <div class="transport-split-image-wrap">
-    <img src="{{ tr_img }}"
-         class="transport-split-image"
-         alt="{{ tr.transport_type or 'Transport' }}"
-         onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';">
-  </div>
 </div>
 </div>
 </div>
@@ -441,13 +400,6 @@
 {% endif %}
 </div>
 
-<div class="section-card mb-5">
-<h3 class="fw-bold mb-3">Route Map (1st, 2nd, 3rd...)</h3>
-<div id="tourRouteMap" class="route-map"></div>
-<div id="tourRouteSummary" class="small text-muted mt-2"></div>
-<div id="tourRouteLegs" class="route-legs mt-3"></div>
-</div>
-
 {% if not readonly %}
 {% if not session.get('user_id') %}
 <div class="section-card mb-5 border border-primary">
@@ -538,11 +490,6 @@ Minimum {{ min_group_size or 6 }} or more persons are required to start this tou
 </option>
 {% endfor %}
 </select>
-<div class="row g-2 mt-1">
-<div class="col-md-4">
-<input type="number" name="rooms_requested" min="1" value="{{ room_req.rooms_requested or 1 }}" class="form-control">
-</div>
-</div>
 <div class="small text-muted mt-1" id="roomUpgradeSummary">Room Type Upgrade: ₹0.00 (included room type)</div>
 {% endif %}
 <input type="hidden" name="final_amount" id="finalAmountInput">
@@ -562,100 +509,7 @@ This trip is already booked. Enjoy your itinerary above!
 
 <div id="tour-data" data-price="{{ tour.price | default(0) }}"></div>
 <script id="existing-travelers-json" type="application/json">{{ existing_travelers|tojson }}</script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
 <script>
-const spotPointsRaw = [
-{% for item in itinerary %}
-{
-type: 'spot',
-day: {{ item.day_number }},
-name: {{ item.spot_name|tojson }},
-lat: {{ item.latitude if item.latitude is not none else 'null' }},
-lng: {{ item.longitude if item.longitude is not none else 'null' }},
-img: {% if item.image_url %}{% if item.photo_source == 'external_url' %}{{ item.image_url|tojson }}{% else %}{{ url_for('static', filename='uploads/' + item.image_url)|tojson }}{% endif %}{% else %}null{% endif %}
-}{% if not loop.last %},{% endif %}
-{% endfor %}
-];
-const stayPlanEntriesRaw = [];
-{% for h in linked_hotels %}
-  {% for stay in h.stay_plans %}
-stayPlanEntriesRaw.push({
-hotelName: {{ h.hotel_name|tojson }},
-stayLabel: {{ ((stay.check_in_date|string) + ' to ' + (stay.check_out_date|string))|tojson }},
-checkIn: {{ (stay.check_in_date|string)|tojson }},
-checkOut: {{ (stay.check_out_date|string)|tojson }},
-lat: {{ h.latitude if h.latitude is not none else 'null' }},
-lng: {{ h.longitude if h.longitude is not none else 'null' }},
-img: {% if h.cover_image %}{% if h.cover_image.startswith('http://') or h.cover_image.startswith('https://') %}{{ h.cover_image|tojson }}{% else %}{{ url_for('static', filename='uploads/' + h.cover_image)|tojson }}{% endif %}{% else %}null{% endif %}
-});
-  {% endfor %}
-{% endfor %}
-const tourStartDateRaw = {{ (tour.start_date|string)|tojson if tour.start_date else 'null' }};
-
-function parseYmdToDate(value){
-  if(!value) return null;
-  const parts = String(value).slice(0, 10).split('-').map((v) => Number(v));
-  if(parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
-  return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-function buildDailyStayMap(stayPlans, tourStartRaw){
-  const daily = {};
-  const tourStart = parseYmdToDate(tourStartRaw);
-  if(!tourStart) return daily;
-  stayPlans.forEach((entry) => {
-    const checkIn = parseYmdToDate(entry.checkIn);
-    const checkOut = parseYmdToDate(entry.checkOut);
-    if(!checkIn || !checkOut || checkOut <= checkIn) return;
-    const cursor = new Date(checkIn.getTime());
-    while(cursor < checkOut){
-      const dayNo = Math.floor((cursor - tourStart) / 86400000) + 1;
-      if(dayNo > 0 && !daily[dayNo]){
-        daily[dayNo] = {
-          type: 'stay',
-          day: dayNo,
-          name: entry.hotelName,
-          stayLabel: entry.stayLabel,
-          lat: entry.lat,
-          lng: entry.lng,
-          img: entry.img
-        };
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-  });
-  return daily;
-}
-
-function resolveStayLocation(stayPoint, daySpots, alreadyOrdered){
-  if(stayPoint.lat !== null && stayPoint.lng !== null) return stayPoint;
-  const fallbackPool = [...daySpots, ...alreadyOrdered].reverse();
-  const fallback = fallbackPool.find((p) => p.lat !== null && p.lng !== null);
-  if(!fallback) return stayPoint;
-  return { ...stayPoint, lat: fallback.lat, lng: fallback.lng };
-}
-
-const dailyStayMap = buildDailyStayMap(stayPlanEntriesRaw, tourStartDateRaw);
-const orderedDays = Array.from(new Set(
-  spotPointsRaw
-    .map((p) => Number(p.day))
-    .filter((d) => Number.isFinite(d) && d > 0)
-)).sort((a, b) => a - b);
-const routePointsRaw = [];
-if(orderedDays.length){
-  orderedDays.forEach((dayNo) => {
-    const daySpots = spotPointsRaw.filter((p) => Number(p.day) === dayNo);
-    daySpots.forEach((s) => routePointsRaw.push(s));
-    const stayPoint = dailyStayMap[dayNo];
-    if(stayPoint){
-      routePointsRaw.push(resolveStayLocation(stayPoint, daySpots, routePointsRaw));
-    }
-  });
-}else{
-  routePointsRaw.push(...spotPointsRaw);
-}
-
 const basePrice = Number(document.getElementById('tour-data').dataset.price);
 function getRoomUpgradeCharge(){
 const roomTypeSelect = document.getElementById("roomTypeSelect");
@@ -663,9 +517,7 @@ if(!roomTypeSelect || roomTypeSelect.selectedIndex < 0) return 0;
 const selectedOption = roomTypeSelect.options[roomTypeSelect.selectedIndex];
 if(!selectedOption || !selectedOption.value) return 0;
 const extraPerRoomTotal = Number(selectedOption.dataset.extraPerRoomTotal || 0);
-const roomsInput = document.querySelector('input[name="rooms_requested"]');
-const requestedRooms = Math.max(1, Number((roomsInput && roomsInput.value) || 1));
-return extraPerRoomTotal * requestedRooms;
+return extraPerRoomTotal;
 }
 
 function updateRoomUpgradeSummary(){
@@ -683,11 +535,9 @@ return;
 }
 const extraPerNight = Number(selectedOption.dataset.extraPerNight || 0);
 const stayNights = Math.max(1, Number(selectedOption.dataset.stayNights || 1));
-const roomsInput = document.querySelector('input[name="rooms_requested"]');
-const requestedRooms = Math.max(1, Number((roomsInput && roomsInput.value) || 1));
-const totalExtra = extraPerNight * stayNights * requestedRooms;
+const totalExtra = extraPerNight * stayNights;
 if(totalExtra > 0){
-summaryEl.textContent = `Room Type Upgrade: ₹${totalExtra.toFixed(2)} (₹${extraPerNight.toFixed(2)}/night x ${stayNights} night(s) x ${requestedRooms} room(s))`;
+summaryEl.textContent = `Room Type Upgrade: ₹${totalExtra.toFixed(2)} (₹${extraPerNight.toFixed(2)}/night x ${stayNights} night(s))`;
 }else{
 summaryEl.textContent = "Room Type Upgrade: ₹0.00 (included room type)";
 }
@@ -744,114 +594,12 @@ function renderTravelerRows(count){
 }
 calculateTotal();
 
-function haversineKm(lat1, lng1, lat2, lng2){
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const r = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2))
-    * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return r * c;
-}
-
-function initRouteMap(){
-const mapEl = document.getElementById('tourRouteMap');
-const legsEl = document.getElementById('tourRouteLegs');
-const summaryEl = document.getElementById('tourRouteSummary');
-if(!mapEl) return;
-if(!window.L){
-mapEl.innerHTML = '<div class="text-muted p-3">Map failed to load.</div>';
-return;
-}
-
-const points = routePointsRaw.filter((p) => p.lat !== null && p.lng !== null);
-if(!points.length){
-mapEl.innerHTML = '<div class="text-muted p-3">Route coordinates are not available for this itinerary.</div>';
-if(legsEl) legsEl.innerHTML = '';
-if(summaryEl) summaryEl.textContent = '';
-return;
-}
-
-const indiaBounds = L.latLngBounds(
-  L.latLng(6.4627, 68.1097),
-  L.latLng(37.0841, 97.3956)
-);
-const map = L.map('tourRouteMap', {
-maxBounds: indiaBounds,
-maxBoundsViscosity: 1.0,
-minZoom: 4
-});
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-maxZoom: 18,
-attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
-
-const line = [];
-let legsHtml = '';
-let totalKm = 0;
-const fallbackImg = {{ url_for('static', filename='uploads/demo.jpg')|tojson }};
-
-points.forEach((p, i) => {
-const markerIcon = L.divIcon({
-className: 'route-marker-wrap',
-html: `<div class="route-marker-pin${p.type === 'stay' ? ' route-marker-pin-stay' : ''}">${i + 1}</div>`,
-iconSize: [28, 28],
-iconAnchor: [14, 28],
-popupAnchor: [0, -24]
-});
-const imgHtml = p.img
-  ? `<img src="${p.img}" alt="${p.name}" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.onerror=null;this.src='${fallbackImg}';">`
-  : `<div style="width:100%;height:110px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:6px;margin-bottom:8px;color:#64748b;font-size:12px;">Photo Not Uploaded</div>`;
-const legKm = i > 0 ? haversineKm(points[i - 1].lat, points[i - 1].lng, p.lat, p.lng) : null;
-L.marker([p.lat, p.lng], { icon: markerIcon })
-.addTo(map)
-.bindPopup(
-`<div style="min-width:220px">
-${imgHtml}
-<div style="font-weight:600">Point ${i + 1}: ${p.name}</div>
-<div style="font-size:12px;color:#64748b">${p.type === 'stay' ? `Stay: ${p.stayLabel || 'Fixed tour stay'}` : `Day ${p.day || '-'}`}</div>
-${i > 0 ? `<div style="font-size:12px;margin-top:4px;">Distance from Point ${i}: ${legKm !== null ? legKm.toFixed(1) + ' km' : 'N/A'}</div>` : '<div style="font-size:12px;margin-top:4px;">Start Point</div>'}
-</div>`
-);
-line.push([p.lat, p.lng]);
-
-if(i > 0){
-const legText = legKm !== null ? `${legKm.toFixed(1)} km` : 'N/A';
-legsHtml += `<div class="route-leg-item">Point ${i} (${points[i - 1].type === 'stay' ? 'Stay' : 'Spot'}) ➜ Point ${i + 1} (${p.type === 'stay' ? 'Stay' : 'Spot'}): <b>${legText}</b></div>`;
-if(legKm !== null) totalKm += Number(legKm);
-}
-});
-
-if(line.length > 1){
-L.polyline(line, { color: '#2563eb', weight: 4, opacity: 0.8 }).addTo(map);
-map.fitBounds(line, { padding: [24, 24] });
-map.panInsideBounds(indiaBounds, { animate: false });
-}else{
-map.setView(line[0], 12);
-}
-
-if(legsEl){
-legsEl.innerHTML = legsHtml || '<div class="route-leg-item">Only one map point is available.</div>';
-}
-if(summaryEl){
-summaryEl.textContent = `Total route distance: ${totalKm > 0 ? totalKm.toFixed(1) + ' km' : 'N/A'}`;
-}
-}
-
 document.addEventListener('DOMContentLoaded', function(){
 const roomTypeSelect = document.getElementById("roomTypeSelect");
 if(roomTypeSelect){
 roomTypeSelect.addEventListener("change", calculateTotal);
 }
-const roomsInput = document.querySelector('input[name="rooms_requested"]');
-if(roomsInput){
-roomsInput.addEventListener("input", calculateTotal);
-roomsInput.addEventListener("change", calculateTotal);
-}
 calculateTotal();
-initRouteMap();
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

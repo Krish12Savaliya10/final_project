@@ -13,6 +13,7 @@
 
 .home_div{
     max-width:840px;
+    background:transparent !important;
 }
 
 .home_div h1{
@@ -28,6 +29,24 @@
     border:1px solid rgba(255, 255, 255, .24);
     background:rgba(255, 255, 255, .92);
     padding-left:20px;
+}
+
+.hero-search-input{
+    background:#ffffff !important;
+    color:#0f172a !important;
+    border:1px solid rgba(15, 23, 42, .16) !important;
+}
+
+.hero-search-input::placeholder{
+    color:#64748b !important;
+    opacity:1;
+}
+
+.hero-search-input:focus{
+    background:#ffffff !important;
+    color:#0f172a !important;
+    border-color:#93c5fd !important;
+    box-shadow:0 0 0 .2rem rgba(37,99,235,.16) !important;
 }
 
 .home_div .btn{

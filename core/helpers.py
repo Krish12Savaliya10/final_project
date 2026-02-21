@@ -8,13 +8,14 @@ from decimal import Decimal, InvalidOperation
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from core.db import execute_db, query_db
 from core.india_geo import is_point_in_india
+
+from core.db import execute_db, query_db
 
 
 DOC_FIELD_LABELS = {
     "identity_proof_path": "Identity KYC",
-    "business_proof_path": "Business Proof",
+    "business_proof_path": "Main Business Document",
     "property_proof_path": "Property Proof",
     "vehicle_proof_path": "Vehicle Proof",
     "driver_verification_path": "Driver Verification",
@@ -25,19 +26,10 @@ DOC_FIELD_LABELS = {
 
 ROLE_BASE_DOCUMENTS = {
     "organizer": [
-        "identity_proof_path",
         "business_proof_path",
-        "bank_proof_path",
-        "address_proof_path",
-        "operational_photo_path",
     ],
     "hotel_provider": [
-        "identity_proof_path",
         "business_proof_path",
-        "bank_proof_path",
-        "address_proof_path",
-        "operational_photo_path",
-        "property_proof_path",
     ],
     "admin": [
         "identity_proof_path",
@@ -49,10 +41,6 @@ ROLE_BASE_DOCUMENTS = {
 
 ALLOWED_DOCUMENT_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp"}
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-INDIA_LAT_MIN = Decimal("6.4627")
-INDIA_LAT_MAX = Decimal("37.0841")
-INDIA_LNG_MIN = Decimal("68.1097")
-INDIA_LNG_MAX = Decimal("97.3956")
 
 
 def save_upload(file_obj, folder=None):
@@ -81,12 +69,8 @@ def normalize_role(raw_role):
         # Legacy provider role is merged into hotel_provider.
         "provider": "hotel_provider",
         "hotel_provider": "hotel_provider",
-        # Legacy transport role is folded into organizer.
-        "transport_provider": "organizer",
         "hotel": "hotel_provider",
-        "transport": "organizer",
         "hotel and resort providers": "hotel_provider",
-        "transport rental services": "organizer",
         "service_provider": "hotel_provider",
     }
     return role_map.get((raw_role or "").strip().lower(), "customer")
@@ -96,8 +80,6 @@ def normalize_provider_category(raw_category):
     text = (raw_category or "").strip().lower()
     if text in {"hotel", "hotels", "resort", "hotel/resort", "hotel & resort"}:
         return "Hotel"
-    if text in {"transport", "transportation", "vehicle", "rental"}:
-        return ""
     if text in {"guide", "guides", "tour_guide"}:
         return "Guides"
     if text in {"food", "catering"}:
@@ -182,49 +164,27 @@ def is_valid_pincode(pincode):
     return bool(re.match(r"^\d{6}$", (pincode or "").strip()))
 
 
-def is_valid_latitude(value):
-    val = to_decimal(value, None)
-    return val is not None and Decimal("-90") <= val <= Decimal("90")
-
-
-def is_valid_longitude(value):
-    val = to_decimal(value, None)
-    return val is not None and Decimal("-180") <= val <= Decimal("180")
-
-
-def is_within_india_bounds(latitude, longitude):
-    lat = to_decimal(latitude, None)
-    lng = to_decimal(longitude, None)
-    if lat is None or lng is None:
-        return False
-    # Fast coarse reject before polygon check.
-    if not (INDIA_LAT_MIN <= lat <= INDIA_LAT_MAX and INDIA_LNG_MIN <= lng <= INDIA_LNG_MAX):
-        return False
-    return is_point_in_india(float(lat), float(lng))
-
-
-def build_transport_image_url(transport_type="", city_name="", unique_key=""):
-    type_text = (transport_type or "").strip().lower()
-    city_token = re.sub(r"[^a-z0-9]+", "-", (city_name or "").strip().lower()).strip("-") or "india"
-
-    if "bus" in type_text or "coach" in type_text:
-        vehicle_token = "bus"
-    elif "bike" in type_text or "scooter" in type_text:
-        vehicle_token = "motorbike"
-    elif "traveller" in type_text or "van" in type_text:
-        vehicle_token = "van"
-    elif any(token in type_text for token in ("taxi", "car", "cab", "sedan", "suv", "self drive", "hatchback")):
-        vehicle_token = "car"
-    else:
-        vehicle_token = "vehicle"
-
-    lock_value = re.sub(r"[^0-9A-Za-z]+", "", str(unique_key or "")) or f"{vehicle_token}{city_token}"
-    return f"https://loremflickr.com/1200/800/{vehicle_token},{city_token},india?lock={lock_value}"
-
-
 def is_non_negative_amount(value):
     val = to_decimal(value, None)
     return val is not None and val >= Decimal("0")
+
+
+
+
+def is_within_india_bounds(lat, lng):
+    """Return True if the given latitude/longitude point lies within India.
+
+    This is a thin wrapper around :func:`core.india_geo.is_point_in_india` that
+    accepts string inputs and gracefully handles bad data. Other parts of the
+    application import ``is_within_india_bounds`` from ``core.helpers`` so
+    keeping the helper here avoids a circular import in route modules.
+    """
+
+    try:
+        return is_point_in_india(lat, lng)
+    except Exception:
+        # In case of unexpected value types just treat as out of bounds.
+        return False
 
 
 def update_room_inventory_for_provider(room_type_id, new_available, provider_user_id, note=None):
@@ -303,35 +263,3 @@ def normalize_state_name(raw_state: str) -> str:
         return fixed
     # fall back to a capitalised form of the original if nothing matches
     return raw_state.strip()
-
-
-def update_transport_inventory_for_provider(service_id, new_available, provider_user_id, note=None):
-    transport_row = query_db(
-        """
-        SELECT tp.service_id, tp.available_units, tp.total_units
-        FROM transport_profiles tp
-        JOIN services s ON s.id=tp.service_id
-        WHERE tp.service_id=%s AND s.provider_id=%s AND s.service_type='Transport'
-        """,
-        (service_id, provider_user_id),
-        one=True,
-    )
-    if not transport_row:
-        return False, "Transport service not found."
-
-    old_available = int(transport_row["available_units"] or 0)
-    total_units = max(0, int(transport_row["total_units"] or 0))
-    new_available = max(0, min(new_available, total_units))
-
-    execute_db(
-        "UPDATE transport_profiles SET available_units=%s WHERE service_id=%s",
-        (new_available, service_id),
-    )
-    execute_db(
-        """
-        INSERT INTO transport_inventory_logs(service_id, changed_by, old_available, new_available, note)
-        VALUES(%s,%s,%s,%s,%s)
-        """,
-        (service_id, provider_user_id, old_available, new_available, note or None),
-    )
-    return True, "Transport availability updated."

@@ -1,4 +1,4 @@
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans','Segoe UI',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:var(--tg-font,'Plus Jakarta Sans','Segoe UI',sans-serif);}
 body{min-height:100vh;background:linear-gradient(120deg,#0f2f64,#1e40af);display:flex;align-items:center;justify-content:center;}
 .back-web-btn{
 position:fixed;
@@ -27,6 +27,19 @@ transition:.2s;
 .input-group i{position:absolute;top:50%;left:14px;transform:translateY(-50%);color:#888;font-size:15px;}
 .input-group input,.input-group select{width:100%;padding:12px 14px 12px 42px;border:1px solid #dcdcdc;border-radius:10px;outline:none;font-size:14px;transition:.25s;background:#fff;}
 .input-group input:focus,.input-group select:focus{border-color:#2a5298;box-shadow:0 0 0 2px rgba(42,82,152,.15);}
+.role-select{
+font-size:15px !important;
+font-weight:600;
+letter-spacing:.1px;
+}
+.role-select-help{
+font-size:12px;
+color:#5f6f85;
+margin:4px 2px 10px;
+}
+.role-select option{
+font-size:14px;
+}
 .field-error{color:#d10000;font-size:13px;margin:4px 0 12px 5px;}
 .role-note{font-size:12px;color:#666;margin:8px 0 12px;}
 .signup-btn{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#2a5298,#1e3c72);color:#fff;font-weight:600;font-size:15px;cursor:pointer;margin-top:8px;transition:.25s;}

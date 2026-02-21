@@ -51,6 +51,12 @@
         <div class="star mb-2">{{ hotel.star_rating }}★ Hotel</div>
         <div class="text-muted mb-1">{{ hotel.address_line1 }}{% if hotel.locality %}, {{ hotel.locality }}{% endif %}</div>
         <div class="text-muted mb-3">{{ hotel.city_name or '-' }}, {{ hotel.state_name or '-' }}{% if hotel.pincode %} - {{ hotel.pincode }}{% endif %}</div>
+        <div class="small mb-2">
+          <b>Owner:</b> {{ hotel.owner_display_name or hotel.owner_name or '-' }}
+          {% if hotel.owner_verified_badge %}
+          <span class="badge bg-success ms-1">Verified</span>
+          {% endif %}
+        </div>
 
         <div class="small mb-1"><b>Check-in:</b> {{ hotel.check_in_time or '-' }}</div>
         <div class="small mb-1"><b>Check-out:</b> {{ hotel.check_out_time or '-' }}</div>
@@ -131,6 +137,8 @@
           <div class="col-md-6"><div class="detail-pill"><span>Brand</span><strong>{{ hotel.brand_name or '-' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Hotel Name</span><strong>{{ hotel.hotel_name or '-' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Star Rating</span><strong>{{ hotel.star_rating or 0 }}★</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Owner</span><strong>{{ hotel.owner_display_name or hotel.owner_name or '-' }}</strong></div></div>
+          <div class="col-md-6"><div class="detail-pill"><span>Owner Badge</span><strong>{{ 'Verified' if hotel.owner_verified_badge else 'Not Verified' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Address Line 1</span><strong>{{ hotel.address_line1 or '-' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Address Line 2</span><strong>{{ hotel.address_line2 or '-' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Locality</span><strong>{{ hotel.locality or '-' }}</strong></div></div>
@@ -147,14 +155,6 @@
           <div class="col-md-6"><div class="detail-pill"><span>Latitude</span><strong>{{ hotel.latitude if hotel.latitude is not none else '-' }}</strong></div></div>
           <div class="col-md-6"><div class="detail-pill"><span>Longitude</span><strong>{{ hotel.longitude if hotel.longitude is not none else '-' }}</strong></div></div>
         </div>
-        {% if hotel.latitude is not none and hotel.longitude is not none %}
-        <a class="btn btn-outline-secondary btn-sm rounded-pill mt-3"
-           target="_blank"
-           rel="noopener"
-           href="https://www.google.com/maps?q={{ hotel.latitude }},{{ hotel.longitude }}">
-          Open Hotel on Maps
-        </a>
-        {% endif %}
       </div>
 
       <div class="section-card p-3">
@@ -236,11 +236,7 @@
             <label class="form-label small">Check-Out</label>
             <input type="date" name="check_out_date" class="form-control" required>
           </div>
-          <div class="col-6">
-            <label class="form-label small">Rooms</label>
-            <input type="number" name="rooms_booked" min="1" value="1" class="form-control" required>
-          </div>
-          <div class="col-6">
+          <div class="col-12">
             <label class="form-label small">Guests</label>
             <input type="number" name="guests_count" min="1" value="2" class="form-control" required>
           </div>

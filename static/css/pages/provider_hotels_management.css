@@ -2,12 +2,71 @@
 .stat{font-size:26px;font-weight:800;line-height:1.2;}
 .small-muted{font-size:12px;color:#64748b;}
 
+.hotel-manage-thumb{
+    width:96px;
+    height:70px;
+    border-radius:10px;
+    object-fit:cover;
+    border:1px solid #e2e8f0;
+    background:#f8fafc;
+}
+
+.hotel-detail-photo{
+    width:100%;
+    height:150px;
+    border-radius:10px;
+    object-fit:cover;
+    border:1px solid #e2e8f0;
+    background:#f8fafc;
+}
+
+.simple-detail-list .list-group-item{
+    padding:.6rem .75rem;
+    font-size:.95rem;
+}
+
+.status-badge{
+    border:1px solid transparent;
+}
+
+.status-badge.status-active{
+    background:#dcfce7;
+    color:#166534;
+    border-color:#86efac;
+}
+
+.status-badge.status-inactive{
+    background:#fee2e2;
+    color:#991b1b;
+    border-color:#fecaca;
+}
+
+.status-badge.status-maintenance{
+    background:#fef3c7;
+    color:#92400e;
+    border-color:#fde68a;
+}
+
 .inv-count-input{
     max-width:100px;
 }
 
 .inv-note-input{
     max-width:230px;
+}
+
+html[data-theme="dark"] .hotel-manage-thumb,
+html[data-theme="dark"] .hotel-detail-photo,
+body.dark-mode .hotel-manage-thumb,
+body.dark-mode .hotel-detail-photo{
+    border-color:#334155;
+    background:#0f172a;
+}
+
+html[data-theme="dark"] .simple-detail-list .list-group-item,
+body.dark-mode .simple-detail-list .list-group-item{
+    background:transparent;
+    border-color:#334155;
 }
 
 html[data-theme="dark"] .inv-count-input,
@@ -18,6 +77,11 @@ body.dark-mode .inv-note-input{
 }
 
 @media (max-width: 767.98px){
+    .hotel-manage-thumb{
+        width:84px;
+        height:62px;
+    }
+
     .inv-count-input{
         max-width:none;
         width:100%;

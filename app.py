@@ -4,7 +4,6 @@ from flask import Flask
 
 from core.config import (
     DOC_UPLOAD_FOLDER,
-    GOOGLE_MAPS_API_KEY,
     SECRET_KEY,
     SPOT_UPLOAD_FOLDER,
     UPLOAD_FOLDER,
@@ -26,9 +25,6 @@ def create_app():
         # Keep app boot resilient even if DB is temporarily unavailable.
         print(f"[schema-warning] Could not ensure runtime schema: {exc}")
 
-    @app.context_processor
-    def inject_google_maps_key():
-        return dict(google_maps_api_key=GOOGLE_MAPS_API_KEY)
     register_all_routes(app)
     return app
 

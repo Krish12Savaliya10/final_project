@@ -14,7 +14,7 @@
 body {
     margin: 0;
     background: var(--admin-bg);
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: var(--tg-font, "Plus Jakarta Sans", "Segoe UI", sans-serif);
     color: var(--admin-ink);
 }
 

@@ -65,6 +65,66 @@
     cursor: zoom-in;
     width: 100%;
   }
+  .spot-card-img {
+    height: 220px;
+    object-fit: cover;
+  }
+  .spot-photo-placeholder {
+    height: 220px;
+    background: #f8fafc;
+  }
+  .spot-popup-wrap {
+    min-width: 220px;
+  }
+  .spot-popup-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .spot-popup-placeholder {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    color: #64748b;
+    font-size: 12px;
+  }
+  .spot-popup-label {
+    font-size: 12px;
+    color: #1d4ed8;
+    margin-bottom: 3px;
+  }
+  .spot-popup-city {
+    font-size: 12px;
+    color: #6c757d;
+  }
+  html[data-theme="dark"] .spot-photo-placeholder,
+  html[data-theme="dark"] .spot-popup-placeholder {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .spot-popup-city {
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .spot-meta-chip,
+  html[data-theme="dark"] .spot-meta-chip *,
+  html[data-theme="dark"] .spot-logo-badge,
+  html[data-theme="dark"] .spot-logo-badge * {
+    color: #0f172a !important;
+  }
+  html[data-theme="dark"] .spot-meta-chip {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+  html[data-theme="dark"] .spot-logo-badge {
+    background: #e2e8f0;
+  }
   #spotsPhotoCarousel .carousel-control-prev,
   #spotsPhotoCarousel .carousel-control-next {
     width: 12%;
@@ -128,18 +188,6 @@
     </div>
   </form>
 
-  {% set geo_spots = map_spots or [] %}
-  {% if geo_spots %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h5 class="card-title mb-2">Spot Map</h5>
-      <div class="text-muted small mb-3">Interactive view of spots with location data</div>
-      <div id="spotsMap" style="height: 420px; border-radius: 10px;"></div>
-    </div>
-  </div>
-  {% endif %}
-
   {% if spots %}
   {% set image_ns = namespace(idx=0) %}
   <div class="row g-3">
@@ -160,13 +208,13 @@
             data-bs-target="#spotsPhotoModal"
             aria-label="Open photo for {{ s.spot_name }}"
           >
-            <img src="{{ spot_img_src }}" class="card-img-top" style="height:220px;object-fit:cover;"
+            <img src="{{ spot_img_src }}" class="card-img-top spot-card-img"
                  onerror="this.onerror=null;this.src='{{ url_for('static', filename='uploads/demo.jpg') }}';"
                  alt="{{ s.spot_name }}">
           </button>
           {% set image_ns.idx = image_ns.idx + 1 %}
         {% else %}
-          <div class="card-img-top d-flex align-items-center justify-content-center text-muted" style="height:220px;background:#f8fafc;">
+          <div class="card-img-top d-flex align-items-center justify-content-center text-muted spot-photo-placeholder">
             <div class="text-center">
               <i class="bi bi-image fs-3 d-block mb-2"></i>
               <small>Photo Not Uploaded</small>
@@ -185,11 +233,6 @@
           {% endif %}
           {% if s.latitude and s.longitude %}
           <div class="small text-muted">Location: {{ "%.4f"|format(s.latitude) }}, {{ "%.4f"|format(s.longitude) }}</div>
-          <div class="small">
-            <a target="_blank" rel="noopener" href="https://www.google.com/maps?q={{ s.latitude }},{{ s.longitude }}">
-              Open in Maps
-            </a>
-          </div>
           {% endif %}
         </div>
       </div>
@@ -226,81 +269,6 @@
   {% endif %}
 </div>
 
-{% if geo_spots %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script>
-(() => {
-  const mapEl = document.getElementById('spotsMap');
-  if (!mapEl) return;
-
-  const spots = [
-    {% for s in geo_spots %}
-    {
-      name: {{ s.spot_name|tojson }},
-      city: {{ s.city_name|tojson }},
-      state: {{ s.state_name|tojson }},
-      lat: {{ s.latitude }},
-      lng: {{ s.longitude }},
-      details: {{ (s.spot_details or '')|tojson }},
-      iconClass: {{ (s.logo_icon_class or 'bi-geo-alt-fill')|tojson }},
-      iconLabel: {{ (s.logo_label or 'Tourist Spot')|tojson }},
-      img: {% if s.image_url %}{% if s.photo_source == 'external_url' %}{{ s.image_url|tojson }}{% else %}{{ url_for('static', filename='uploads/' + s.image_url)|tojson }}{% endif %}{% else %}null{% endif %}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ];
-
-  const indiaBounds = L.latLngBounds(
-    L.latLng(6.4627, 68.1097),
-    L.latLng(37.0841, 97.3956)
-  );
-  const map = L.map('spotsMap', {
-    maxBounds: indiaBounds,
-    maxBoundsViscosity: 1.0,
-    minZoom: 4
-  });
-  const bounds = [];
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  spots.forEach((s) => {
-    const markerIcon = L.divIcon({
-      className: 'spot-marker-wrap',
-      html: `<div class="spot-marker-pin"><i class="bi ${s.iconClass}"></i></div>`,
-      iconSize: [30, 30],
-      iconAnchor: [15, 30],
-      popupAnchor: [0, -28]
-    });
-    const marker = L.marker([s.lat, s.lng], { icon: markerIcon }).addTo(map);
-    bounds.push([s.lat, s.lng]);
-    const fallbackImg = {{ url_for('static', filename='uploads/demo.jpg')|tojson }};
-    const imageHtml = s.img
-      ? `<img src="${s.img}" alt="${s.name}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.onerror=null;this.src='${fallbackImg}';">`
-      : `<div style="width:100%;height:120px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:6px;margin-bottom:8px;color:#64748b;font-size:12px;">Photo Not Uploaded</div>`;
-    marker.bindPopup(`
-      <div style="min-width:220px">
-        ${imageHtml}
-        <div style="font-size:12px;color:#1d4ed8;margin-bottom:3px;"><i class="bi ${s.iconClass}"></i> ${s.iconLabel}</div>
-        <div style="font-weight:600">${s.name}</div>
-        <div style="font-size:12px;color:#6c757d">${s.city}, ${s.state}</div>
-        ${s.details ? `<div style="font-size:12px;margin-top:4px;">${s.details}</div>` : ""}
-        <a href="https://www.google.com/maps?q=${s.lat},${s.lng}" target="_blank" rel="noopener">Open in Maps</a>
-      </div>
-    `);
-  });
-
-  if (bounds.length === 1) {
-    map.setView(bounds[0], 12);
-  } else if (bounds.length > 1) {
-    map.fitBounds(bounds, { padding: [30, 30] });
-    map.panInsideBounds(indiaBounds, { animate: false });
-  } else {
-    map.fitBounds(indiaBounds, { padding: [12, 12] });
-  }
-})();
-</script>
-{% endif %}
 <script>
 const spotFallbackImage = {{ url_for('static', filename='uploads/demo.jpg')|tojson }};
 const spotGallery = [

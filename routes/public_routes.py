@@ -1,15 +1,9 @@
-import json
-import urllib.parse
-import urllib.request
 from decimal import Decimal
 
 from flask import abort, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from core.auth import login_required
-from core.config import (
-    GOOGLE_MAPS_API_KEY,
-)
 from core.db import execute_db, get_db, query_db
 from core.helpers import (
     get_onboarding_document_requirements,
@@ -28,14 +22,7 @@ from core.helpers import (
 
 
 SIGNUP_DOCUMENT_INPUTS = {
-    "identity_proof_path": "identity_proof",
     "business_proof_path": "business_proof",
-    "property_proof_path": "property_proof",
-    "vehicle_proof_path": "vehicle_proof",
-    "driver_verification_path": "driver_verification",
-    "bank_proof_path": "bank_proof",
-    "address_proof_path": "address_proof",
-    "operational_photo_path": "operational_photo",
 }
 BOOKING_ID_PROOF_TYPES = [
     "Aadhaar Card",
@@ -47,167 +34,17 @@ BOOKING_ID_PROOF_TYPES = [
 ]
 
 
-def _google_maps_geocoding_enabled():
-    key = (GOOGLE_MAPS_API_KEY or "").strip()
-    return bool(key and key != "YOUR_GOOGLE_MAPS_API_KEY")
-
-
-def _extract_location_from_geocode(result):
-    components = (result or {}).get("address_components") or []
-    city = ""
-    district = ""
-    state = ""
-
-    for comp in components:
-        long_name = (comp.get("long_name") or "").strip()
-        comp_types = set(comp.get("types") or [])
-        if not long_name:
-            continue
-        if not city and (
-            "locality" in comp_types
-            or "postal_town" in comp_types
-            or "administrative_area_level_3" in comp_types
-            or "sublocality_level_1" in comp_types
-            or "administrative_area_level_2" in comp_types
-        ):
-            city = long_name
-        if not district and ("administrative_area_level_2" in comp_types or "administrative_area_level_3" in comp_types):
-            district = long_name
-        if not state and "administrative_area_level_1" in comp_types:
-            state = long_name
-
-    if not city:
-        city = district
-    if not district:
-        district = city
-    return {
-        "city": (city or "").strip(),
-        "district": (district or "").strip(),
-        "state": (state or "").strip(),
-    }
-
-
-def _resolve_location_from_pincode(pincode):
-    if not is_valid_pincode(pincode):
-        return None, "Pincode must be a valid 6-digit number."
-    if not _google_maps_geocoding_enabled():
-        return None, "Google Maps API key is not configured for pincode lookup."
-
-    params = urllib.parse.urlencode(
-        {
-            "address": pincode,
-            "components": f"country:IN|postal_code:{pincode}",
-            "region": "in",
-            "language": "en",
-            "key": GOOGLE_MAPS_API_KEY,
-        }
-    )
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?{params}"
-    try:
-        with urllib.request.urlopen(url, timeout=20) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception:
-        return None, "Unable to fetch city details from Google Maps right now."
-
-    status = (payload or {}).get("status")
-    if status != "OK":
-        api_message = (payload or {}).get("error_message")
-        if api_message:
-            return None, f"Google Maps error: {api_message}"
-        return None, f"Could not resolve this pincode (status: {status or 'UNKNOWN'})."
-
-    results = (payload or {}).get("results") or []
-    if not results:
-        return None, "No location result found for this pincode."
-
-    location = _extract_location_from_geocode(results[0])
-    if not location.get("city"):
-        return None, "Google Maps did not return a valid city for this pincode."
-    return location, ""
-
-
-def _get_or_create_state_id(state_name):
-    # apply normalization to correct common typos before touching the database
-    from core.helpers import normalize_state_name
-
-    name = normalize_state_name(state_name)
-    if not name:
+def _parse_non_negative_decimal(value_text):
+    text = (value_text or "").strip()
+    if not text:
         return None
-
-    row = query_db(
-        "SELECT id FROM states WHERE LOWER(state_name)=LOWER(%s) LIMIT 1",
-        (name,),
-        one=True,
-    )
-    if row:
-        return row["id"]
-
     try:
-        return execute_db("INSERT INTO states(state_name) VALUES(%s)", (name,))
+        parsed = Decimal(text)
     except Exception:
-        row = query_db(
-            "SELECT id FROM states WHERE LOWER(state_name)=LOWER(%s) LIMIT 1",
-            (name,),
-            one=True,
-        )
-        return row["id"] if row else None
-
-
-def _get_or_create_city_id(city_name, state_id):
-    name = (city_name or "").strip()
-    if not (name and state_id):
         return None
-
-    row = query_db(
-        """
-        SELECT id
-        FROM cities
-        WHERE state_id=%s AND LOWER(city_name)=LOWER(%s)
-        ORDER BY id ASC
-        LIMIT 1
-        """,
-        (state_id, name),
-        one=True,
-    )
-    if row:
-        return row["id"]
-    return execute_db(
-        "INSERT INTO cities(state_id, city_name) VALUES(%s, %s)",
-        (state_id, name),
-    )
-
-
-def _sync_user_location_from_pincode(user_id, pincode):
-    location, error = _resolve_location_from_pincode(pincode)
-    if error:
-        return None, error
-
-    city_name = (location.get("city") or "").strip()
-    district_name = (location.get("district") or city_name).strip()
-    state_name = (location.get("state") or "").strip()
-
-    state_id = _get_or_create_state_id(state_name)
-    city_id = _get_or_create_city_id(city_name, state_id) if state_id else None
-
-    execute_db(
-        """
-        INSERT INTO user_profiles(user_id, city_id, city, district, pincode)
-        VALUES(%s,%s,%s,%s,%s)
-        ON DUPLICATE KEY UPDATE
-            city_id=VALUES(city_id),
-            city=VALUES(city),
-            district=VALUES(district),
-            pincode=VALUES(pincode)
-        """,
-        (user_id, city_id, city_name or None, district_name or None, pincode),
-    )
-    return {
-        "city_id": city_id,
-        "city": city_name,
-        "district": district_name,
-        "state": state_name,
-        "pincode": pincode,
-    }, ""
+    if parsed < 0:
+        return None
+    return parsed
 
 
 def _login_session_and_redirect(user_row):
@@ -289,15 +126,8 @@ def register_routes(app):
                     SELECT COUNT(*)
                     FROM tour_service_links tsl
                     WHERE tsl.tour_id=t.id
-                      AND tsl.service_kind='Transport'
-                ) AS linked_transport_count,
-                (
-                    SELECT COUNT(*)
-                    FROM tour_service_links tsl
-                    WHERE tsl.tour_id=t.id
                       AND tsl.service_kind='Guides'
-                ) AS linked_guides_count,
-                NULL AS transport_vehicle_image
+                ) AS linked_guides_count
             FROM tours t
             ORDER BY t.id DESC
             LIMIT 3
@@ -356,15 +186,6 @@ def register_routes(app):
         for row in spots_rows:
             row.update(_spot_logo_meta(row.get("spot_name", ""), row.get("spot_details", "")))
 
-        map_spots = []
-        for s in spots_rows:
-            try:
-                lat = float(s.get("latitude"))
-                lng = float(s.get("longitude"))
-            except (TypeError, ValueError):
-                continue
-            if is_within_india_bounds(lat, lng):
-                map_spots.append(s)
         states = query_db("SELECT id, state_name FROM states ORDER BY state_name")
         cities = query_db(
             """
@@ -377,7 +198,6 @@ def register_routes(app):
         return render_template(
             "spots.html",
             spots=spots_rows,
-            map_spots=map_spots,
             states=states,
             cities=cities,
             search=search,
@@ -389,32 +209,109 @@ def register_routes(app):
     def contact():
         return render_template("contact.html")
 
-    @app.route("/india-map")
-    def india_map():
-        return render_template("india_map.html")
-
     @app.route("/tour")
     def tour():
         search = request.args.get("search", "").strip()
         state_id = to_int(request.args.get("state_id"), 0)
         city_id = to_int(request.args.get("city_id"), 0)
+        departure_city_id = to_int(request.args.get("departure_city_id"), 0)
+        destination_city_id = to_int(request.args.get("destination_city_id"), 0)
+        group_members = to_int(request.args.get("group_members"), 0)
+        min_price_raw = (request.args.get("min_price") or "").strip()
+        max_price_raw = (request.args.get("max_price") or "").strip()
+        start_date_raw = (request.args.get("start_date") or "").strip()
+        end_date_raw = (request.args.get("end_date") or "").strip()
+        sort_by = (request.args.get("sort_by") or "latest").strip().lower()
+
+        min_price = _parse_non_negative_decimal(min_price_raw)
+        max_price = _parse_non_negative_decimal(max_price_raw)
+        if min_price is not None and max_price is not None and min_price > max_price:
+            min_price, max_price = max_price, min_price
+        if group_members < 0:
+            group_members = 0
+
+        date_filter_errors = []
+        start_date_filter = parse_date(start_date_raw)
+        end_date_filter = parse_date(end_date_raw)
+        if start_date_raw and not start_date_filter:
+            date_filter_errors.append("Start date is invalid.")
+        if end_date_raw and not end_date_filter:
+            date_filter_errors.append("End date is invalid.")
+        if start_date_filter and end_date_filter and start_date_filter > end_date_filter:
+            date_filter_errors.append("Start date must be before or same as end date.")
+            start_date_filter, end_date_filter = end_date_filter, start_date_filter
+        date_filter_error = " ".join(date_filter_errors)
+        start_date_value = start_date_filter.isoformat() if start_date_filter else start_date_raw
+        end_date_value = end_date_filter.isoformat() if end_date_filter else end_date_raw
+
         where = []
         params = []
 
         if search:
             where.append(
-                "(t.title LIKE %s OR t.start_point LIKE %s OR t.end_point LIKE %s OR t.description LIKE %s)"
+                """
+                (
+                    t.title LIKE %s
+                    OR t.start_point LIKE %s
+                    OR t.end_point LIKE %s
+                    OR t.description LIKE %s
+                    OR pc.city_name LIKE %s
+                    OR dc.city_name LIKE %s
+                    OR ps.state_name LIKE %s
+                    OR ds.state_name LIKE %s
+                )
+                """
             )
             like_term = f"%{search}%"
-            params.extend([like_term, like_term, like_term, like_term])
+            params.extend([like_term] * 8)
         if state_id:
             where.append("(t.pickup_state_id=%s OR t.drop_state_id=%s)")
             params.extend([state_id, state_id])
         if city_id:
             where.append("(t.pickup_city_id=%s OR t.drop_city_id=%s)")
             params.extend([city_id, city_id])
+        if departure_city_id:
+            where.append("t.pickup_city_id=%s")
+            params.append(departure_city_id)
+        if destination_city_id:
+            where.append("t.drop_city_id=%s")
+            params.append(destination_city_id)
+        if min_price is not None:
+            where.append("t.price >= %s")
+            params.append(str(min_price))
+        if max_price is not None:
+            where.append("t.price <= %s")
+            params.append(str(max_price))
+        if group_members > 0:
+            where.append(
+                """
+                COALESCE(t.min_group_size, 1) <= %s
+                AND (
+                    t.max_group_size IS NULL
+                    OR t.max_group_size = 0
+                    OR t.max_group_size >= %s
+                )
+                """
+            )
+            params.extend([group_members, group_members])
+        if start_date_filter:
+            where.append("DATE(COALESCE(t.departure_datetime, t.start_date)) >= %s")
+            params.append(start_date_filter.isoformat())
+        if end_date_filter:
+            where.append("DATE(COALESCE(t.return_datetime, t.end_date, t.start_date)) <= %s")
+            params.append(end_date_filter.isoformat())
 
         where_clause = f"WHERE {' AND '.join(where)}" if where else ""
+        sort_map = {
+            "latest": "t.id DESC",
+            "price_low": "t.price ASC, t.id DESC",
+            "price_high": "t.price DESC, t.id DESC",
+            "group_small": "COALESCE(NULLIF(t.max_group_size, 0), 999999) ASC, t.id DESC",
+            "group_large": "COALESCE(t.max_group_size, 0) DESC, t.id DESC",
+            "date_soon": "COALESCE(t.departure_datetime, t.start_date) ASC, t.id DESC",
+        }
+        order_clause = sort_map.get(sort_by, sort_map["latest"])
+
         tours = query_db(
             f"""
             SELECT
@@ -433,22 +330,15 @@ def register_routes(app):
                     SELECT COUNT(*)
                     FROM tour_service_links tsl
                     WHERE tsl.tour_id=t.id
-                      AND tsl.service_kind='Transport'
-                ) AS linked_transport_count,
-                (
-                    SELECT COUNT(*)
-                    FROM tour_service_links tsl
-                    WHERE tsl.tour_id=t.id
                       AND tsl.service_kind='Guides'
-                ) AS linked_guides_count,
-                NULL AS transport_vehicle_image
+                ) AS linked_guides_count
             FROM tours t
             LEFT JOIN states ps ON ps.id=t.pickup_state_id
             LEFT JOIN cities pc ON pc.id=t.pickup_city_id
             LEFT JOIN states ds ON ds.id=t.drop_state_id
             LEFT JOIN cities dc ON dc.id=t.drop_city_id
             {where_clause}
-            ORDER BY t.id DESC
+            ORDER BY {order_clause}
             """,
             tuple(params),
         )
@@ -470,24 +360,79 @@ def register_routes(app):
             cities=cities,
             state_id=state_id,
             city_id=city_id,
+            departure_city_id=departure_city_id,
+            destination_city_id=destination_city_id,
+            min_price=(str(min_price) if min_price is not None else ""),
+            max_price=(str(max_price) if max_price is not None else ""),
+            group_members=group_members,
+            start_date=start_date_value,
+            end_date=end_date_value,
+            date_filter_error=date_filter_error,
+            sort_by=sort_by,
         )
 
     @app.route("/hotels")
     def hotels():
         search = request.args.get("search", "").strip()
-        params = []
-        where = "WHERE COALESCE(hp.listing_status, 'active')='active'"
+        state_id = to_int(request.args.get("state_id"), 0)
+        city_id = to_int(request.args.get("city_id"), 0)
+        star_rating = to_int(request.args.get("star_rating"), 0)
+        min_price_raw = (request.args.get("min_price") or "").strip()
+        max_price_raw = (request.args.get("max_price") or "").strip()
+        sort_by = (request.args.get("sort_by") or "rating_high").strip().lower()
+
+        if star_rating < 1 or star_rating > 5:
+            star_rating = 0
+        min_price = _parse_non_negative_decimal(min_price_raw)
+        max_price = _parse_non_negative_decimal(max_price_raw)
+        if min_price is not None and max_price is not None and min_price > max_price:
+            min_price, max_price = max_price, min_price
+
+        where_parts = ["COALESCE(hp.listing_status, 'active')='active'"]
+        where_params = []
         if search:
-            where += """
-              AND (
-                   hp.hotel_name LIKE %s
-                OR hp.locality LIKE %s
-                OR c.city_name LIKE %s
-                OR s.state_name LIKE %s
-              )
-            """
+            where_parts.append(
+                """
+                (
+                     hp.hotel_name LIKE %s
+                  OR hp.locality LIKE %s
+                  OR c.city_name LIKE %s
+                  OR s.state_name LIKE %s
+                )
+                """
+            )
             term = f"%{search}%"
-            params = [term, term, term, term]
+            where_params.extend([term, term, term, term])
+        if state_id:
+            where_parts.append("s.id=%s")
+            where_params.append(state_id)
+        if city_id:
+            where_parts.append("c.id=%s")
+            where_params.append(city_id)
+        if star_rating:
+            where_parts.append("hp.star_rating=%s")
+            where_params.append(star_rating)
+
+        having_parts = []
+        having_params = []
+        if min_price is not None:
+            having_parts.append("COALESCE(MIN(rt.base_price), svc.price, 0) >= %s")
+            having_params.append(str(min_price))
+        if max_price is not None:
+            having_parts.append("COALESCE(MIN(rt.base_price), svc.price, 0) <= %s")
+            having_params.append(str(max_price))
+
+        where_clause = f"WHERE {' AND '.join(where_parts)}"
+        having_clause = f"HAVING {' AND '.join(having_parts)}" if having_parts else ""
+
+        sort_map = {
+            "latest": "svc.id DESC",
+            "price_low": "starting_price ASC, svc.id DESC",
+            "price_high": "starting_price DESC, svc.id DESC",
+            "rating_low": "hp.star_rating ASC, svc.id DESC",
+            "rating_high": "hp.star_rating DESC, svc.id DESC",
+        }
+        order_clause = sort_map.get(sort_by, sort_map["rating_high"])
 
         hotel_rows = query_db(
             f"""
@@ -508,24 +453,37 @@ def register_routes(app):
             LEFT JOIN states s ON s.id=c.state_id
             LEFT JOIN hotel_images hi ON hi.service_id=svc.id AND hi.is_cover=1
             LEFT JOIN hotel_room_types rt ON rt.service_id=svc.id
-            {where}
+            {where_clause}
             GROUP BY
                 svc.id, hp.hotel_name, hp.star_rating, hp.locality, hp.address_line1,
                 c.city_name, s.state_name, hi.image_url, svc.price
-            ORDER BY hp.star_rating DESC, svc.id DESC
+            {having_clause}
+            ORDER BY {order_clause}
             """,
-            tuple(params),
+            tuple(where_params + having_params),
         )
-        return render_template("hotels.html", hotels=hotel_rows, search=search)
-
-    @app.route("/transports")
-    def transports():
-        search = request.args.get("search", "").strip()
-        return render_template("transports.html", transports=[], search=search)
-
-    @app.route("/transports/<int:service_id>")
-    def transport_detail(service_id):
-        abort(404)
+        states = query_db("SELECT id, state_name FROM states ORDER BY state_name")
+        cities = query_db(
+            """
+            SELECT c.id, c.city_name, c.state_id, s.state_name
+            FROM cities c
+            JOIN states s ON s.id=c.state_id
+            ORDER BY s.state_name, c.city_name
+            """
+        )
+        return render_template(
+            "hotels.html",
+            hotels=hotel_rows,
+            search=search,
+            states=states,
+            cities=cities,
+            state_id=state_id,
+            city_id=city_id,
+            star_rating=star_rating,
+            min_price=(str(min_price) if min_price is not None else ""),
+            max_price=(str(max_price) if max_price is not None else ""),
+            sort_by=sort_by,
+        )
 
     @app.route("/hotels/<int:service_id>", methods=["GET", "POST"])
     def hotel_detail(service_id):
@@ -536,11 +494,21 @@ def register_routes(app):
                 svc.provider_id,
                 svc.service_name,
                 svc.city_id,
-                hp.*, c.city_name, s.state_name
+                hp.*,
+                c.city_name,
+                s.state_name,
+                COALESCE(owner_user.full_name, hp.owner_name) AS owner_display_name,
+                COALESCE(
+                    owner_profile.verification_badge,
+                    CASE WHEN owner_user.status='approved' THEN 1 ELSE 0 END,
+                    0
+                ) AS owner_verified_badge
             FROM services svc
             JOIN hotel_profiles hp ON hp.service_id=svc.id
             LEFT JOIN cities c ON c.id=svc.city_id
             LEFT JOIN states s ON s.id=c.state_id
+            LEFT JOIN users owner_user ON owner_user.id=svc.provider_id
+            LEFT JOIN user_profiles owner_profile ON owner_profile.user_id=owner_user.id
             WHERE svc.id=%s
             """,
             (service_id,),
@@ -584,7 +552,7 @@ def register_routes(app):
                 return redirect(url_for("login"))
 
             room_type_id = to_int(request.form.get("room_type_id"), 0)
-            rooms_booked = max(1, to_int(request.form.get("rooms_booked"), 1))
+            rooms_booked = 1
             guests_count = max(1, to_int(request.form.get("guests_count"), 1))
             check_in_date = request.form.get("check_in_date", "").strip()
             check_out_date = request.form.get("check_out_date", "").strip()
@@ -665,7 +633,7 @@ def register_routes(app):
                 db.rollback()
                 cur.close()
                 db.close()
-                flash("Requested rooms are not available for selected dates.")
+                flash("Selected room is not available for selected dates.")
                 return redirect(url_for("hotel_detail", service_id=service_id))
 
             cur.execute(
@@ -813,7 +781,7 @@ def register_routes(app):
             )
             kyc_stage = "verified" if role_is_customer else "submitted_for_admin_approval"
             hashed = generate_password_hash(password)
-            identity_doc_path = uploaded_doc_names.get("identity_proof_path")
+            identity_doc_path = uploaded_doc_names.get("business_proof_path")
 
             user_id = execute_db(
                 """
@@ -869,7 +837,7 @@ def register_routes(app):
             )
 
             if status == "pending":
-                flash("Signup submitted with KYC documents. Admin approval is required before login.")
+                flash("Signup submitted with business document. Admin approval is required before login.")
             else:
                 flash("Account created successfully. You can login now.")
             return redirect(url_for("login"))
@@ -922,7 +890,7 @@ def register_routes(app):
                         message += f" Note: {admin_note}"
                     flash(message)
                 elif not to_int(profile_row.get("kyc_completed"), 0):
-                    flash("KYC documents are incomplete. Please resubmit your signup form.")
+                    flash("Business document is incomplete. Please resubmit your signup form.")
                 else:
                     flash("Your account is pending admin approval.")
                 return redirect(url_for("login"))
@@ -1041,15 +1009,6 @@ def register_routes(app):
                 flash("Pincode must be a valid 6-digit number.")
                 return redirect(url_for("profile"))
 
-            if pincode:
-                location_data, location_error = _sync_user_location_from_pincode(session["user_id"], pincode)
-                if location_error:
-                    flash(location_error)
-                    return redirect(url_for("profile"))
-                city = location_data.get("city") or city
-                district = location_data.get("district") or district
-                city_id = location_data.get("city_id") or city_id
-
             if city and len(city) > 120:
                 flash("City name is too long.")
                 return redirect(url_for("profile"))
@@ -1141,7 +1100,7 @@ def register_routes(app):
             cities=cities,
             doc_labels={
                 "identity_proof_path": "Identity KYC",
-                "business_proof_path": "Business Proof",
+                "business_proof_path": "Main Business Document",
                 "property_proof_path": "Property Proof",
                 "vehicle_proof_path": "Vehicle Proof",
                 "driver_verification_path": "Driver Verification",

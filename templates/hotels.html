@@ -12,11 +12,65 @@
     <p class="text-muted">Organizer and travelers can track room availability type-wise.</p>
   </div>
 
-  <form method="GET" class="row justify-content-center mb-4">
-    <div class="col-md-6">
-      <div class="input-group">
-        <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search hotel, city or locality...">
-        <button class="btn btn-primary"><i class="bi bi-search"></i></button>
+  <form method="GET" class="mb-4" id="hotelFilterForm">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <input
+          type="text"
+          class="form-control"
+          name="search"
+          value="{{ search }}"
+          placeholder="Search hotel, city or locality..."
+        >
+      </div>
+      <div class="col-md-2">
+        <select name="state_id" id="hotelStateFilter" class="form-select">
+          <option value="">All States</option>
+          {% for s in states %}
+          <option value="{{ s.id }}" {% if state_id == s.id %}selected{% endif %}>{{ s.state_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="city_id" id="hotelCityFilter" class="form-select" {% if not state_id and not city_id %}disabled{% endif %}>
+          <option value="">All Cities</option>
+          {% for c in cities %}
+          <option value="{{ c.id }}" data-state-id="{{ c.state_id }}" {% if city_id == c.id %}selected{% endif %}>
+            {{ c.city_name }} ({{ c.state_name }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="star_rating" class="form-select">
+          <option value="">Any Rating</option>
+          <option value="5" {% if star_rating == 5 %}selected{% endif %}>5 Star</option>
+          <option value="4" {% if star_rating == 4 %}selected{% endif %}>4 Star</option>
+          <option value="3" {% if star_rating == 3 %}selected{% endif %}>3 Star</option>
+          <option value="2" {% if star_rating == 2 %}selected{% endif %}>2 Star</option>
+          <option value="1" {% if star_rating == 1 %}selected{% endif %}>1 Star</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <input type="number" name="min_price" class="form-control" value="{{ min_price }}" min="0" step="0.01" placeholder="Min">
+      </div>
+      <div class="col-md-1">
+        <input type="number" name="max_price" class="form-control" value="{{ max_price }}" min="0" step="0.01" placeholder="Max">
+      </div>
+    </div>
+    <div class="row g-2 mt-1">
+      <div class="col-md-4">
+        <select name="sort_by" class="form-select">
+          <option value="rating_high" {% if sort_by == 'rating_high' %}selected{% endif %}>Sort: Rating High to Low</option>
+          <option value="rating_low" {% if sort_by == 'rating_low' %}selected{% endif %}>Sort: Rating Low to High</option>
+          <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>Sort: Price Low to High</option>
+          <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Sort: Price High to Low</option>
+          <option value="latest" {% if sort_by == 'latest' %}selected{% endif %}>Sort: Latest Added</option>
+        </select>
+      </div>
+      <div class="col-md-8 d-flex gap-2">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Apply Filters</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('hotels') }}">Reset</a>
       </div>
     </div>
   </form>
@@ -60,4 +114,47 @@
     {% endif %}
   </div>
 </div>
+<script>
+function updateHotelCityFilter(){
+const stateSelect = document.getElementById('hotelStateFilter');
+const citySelect = document.getElementById('hotelCityFilter');
+if(!stateSelect || !citySelect) return;
+
+let stateId = stateSelect.value || '';
+if(!stateId && citySelect.value){
+const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
+if(selected && selected.dataset.stateId){
+stateId = selected.dataset.stateId;
+stateSelect.value = stateId;
+}
+}
+
+const hasState = !!stateId;
+citySelect.querySelectorAll('option[data-state-id]').forEach((opt) => {
+const visible = hasState && opt.dataset.stateId === stateId;
+opt.hidden = !visible;
+opt.disabled = !visible;
+opt.style.display = visible ? '' : 'none';
+});
+citySelect.disabled = !hasState;
+if(!hasState){
+citySelect.value = '';
+return;
+}
+if(citySelect.value){
+const selected = citySelect.querySelector(`option[value="${citySelect.value}"]`);
+if(selected && (selected.hidden || selected.disabled)){
+citySelect.value = '';
+}
+}
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+const stateFilter = document.getElementById('hotelStateFilter');
+if(stateFilter){
+stateFilter.addEventListener('change', updateHotelCityFilter);
+}
+updateHotelCityFilter();
+});
+</script>
 {% endblock %}

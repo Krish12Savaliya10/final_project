@@ -1,7 +1,7 @@
 
 body{
     background:#f2f6fb;
-    font-family:'Plus Jakarta Sans','Segoe UI',sans-serif;
+    font-family:var(--tg-font,'Plus Jakarta Sans','Segoe UI',sans-serif);
     padding-top:80px;
 }
 

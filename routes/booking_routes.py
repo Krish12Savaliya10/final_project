@@ -87,6 +87,27 @@ def register_routes(app):
             """,
             (tour_id,),
         )
+        try:
+            city_schedules = query_db(
+                """
+                SELECT
+                    tcs.city_id,
+                    c.city_name,
+                    s.state_name,
+                    tcs.arrival_datetime,
+                    tcs.departure_datetime,
+                    tcs.note,
+                    tcs.sequence_no
+                FROM tour_city_schedules tcs
+                JOIN cities c ON c.id=tcs.city_id
+                LEFT JOIN states s ON s.id=c.state_id
+                WHERE tcs.tour_id=%s
+                ORDER BY tcs.sequence_no ASC, tcs.id ASC
+                """,
+                (tour_id,),
+            )
+        except Exception:
+            city_schedules = []
         total_distance_km = 0.0
         prev_lat = None
         prev_lng = None
@@ -369,7 +390,6 @@ def register_routes(app):
                 rid = to_int(room_option.get("room_type_id"), 0)
                 if rid > 0:
                     room_option_lookup[rid] = room_option
-        linked_transports = []
         linked_guides = query_db(
             """
             SELECT
@@ -513,7 +533,7 @@ def register_routes(app):
             selected_guide_id = request.form.get("guide_service_id")
             guide_note = request.form.get("guide_note", "").strip()
             selected_room_type_id = to_int(request.form.get("room_type_id"), 0)
-            rooms_requested = max(1, to_int(request.form.get("rooms_requested"), 1))
+            rooms_requested = 1
             room_note = request.form.get("room_note", "").strip()
             if len(guide_note) > 255:
                 flash("Guide request note is too long.")
@@ -551,7 +571,7 @@ def register_routes(app):
                     flash("Selected hotel is not available for this fixed tour.")
                     return redirect(url_for("booking", tour_id=tour_id))
                 if to_int(selected_room_option.get("available"), 0) < rooms_requested:
-                    flash("Requested rooms are not available for this tour stay.")
+                    flash("Selected room is not available for this tour stay.")
                     return redirect(url_for("booking", tour_id=tour_id))
 
                 stay_check_in = selected_room_option.get("stay_check_in")
@@ -598,7 +618,7 @@ def register_routes(app):
                     db.rollback()
                     cur.close()
                     db.close()
-                    flash("Requested rooms are not available now. Please choose fewer rooms.")
+                    flash("Selected room is not available now. Please choose a different room type.")
                     return redirect(url_for("booking", tour_id=tour_id))
                 db.commit()
                 cur.close()
@@ -711,8 +731,8 @@ def register_routes(app):
             "booking.html",
             tour=tour,
             itinerary=itinerary,
+            city_schedules=city_schedules,
             linked_hotels=linked_hotels,
-            linked_transports=linked_transports,
             linked_guides=linked_guides,
             room_options_by_hotel=room_options_by_hotel,
             room_options_flat=room_options_flat,
@@ -775,7 +795,7 @@ def register_routes(app):
 
         booking = query_db(
             """
-            SELECT b.*, t.title, t.price, t.start_date, t.child_price_percent
+            SELECT b.*, t.title, t.price, t.start_date, t.departure_datetime, t.return_datetime, t.child_price_percent
             FROM bookings b
             JOIN tours t ON t.id=b.tour_id
             WHERE b.id=%s AND b.user_id=%s
@@ -941,7 +961,7 @@ def register_routes(app):
     def invoice(booking_id):
         booking = query_db(
             """
-            SELECT b.*, t.title, t.price, t.start_date
+            SELECT b.*, t.title, t.price, t.start_date, t.departure_datetime, t.return_datetime
             FROM bookings b
             JOIN tours t ON t.id=b.tour_id
             WHERE b.id=%s AND b.user_id=%s
@@ -961,7 +981,7 @@ def register_routes(app):
     def mybookings():
         bookings = query_db(
             """
-            SELECT b.*, t.title, t.price, t.start_date
+            SELECT b.*, t.title, t.price, t.start_date, t.departure_datetime, t.return_datetime
             FROM bookings b
             JOIN tours t ON t.id=b.tour_id
             WHERE b.user_id=%s
@@ -970,474 +990,3 @@ def register_routes(app):
             (session["user_id"],),
         )
         return render_template("mybookings.html", bookings=bookings)
-
-    @app.route("/my-trip-planner", methods=["GET", "POST"])
-    @login_required
-    def my_trip_planner():
-        if request.method == "POST":
-            action = (request.form.get("action") or "create_plan").strip()
-            if action not in {"delete_plan", "generate_ideal_plan", "create_plan", "update_plan"}:
-                flash("Invalid planner action.")
-                return redirect(url_for("my_trip_planner"))
-
-            if action == "delete_plan":
-                plan_id = to_int(request.form.get("plan_id"), 0)
-                if plan_id:
-                    execute_db("DELETE FROM self_trip_plans WHERE id=%s AND user_id=%s", (plan_id, session["user_id"]))
-                    flash("Trip plan deleted.")
-                return redirect(url_for("my_trip_planner"))
-
-            if action == "generate_ideal_plan":
-                departure_city_id = to_int(request.form.get("departure_city_id"), 0)
-                destination_city_id = to_int(request.form.get("destination_city_id"), 0)
-                duration_days = max(1, min(15, to_int(request.form.get("duration_days"), 3)))
-                program_mode = (request.form.get("program_mode") or "balanced").strip().lower()
-                per_day_input = to_int(request.form.get("spots_per_day"), 0)
-                budget_input = (request.form.get("budget") or "").strip()
-
-                if not destination_city_id:
-                    flash("Destination city is required for ideal tour generation.")
-                    return redirect(url_for("my_trip_planner"))
-
-                budget = Decimal("0")
-                try:
-                    if budget_input:
-                        budget = Decimal(budget_input)
-                except Exception:
-                    budget = Decimal("0")
-                if budget < 0:
-                    budget = Decimal("0")
-
-                departure_city = query_db("SELECT id, city_name FROM cities WHERE id=%s", (departure_city_id,), one=True) if departure_city_id else None
-                destination_city = query_db(
-                    """
-                    SELECT c.id, c.city_name, s.state_name
-                    FROM cities c
-                    JOIN states s ON s.id=c.state_id
-                    WHERE c.id=%s
-                    """,
-                    (destination_city_id,),
-                    one=True,
-                )
-                if not destination_city:
-                    flash("Destination city not found.")
-                    return redirect(url_for("my_trip_planner"))
-
-                candidate_spots = query_db(
-                    """
-                    SELECT id, spot_name
-                    FROM master_spots
-                    WHERE city_id=%s
-                    ORDER BY spot_name ASC
-                    LIMIT 300
-                    """,
-                    (destination_city_id,),
-                )
-                if not candidate_spots:
-                    flash("No spots found in selected destination city.")
-                    return redirect(url_for("my_trip_planner"))
-
-                generic_tokens = [
-                    "heritage site",
-                    "temple 0",
-                    "fort 0",
-                    "lake view",
-                    "sunset point",
-                    "nature park",
-                    "museum 0",
-                    "market street",
-                    "adventure point",
-                    "waterfall",
-                    "riverfront",
-                    "cultural center",
-                    "photography spot",
-                    "hill view",
-                    "local food street",
-                ]
-                preferred = []
-                fallback = []
-                for s in candidate_spots:
-                    name = (s.get("spot_name") or "").lower()
-                    if any(tok in name for tok in generic_tokens):
-                        fallback.append(s)
-                    else:
-                        preferred.append(s)
-
-                ordered_spots = preferred + fallback
-                if not ordered_spots:
-                    ordered_spots = candidate_spots
-
-                if program_mode not in {"relaxed", "balanced", "intensive"}:
-                    program_mode = "balanced"
-                if per_day_input > 0:
-                    per_day = max(1, min(6, per_day_input))
-                else:
-                    per_day_map = {"relaxed": 1, "balanced": 2, "intensive": 3}
-                    per_day = per_day_map[program_mode]
-                total_items = duration_days * per_day
-                chosen = []
-                idx = 0
-                while len(chosen) < total_items:
-                    chosen.append(ordered_spots[idx % len(ordered_spots)])
-                    idx += 1
-
-                # Hotel recommendation (destination city): budget-aware if possible
-                hotel_candidates = query_db(
-                    """
-                    SELECT
-                        s.id,
-                        hp.hotel_name,
-                        COALESCE(MIN(rt.base_price), s.price, 0) AS min_price
-                    FROM services s
-                    JOIN hotel_profiles hp ON hp.service_id=s.id
-                    LEFT JOIN hotel_room_types rt ON rt.service_id=s.id
-                    WHERE s.service_type='Hotel' AND s.city_id=%s
-                    GROUP BY s.id, hp.hotel_name, s.price
-                    ORDER BY min_price ASC, s.id DESC
-                    LIMIT 200
-                    """,
-                    (destination_city_id,),
-                )
-                hotel_service_id = None
-                if hotel_candidates:
-                    if budget > 0 and duration_days > 0:
-                        budget_per_day = budget / Decimal(duration_days)
-                        eligible = [h for h in hotel_candidates if Decimal(str(h["min_price"] or 0)) <= budget_per_day]
-                        hotel_service_id = (eligible[0]["id"] if eligible else hotel_candidates[0]["id"])
-                    else:
-                        hotel_service_id = hotel_candidates[0]["id"]
-
-                title = f"Ideal {destination_city['city_name']} {duration_days}D Plan"
-                trip_notes = []
-                if departure_city:
-                    trip_notes.append(f"Departure: {departure_city['city_name']}")
-                trip_notes.append(f"Destination: {destination_city['city_name']}, {destination_city['state_name']}")
-                trip_notes.append(f"Duration: {duration_days} day(s)")
-                trip_notes.append(f"Program: {program_mode.capitalize()}")
-                trip_notes.append(f"Spots per day: {per_day}")
-                if budget > 0:
-                    trip_notes.append(f"Budget: Rs {budget}")
-
-                db = get_db()
-                cur = db.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO self_trip_plans(
-                        user_id, plan_title, city_id, hotel_service_id, notes
-                    )
-                    VALUES(%s,%s,%s,%s,%s)
-                    """,
-                    (
-                        session["user_id"],
-                        title,
-                        destination_city_id,
-                        hotel_service_id,
-                        " | ".join(trip_notes),
-                    ),
-                )
-                plan_id = cur.lastrowid
-
-                for i, spot in enumerate(chosen):
-                    day_num = (i // per_day) + 1
-                    cur.execute(
-                        """
-                        INSERT INTO self_trip_plan_items(plan_id, day_number, spot_id, note)
-                        VALUES(%s,%s,%s,%s)
-                        """,
-                        (plan_id, day_num, int(spot["id"]), None),
-                    )
-
-                db.commit()
-                cur.close()
-                db.close()
-                flash("Ideal self tour generated and saved.")
-                return redirect(url_for("my_trip_planner", edit_plan_id=plan_id))
-
-            plan_id = to_int(request.form.get("plan_id"), 0)
-            title = (request.form.get("plan_title") or "").strip()
-            city_id = to_int(request.form.get("city_id"), 0) or None
-            hotel_service_id = to_int(request.form.get("hotel_service_id"), 0) or None
-            start_date = (request.form.get("start_date") or "").strip() or None
-            end_date = (request.form.get("end_date") or "").strip() or None
-            notes = (request.form.get("notes") or "").strip() or None
-            day_numbers = request.form.getlist("day_numbers[]")
-            spot_ids = request.form.getlist("spot_ids[]")
-            item_notes = request.form.getlist("item_notes[]")
-
-            if not title:
-                flash("Plan title is required.")
-                return redirect(url_for("my_trip_planner"))
-            if len(title) > 150:
-                flash("Plan title is too long.")
-                return redirect(url_for("my_trip_planner"))
-            if notes and len(notes) > 2000:
-                flash("Plan notes must be 2000 characters or less.")
-                return redirect(url_for("my_trip_planner"))
-            if city_id and not query_db("SELECT id FROM cities WHERE id=%s", (city_id,), one=True):
-                flash("Invalid city selected.")
-                return redirect(url_for("my_trip_planner"))
-
-            start_dt = parse_date(start_date) if start_date else None
-            end_dt = parse_date(end_date) if end_date else None
-            if (start_date and not start_dt) or (end_date and not end_dt):
-                flash("Invalid start/end date.")
-                return redirect(url_for("my_trip_planner"))
-            if start_dt and end_dt and start_dt > end_dt:
-                flash("Start date must be before end date.")
-                return redirect(url_for("my_trip_planner"))
-
-            # validate attached services
-            if hotel_service_id:
-                hotel_ok = query_db(
-                    "SELECT id FROM services WHERE id=%s AND service_type='Hotel'",
-                    (hotel_service_id,),
-                    one=True,
-                )
-                if not hotel_ok:
-                    flash("Invalid hotel selected.")
-                    return redirect(url_for("my_trip_planner"))
-
-            db = get_db()
-            cur = db.cursor()
-
-            if action == "update_plan":
-                cur.execute(
-                    "SELECT id FROM self_trip_plans WHERE id=%s AND user_id=%s",
-                    (plan_id, session["user_id"]),
-                )
-                if not cur.fetchone():
-                    cur.close()
-                    db.close()
-                    flash("Plan not found.")
-                    return redirect(url_for("my_trip_planner"))
-                cur.execute(
-                    """
-                    UPDATE self_trip_plans
-                    SET plan_title=%s, city_id=%s, hotel_service_id=%s,
-                        start_date=%s, end_date=%s, notes=%s
-                    WHERE id=%s AND user_id=%s
-                    """,
-                    (
-                        title,
-                        city_id,
-                        hotel_service_id,
-                        start_date,
-                        end_date,
-                        notes,
-                        plan_id,
-                        session["user_id"],
-                    ),
-                )
-                cur.execute("DELETE FROM self_trip_plan_items WHERE plan_id=%s", (plan_id,))
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO self_trip_plans(
-                        user_id, plan_title, city_id, hotel_service_id,
-                        start_date, end_date, notes
-                    )
-                    VALUES(%s,%s,%s,%s,%s,%s,%s)
-                    """,
-                    (
-                        session["user_id"],
-                        title,
-                        city_id,
-                        hotel_service_id,
-                        start_date,
-                        end_date,
-                        notes,
-                    ),
-                )
-                plan_id = cur.lastrowid
-
-            for idx, spot_id_raw in enumerate(spot_ids):
-                spot_id = to_int(spot_id_raw, 0)
-                if not spot_id:
-                    continue
-                spot_ok = query_db("SELECT id FROM master_spots WHERE id=%s", (spot_id,), one=True)
-                if not spot_ok:
-                    continue
-                day_num = 1
-                if idx < len(day_numbers):
-                    day_num = max(1, to_int(day_numbers[idx], 1))
-                note = item_notes[idx].strip() if idx < len(item_notes) and item_notes[idx] else None
-                if note and len(note) > 255:
-                    cur.close()
-                    db.close()
-                    flash("Each plan item note must be 255 characters or less.")
-                    return redirect(url_for("my_trip_planner"))
-                cur.execute(
-                    """
-                    INSERT INTO self_trip_plan_items(plan_id, day_number, spot_id, note)
-                    VALUES(%s,%s,%s,%s)
-                    """,
-                    (plan_id, day_num, spot_id, note),
-                )
-
-            db.commit()
-            cur.close()
-            db.close()
-            flash("Self trip plan updated." if action == "update_plan" else "Self trip plan saved.")
-            return redirect(url_for("my_trip_planner"))
-
-        edit_plan_id = to_int(request.args.get("edit_plan_id"), 0)
-        plans = query_db(
-            """
-            SELECT
-                p.*,
-                c.city_name,
-                s.state_name,
-                hs.service_name AS hotel_service_name,
-                (
-                    SELECT COUNT(*)
-                    FROM self_trip_plan_items pi
-                    WHERE pi.plan_id=p.id
-                ) AS total_items
-            FROM self_trip_plans p
-            LEFT JOIN cities c ON c.id=p.city_id
-            LEFT JOIN states s ON s.id=c.state_id
-            LEFT JOIN services hs ON hs.id=p.hotel_service_id
-            WHERE p.user_id=%s
-            ORDER BY p.id DESC
-            """,
-            (session["user_id"],),
-        )
-        plan_items = query_db(
-            """
-            SELECT
-                pi.plan_id,
-                pi.day_number,
-                pi.note,
-                pi.spot_id,
-                ms.spot_name,
-                ms.image_url,
-                ms.photo_source,
-                c.city_name,
-                s.state_name
-            FROM self_trip_plan_items pi
-            JOIN self_trip_plans p ON p.id=pi.plan_id
-            JOIN master_spots ms ON ms.id=pi.spot_id
-            JOIN cities c ON c.id=ms.city_id
-            JOIN states s ON s.id=c.state_id
-            WHERE p.user_id=%s
-            ORDER BY pi.plan_id DESC, pi.day_number ASC, pi.id ASC
-            """,
-            (session["user_id"],),
-        )
-        items_by_plan = {}
-        for row in plan_items:
-            items_by_plan.setdefault(row["plan_id"], []).append(row)
-
-        edit_plan = None
-        edit_items = []
-        if edit_plan_id:
-            for p in plans:
-                if int(p["id"]) == edit_plan_id:
-                    edit_plan = p
-                    break
-            if edit_plan:
-                edit_items = items_by_plan.get(edit_plan_id, [])
-
-        states = query_db(
-            """
-            SELECT id, state_name
-            FROM states
-            ORDER BY state_name
-            """
-        )
-        cities = query_db(
-            """
-            SELECT c.id, c.city_name, c.state_id, s.state_name
-            FROM cities c
-            JOIN states s ON s.id=c.state_id
-            ORDER BY s.state_name, c.city_name
-            """
-        )
-        spots = query_db(
-            """
-            SELECT
-                ms.id,
-                ms.spot_name,
-                ms.image_url,
-                ms.photo_source,
-                c.id AS city_id,
-                c.city_name,
-                s.state_name
-            FROM master_spots ms
-            JOIN cities c ON c.id=ms.city_id
-            JOIN states s ON s.id=c.state_id
-            ORDER BY s.state_name, c.city_name, ms.spot_name
-            LIMIT 2000
-            """
-        )
-        hotel_options = query_db(
-            """
-            SELECT
-                s.id,
-                hp.hotel_name AS service_name,
-                c.city_name,
-                st.state_name
-            FROM services s
-            JOIN hotel_profiles hp ON hp.service_id=s.id
-            LEFT JOIN cities c ON c.id=s.city_id
-            LEFT JOIN states st ON st.id=c.state_id
-            WHERE s.service_type='Hotel'
-            ORDER BY st.state_name, c.city_name, hp.hotel_name
-            LIMIT 1500
-            """
-        )
-
-        return render_template(
-            "my_trip_planner.html",
-            plans=plans,
-            items_by_plan=items_by_plan,
-            states=states,
-            cities=cities,
-            spots=spots,
-            hotel_options=hotel_options,
-            edit_plan=edit_plan,
-            edit_items=edit_items,
-        )
-
-    @app.route("/my-trip-planner/<int:plan_id>/export")
-    @login_required
-    def my_trip_planner_export(plan_id):
-        plan = query_db(
-            """
-            SELECT
-                p.*,
-                c.city_name,
-                s.state_name,
-                hs.service_name AS hotel_service_name
-            FROM self_trip_plans p
-            LEFT JOIN cities c ON c.id=p.city_id
-            LEFT JOIN states s ON s.id=c.state_id
-            LEFT JOIN services hs ON hs.id=p.hotel_service_id
-            WHERE p.id=%s AND p.user_id=%s
-            """,
-            (plan_id, session["user_id"]),
-            one=True,
-        )
-        if not plan:
-            abort(404)
-
-        items = query_db(
-            """
-            SELECT
-                pi.day_number,
-                pi.note,
-                ms.spot_name,
-                ms.image_url,
-                ms.photo_source,
-                c.city_name,
-                s.state_name
-            FROM self_trip_plan_items pi
-            JOIN master_spots ms ON ms.id=pi.spot_id
-            JOIN cities c ON c.id=ms.city_id
-            JOIN states s ON s.id=c.state_id
-            WHERE pi.plan_id=%s
-            ORDER BY pi.day_number ASC, pi.id ASC
-            """,
-            (plan_id,),
-        )
-        return render_template("my_trip_planner_export.html", plan=plan, items=items)

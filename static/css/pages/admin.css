@@ -1,17 +1,17 @@
 
 body{
-    background:#f1f5f9;
-    font-family:'Segoe UI',system-ui;
+    background:var(--dash-bg,#f1f5f9);
+    font-family:var(--tg-font,'Plus Jakarta Sans','Segoe UI',sans-serif);
     color:#0f172a;
     transition:background-color .25s ease,color .25s ease;
 }
 
 .admin-topbar{
-    background:#0f172a;
-    padding:12px 25px;
+    padding:10px 0;
 }
 
-.admin-topbar .brand{
+.admin-topbar .brand,
+.admin-topbar .dashboard-brand{
     color:white;
     font-weight:700;
     font-size:22px;
@@ -31,23 +31,27 @@ body{
 
 .admin-layout{
     display:flex;
-    min-height:calc(100vh - 64px);
+    gap:16px;
+    min-height:0;
 }
 
 .admin-sidebar{
-    width:240px;
-    background:#ffffff;
-    border-right:1px solid #e2e8f0;
-    padding:18px 12px;
+    width:236px;
+    background:var(--dash-surface,#ffffff);
+    border:1px solid var(--dash-border,#e2e8f0);
+    border-radius:16px;
+    padding:12px;
     position:sticky;
-    top:0;
+    top:88px;
     align-self:flex-start;
-    height:calc(100vh - 64px);
+    max-height:calc(100vh - 112px);
+    overflow:auto;
 }
 
 .admin-main{
     flex:1;
-    padding:20px;
+    padding:0;
+    min-width:0;
 }
 
 .sidebar-link{
@@ -73,23 +77,6 @@ body{
 
 .stat-box{
     min-height:100px;
-}
-
-.chart-img{
-    width:100%;
-    height:clamp(200px, 30vw, 360px);
-    object-fit:contain;
-    display:block;
-    border-radius:10px;
-    border:1px solid #e2e8f0;
-    background:#ffffff;
-}
-
-.chart-wrap{
-    min-height:220px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
 }
 
 .tour-builder-accordion .accordion-item{
@@ -124,6 +111,43 @@ body{
     object-fit:cover;
 }
 
+.tour-photo-link{
+    display:block;
+    overflow:hidden;
+    border-top-left-radius:18px;
+    border-top-right-radius:18px;
+    background:#e2e8f0;
+}
+
+.tour-card .tour-card-img{
+    width:100%;
+    height:220px;
+    object-fit:cover;
+    display:block;
+    cursor:zoom-in;
+    transition:transform .22s ease;
+}
+
+.tour-photo-link:hover .tour-card-img{
+    transform:scale(1.04);
+}
+
+.dashboard-thumb-link{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.dashboard-thumb-img{
+    width:72px;
+    height:72px;
+    object-fit:cover;
+    border-radius:10px;
+    border:1px solid #dbe2ea;
+    background:#f8fafc;
+    cursor:zoom-in;
+}
+
 .table img{
     object-fit:cover;
 }
@@ -143,10 +167,6 @@ body{
     padding:6px 8px;
     border-radius:8px;
 }
-.transport-link-item{
-    padding:6px 8px;
-    border-radius:8px;
-}
 .guide-link-item{
     padding:6px 8px;
     border-radius:8px;
@@ -155,24 +175,8 @@ body{
 .hotel-link-item:hover{
     background:#f1f5f9;
 }
-.transport-link-item:hover{
-    background:#f1f5f9;
-}
 .guide-link-item:hover{
     background:#f1f5f9;
-}
-
-.spot-location-map{
-    height:260px;
-    border:1px solid #d1d5db;
-    border-radius:12px;
-    overflow:hidden;
-    background:#f8fafc;
-}
-
-.spot-location-help{
-    font-size:0.78rem;
-    color:#64748b;
 }
 
 body.dark-mode{
@@ -203,11 +207,6 @@ body.dark-mode .sidebar-link.active{
     color:#dbeafe;
 }
 
-body.dark-mode .chart-img{
-    border-color:#334155;
-    background:#0f172a;
-}
-
 body.dark-mode .tour-builder-accordion .accordion-item{
     border-color:#334155;
 }
@@ -230,6 +229,15 @@ body.dark-mode .modal-content{
     background:#111827;
     color:#e2e8f0;
     border-color:#1f2937;
+}
+
+body.dark-mode .tour-photo-link{
+    background:#0f172a;
+}
+
+body.dark-mode .dashboard-thumb-img{
+    border-color:#334155;
+    background:#0f172a;
 }
 
 body.dark-mode .text-muted{
@@ -258,15 +266,7 @@ body.dark-mode .hotel-link-list{
     border-color:#334155 !important;
 }
 
-body.dark-mode .spot-location-map{
-    border-color:#334155;
-    background:#0f172a;
-}
-
 body.dark-mode .hotel-link-item:hover{
-    background:#1f2937;
-}
-body.dark-mode .transport-link-item:hover{
     background:#1f2937;
 }
 body.dark-mode .guide-link-item:hover{
@@ -362,9 +362,6 @@ body.dark-mode .btn-close{
         min-width:720px;
     }
 
-    .chart-img{
-        height:clamp(180px, 48vw, 300px);
-    }
 }
 
 @media (max-width: 575.98px){

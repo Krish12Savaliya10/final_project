@@ -1,11 +1,8 @@
-import base64
 import csv
 import io
 import os
-from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from io import BytesIO
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
 
@@ -13,31 +10,11 @@ from core.auth import login_required, role_required
 from core.db import execute_db, get_db, query_db
 from core.helpers import (
     is_allowed_image_filename,
-    is_within_india_bounds,
     is_non_negative_amount,
-    is_valid_latitude,
-    is_valid_longitude,
     is_valid_phone,
-    parse_date,
     save_upload,
     to_int,
 )
-
-
-def _to_date(value):
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value.date()
-    if hasattr(value, "year") and hasattr(value, "month"):
-        return value
-    text = str(value)
-    for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S"):
-        try:
-            return datetime.strptime(text, fmt).date()
-        except ValueError:
-            continue
-    return None
 
 
 def _parse_datetime_local(value):
@@ -50,16 +27,6 @@ def _parse_datetime_local(value):
         except ValueError:
             continue
     return None
-
-
-def _fig_to_base64(fig):
-    buff = BytesIO()
-    fig.tight_layout()
-    fig.savefig(buff, format="png", dpi=120, bbox_inches="tight")
-    buff.seek(0)
-    encoded = base64.b64encode(buff.read()).decode("utf-8")
-    buff.close()
-    return encoded
 
 
 def _normalize_local_spot_image(image_value, upload_folder, spot_folder):
@@ -84,65 +51,6 @@ def _normalize_local_spot_image(image_value, upload_folder, spot_folder):
             return normalized
 
     return normalized
-
-
-def _build_organizer_charts(tours, bookings):
-    charts = {"tours_by_month": None, "booking_status": None, "travel_mode": None}
-    error = None
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except Exception:
-        return charts, "Matplotlib not available in environment."
-
-    try:
-        month_counts = Counter()
-        for row in tours:
-            dt = _to_date(row.get("start_date"))
-            if not dt:
-                continue
-            month_counts[dt.strftime("%b %Y")] += 1
-
-        if month_counts:
-            labels = sorted(
-                month_counts.keys(),
-                key=lambda s: datetime.strptime(s, "%b %Y"),
-            )
-            values = [month_counts[k] for k in labels]
-            fig, ax = plt.subplots(figsize=(6.4, 3.2))
-            ax.bar(labels, values, color="#2563eb")
-            ax.set_title("Tours By Month")
-            ax.set_ylabel("Tours")
-            ax.tick_params(axis="x", rotation=30)
-            charts["tours_by_month"] = _fig_to_base64(fig)
-            plt.close(fig)
-
-        status_counts = Counter([(b.get("status") or "unknown").capitalize() for b in bookings])
-        if status_counts:
-            labels = list(status_counts.keys())
-            values = list(status_counts.values())
-            fig, ax = plt.subplots(figsize=(4.6, 3.2))
-            ax.pie(values, labels=labels, autopct="%1.0f%%", startangle=140)
-            ax.set_title("Booking Status Split")
-            charts["booking_status"] = _fig_to_base64(fig)
-            plt.close(fig)
-
-        mode_counts = Counter([(t.get("travel_mode") or "Not Set") for t in tours])
-        if mode_counts:
-            labels = list(mode_counts.keys())
-            values = list(mode_counts.values())
-            fig, ax = plt.subplots(figsize=(6.4, 3.2))
-            ax.barh(labels, values, color="#16a34a")
-            ax.set_title("Travel Mode Distribution")
-            ax.set_xlabel("Tours")
-            charts["travel_mode"] = _fig_to_base64(fig)
-            plt.close(fig)
-    except Exception:
-        error = "Unable to generate charts from current data."
-
-    return charts, error
 
 
 def register_routes(app):
@@ -172,18 +80,6 @@ def register_routes(app):
             elif action == "add_spot":
                 city_id = to_int(request.form.get("city_id"), 0)
                 spot_name = request.form.get("spot_name", "").strip()
-                latitude = (
-                    request.form.get("latitude")
-                    or request.form.get("letitude")
-                    or request.form.get("lattitude")
-                    or ""
-                ).strip()
-                longitude = (
-                    request.form.get("longitude")
-                    or request.form.get("longtitude")
-                    or request.form.get("logitutide")
-                    or ""
-                ).strip()
                 external_image_url = (
                     request.form.get("external_image_url")
                     or request.form.get("image_url")
@@ -207,20 +103,6 @@ def register_routes(app):
                 if not city_ok:
                     flash("Invalid city selected.")
                     return redirect(url_for("organizer_dashboard"))
-                has_lat = bool(latitude)
-                has_lng = bool(longitude)
-                if has_lat != has_lng:
-                    flash("Enter both latitude and longitude together, or leave both blank.")
-                    return redirect(url_for("organizer_dashboard"))
-                if latitude and not is_valid_latitude(latitude):
-                    flash("Latitude must be between -90 and 90.")
-                    return redirect(url_for("organizer_dashboard"))
-                if longitude and not is_valid_longitude(longitude):
-                    flash("Longitude must be between -180 and 180.")
-                    return redirect(url_for("organizer_dashboard"))
-                if has_lat and has_lng and not is_within_india_bounds(latitude, longitude):
-                    flash("Spot coordinates must be inside India.")
-                    return redirect(url_for("organizer_dashboard"))
                 if external_image_url and not external_image_url.lower().startswith(("http://", "https://")):
                     flash("External image URL must start with http:// or https://")
                     return redirect(url_for("organizer_dashboard"))
@@ -241,9 +123,9 @@ def register_routes(app):
                         """
                         INSERT INTO spot_change_requests(
                             organizer_id, request_type, status, city_id, spot_name,
-                            image_url, photo_source, latitude, longitude, spot_details
+                            image_url, photo_source, spot_details
                         )
-                        VALUES(%s,'add_spot','pending',%s,%s,%s,%s,%s,%s,%s)
+                        VALUES(%s,'add_spot','pending',%s,%s,%s,%s,%s)
                         """,
                         (
                             session["user_id"],
@@ -251,8 +133,6 @@ def register_routes(app):
                             spot_name,
                             final_image,
                             photo_source,
-                            latitude or None,
-                            longitude or None,
                             spot_details or None,
                         ),
                     )
@@ -374,25 +254,9 @@ def register_routes(app):
                         app.config["SPOT_UPLOAD_FOLDER"],
                     )
                     photo_source = "external_url" if image_url.lower().startswith(("http://", "https://")) else "local_file"
-                    latitude = csv_value(row, "latitude", "lat", "letitude", "lattitude") or None
-                    longitude = csv_value(row, "longitude", "longtitude", "logitutide", "lng", "lon") or None
                     spot_details = (
                         csv_value(row, "spot_details", "details", "description", "spot_description", "about") or None
                     )
-                    has_lat = bool(latitude)
-                    has_lng = bool(longitude)
-                    if has_lat != has_lng:
-                        skipped += 1
-                        continue
-                    if latitude and not is_valid_latitude(latitude):
-                        skipped += 1
-                        continue
-                    if longitude and not is_valid_longitude(longitude):
-                        skipped += 1
-                        continue
-                    if has_lat and has_lng and not is_within_india_bounds(latitude, longitude):
-                        skipped += 1
-                        continue
 
                     cur.execute(
                         "SELECT id FROM master_spots WHERE city_id=%s AND spot_name=%s LIMIT 1",
@@ -403,19 +267,19 @@ def register_routes(app):
                         cur.execute(
                             """
                             UPDATE master_spots
-                            SET image_url=%s, photo_source=%s, latitude=%s, longitude=%s, spot_details=%s
+                            SET image_url=%s, photo_source=%s, spot_details=%s
                             WHERE id=%s
                             """,
-                            (image_url, photo_source, latitude, longitude, spot_details, existing["id"]),
+                            (image_url, photo_source, spot_details, existing["id"]),
                         )
                         updated += 1
                     else:
                         cur.execute(
                             """
-                            INSERT INTO master_spots(spot_name,image_url,photo_source,city_id,latitude,longitude,spot_details)
-                            VALUES(%s,%s,%s,%s,%s,%s,%s)
+                            INSERT INTO master_spots(spot_name,image_url,photo_source,city_id,spot_details)
+                            VALUES(%s,%s,%s,%s,%s)
                             """,
-                            (spot_name, image_url, photo_source, city_id, latitude, longitude, spot_details),
+                            (spot_name, image_url, photo_source, city_id, spot_details),
                         )
                         inserted += 1
 
@@ -607,12 +471,8 @@ def register_routes(app):
                 price = (request.form.get("price", "0") or "0").strip()
                 start_point = request.form.get("start_point", "").strip()
                 end_point = request.form.get("end_point", "").strip()
-                start_date = (request.form.get("start_date") or "").strip()
-                end_date = (request.form.get("end_date") or "").strip()
                 travel_mode = request.form.get("travel_mode", "").strip()
                 food_plan = request.form.get("food_plan", "").strip()
-                transport_details = request.form.get("transport_details", "").strip()
-                hotel_notes = request.form.get("hotel_notes", "").strip()
                 inclusions = request.form.get("inclusions", "").strip()
                 exclusions = request.form.get("exclusions", "").strip()
                 pickup_state_id = to_int(request.form.get("pickup_state_id"), 0) or None
@@ -625,56 +485,51 @@ def register_routes(app):
                     6,
                 ) or 6
                 terms_conditions = request.form.get("terms_conditions", "").strip()
+                child_price_amount_text = (request.form.get("child_price_amount") or "").strip()
                 child_price_percent_text = (request.form.get("child_price_percent") or "100").strip() or "100"
                 departure_datetime_raw = (request.form.get("departure_datetime") or "").strip()
                 return_datetime_raw = (request.form.get("return_datetime") or "").strip()
-                difficulty_level = request.form.get("difficulty_level", "").strip()
+                difficulty_level = None
                 linked_hotels = request.form.getlist("linked_hotels[]")
-                linked_guides = request.form.getlist("linked_guides[]")
                 tour_image_file = request.files.get("tour_image")
-                if tour_image_file and tour_image_file.filename and not is_allowed_image_filename(tour_image_file.filename):
+                if not tour_image_file or not (tour_image_file.filename or "").strip():
+                    flash("Main tour image is required.")
+                    return redirect(url_for("organizer_dashboard"))
+                if not is_allowed_image_filename(tour_image_file.filename):
                     flash("Tour image must be a JPG, JPEG, PNG, or WEBP file.")
                     return redirect(url_for("organizer_dashboard"))
-                image_name = save_upload(tour_image_file, app.config["UPLOAD_FOLDER"]) or "demo.jpg"
+                image_name = save_upload(tour_image_file, app.config["UPLOAD_FOLDER"])
+                if not image_name:
+                    flash("Unable to save main tour image. Please upload a valid file.")
+                    return redirect(url_for("organizer_dashboard"))
                 day_numbers = request.form.getlist("day_numbers[]")
                 spots = request.form.getlist("spots[]")
-                hotel_stay_service_ids = request.form.getlist("hotel_stay_service_ids[]")
-                hotel_stay_check_ins = request.form.getlist("hotel_stay_check_ins[]")
-                hotel_stay_check_outs = request.form.getlist("hotel_stay_check_outs[]")
-                hotel_stay_notes = request.form.getlist("hotel_stay_notes[]")
-                schedule_city_ids = request.form.getlist("schedule_city_ids[]")
-                schedule_arrivals = request.form.getlist("schedule_arrivals[]")
-                schedule_departures = request.form.getlist("schedule_departures[]")
-                schedule_notes = request.form.getlist("schedule_notes[]")
 
-                if not (title and start_point and end_point and start_date and end_date):
+                if not title:
                     flash("All required tour fields must be filled.")
                     return redirect(url_for("organizer_dashboard"))
-                if not (pickup_state_id and pickup_city_id and drop_state_id and drop_city_id):
-                    flash("Pickup and drop state/city are required.")
+                if not (pickup_city_id and drop_city_id):
+                    flash("Pickup and drop city are required.")
                     return redirect(url_for("organizer_dashboard"))
-                if len(title) > 255 or len(start_point) > 255 or len(end_point) > 255:
-                    flash("Tour title or point name is too long.")
+                if not travel_mode:
+                    flash("Transport vehicle type is required.")
+                    return redirect(url_for("organizer_dashboard"))
+                if len(title) > 255:
+                    flash("Tour title is too long.")
                     return redirect(url_for("organizer_dashboard"))
                 if len(description) > 5000:
                     flash("Tour description is too long.")
                     return redirect(url_for("organizer_dashboard"))
-                if len(transport_details) > 255:
-                    flash("Transport details should be 255 characters or less.")
-                    return redirect(url_for("organizer_dashboard"))
-                if len(hotel_notes) > 2000 or len(inclusions) > 2000 or len(exclusions) > 2000 or len(terms_conditions) > 4000:
+                if len(inclusions) > 2000 or len(exclusions) > 2000 or len(terms_conditions) > 4000:
                     flash("One of the detail fields is too long.")
                     return redirect(url_for("organizer_dashboard"))
                 if not is_non_negative_amount(price):
                     flash("Tour price must be a valid non-negative number.")
                     return redirect(url_for("organizer_dashboard"))
-                start_dt = parse_date(start_date)
-                end_dt = parse_date(end_date)
-                if not start_dt or not end_dt:
-                    flash("Invalid tour dates.")
-                    return redirect(url_for("organizer_dashboard"))
-                if start_dt >= end_dt:
-                    flash("Start date must be earlier than end date.")
+                try:
+                    adult_price = Decimal(price)
+                except (InvalidOperation, TypeError):
+                    flash("Tour price must be a valid non-negative number.")
                     return redirect(url_for("organizer_dashboard"))
                 if not max_group_size or max_group_size < 1:
                     flash("Max group size must be at least 1.")
@@ -682,38 +537,60 @@ def register_routes(app):
                 if min_group_size < 1:
                     flash("Minimum people to start tour must be at least 1.")
                     return redirect(url_for("organizer_dashboard"))
-                if not is_non_negative_amount(child_price_percent_text):
-                    flash("Child price percent must be a valid non-negative number.")
-                    return redirect(url_for("organizer_dashboard"))
-                try:
-                    child_price_percent = Decimal(child_price_percent_text)
-                except (InvalidOperation, TypeError):
-                    flash("Invalid child price percent.")
-                    return redirect(url_for("organizer_dashboard"))
-                if child_price_percent > Decimal("100"):
-                    flash("Child price percent cannot exceed 100.")
-                    return redirect(url_for("organizer_dashboard"))
+                if child_price_amount_text:
+                    if not is_non_negative_amount(child_price_amount_text):
+                        flash("Children price must be a valid non-negative number.")
+                        return redirect(url_for("organizer_dashboard"))
+                    try:
+                        child_price_amount = Decimal(child_price_amount_text)
+                    except (InvalidOperation, TypeError):
+                        flash("Invalid children price.")
+                        return redirect(url_for("organizer_dashboard"))
+                    if adult_price <= 0 and child_price_amount > 0:
+                        flash("Adult price must be greater than zero when children price is set.")
+                        return redirect(url_for("organizer_dashboard"))
+                    if adult_price > 0 and child_price_amount > adult_price:
+                        flash("Children price cannot exceed adult price.")
+                        return redirect(url_for("organizer_dashboard"))
+                    child_price_percent = (
+                        (child_price_amount / adult_price) * Decimal("100")
+                        if adult_price > 0
+                        else Decimal("0")
+                    )
+                    child_price_percent = child_price_percent.quantize(Decimal("0.01"))
+                else:
+                    if not is_non_negative_amount(child_price_percent_text):
+                        flash("Child price percent must be a valid non-negative number.")
+                        return redirect(url_for("organizer_dashboard"))
+                    try:
+                        child_price_percent = Decimal(child_price_percent_text)
+                    except (InvalidOperation, TypeError):
+                        flash("Invalid child price percent.")
+                        return redirect(url_for("organizer_dashboard"))
+                    if child_price_percent > Decimal("100"):
+                        flash("Child price percent cannot exceed 100.")
+                        return redirect(url_for("organizer_dashboard"))
 
+                if not departure_datetime_raw or not return_datetime_raw:
+                    flash("Tour departure and return date/time are required.")
+                    return redirect(url_for("organizer_dashboard"))
                 departure_datetime = _parse_datetime_local(departure_datetime_raw)
                 return_datetime = _parse_datetime_local(return_datetime_raw)
-                if departure_datetime_raw and not departure_datetime:
+                if not departure_datetime:
                     flash("Invalid departure date/time.")
                     return redirect(url_for("organizer_dashboard"))
-                if return_datetime_raw and not return_datetime:
+                if not return_datetime:
                     flash("Invalid return date/time.")
                     return redirect(url_for("organizer_dashboard"))
                 if departure_datetime and return_datetime and departure_datetime >= return_datetime:
                     flash("Return date/time must be after departure date/time.")
                     return redirect(url_for("organizer_dashboard"))
-
-                if not query_db("SELECT id FROM states WHERE id=%s", (pickup_state_id,), one=True):
-                    flash("Invalid pickup state.")
-                    return redirect(url_for("organizer_dashboard"))
-                if not query_db("SELECT id FROM states WHERE id=%s", (drop_state_id,), one=True):
-                    flash("Invalid drop state.")
-                    return redirect(url_for("organizer_dashboard"))
+                start_dt = departure_datetime.date()
+                end_dt = return_datetime.date()
+                start_date_value = start_dt.strftime("%Y-%m-%d")
+                end_date_value = end_dt.strftime("%Y-%m-%d")
                 pickup_city = query_db(
-                    "SELECT id, state_id FROM cities WHERE id=%s",
+                    "SELECT id, state_id, city_name FROM cities WHERE id=%s",
                     (pickup_city_id,),
                     one=True,
                 )
@@ -721,21 +598,41 @@ def register_routes(app):
                     flash("Invalid pickup city.")
                     return redirect(url_for("organizer_dashboard"))
                 drop_city = query_db(
-                    "SELECT id, state_id FROM cities WHERE id=%s",
+                    "SELECT id, state_id, city_name FROM cities WHERE id=%s",
                     (drop_city_id,),
                     one=True,
                 )
                 if not drop_city:
                     flash("Invalid drop city.")
                     return redirect(url_for("organizer_dashboard"))
-                if int(pickup_city["state_id"]) != pickup_state_id:
+
+                start_point = start_point or (pickup_city.get("city_name") or "").strip()
+                end_point = end_point or (drop_city.get("city_name") or "").strip()
+                if not (start_point and end_point):
+                    flash("Unable to set departure/destination points from selected cities.")
+                    return redirect(url_for("organizer_dashboard"))
+                if len(start_point) > 255 or len(end_point) > 255:
+                    flash("Tour point name is too long.")
+                    return redirect(url_for("organizer_dashboard"))
+
+                pickup_city_state_id = to_int(pickup_city.get("state_id"), 0) or None
+                drop_city_state_id = to_int(drop_city.get("state_id"), 0) or None
+                pickup_state_id = pickup_state_id or pickup_city_state_id
+                drop_state_id = drop_state_id or drop_city_state_id
+                if not (pickup_state_id and drop_state_id):
+                    flash("Unable to detect pickup/drop state from selected cities.")
+                    return redirect(url_for("organizer_dashboard"))
+
+                if pickup_city_state_id and int(pickup_city_state_id) != pickup_state_id:
                     flash("Pickup city does not belong to selected pickup state.")
                     return redirect(url_for("organizer_dashboard"))
-                if int(drop_city["state_id"]) != drop_state_id:
+                if drop_city_state_id and int(drop_city_state_id) != drop_state_id:
                     flash("Drop city does not belong to selected drop state.")
                     return redirect(url_for("organizer_dashboard"))
 
-                allowed_state_ids = {pickup_state_id, drop_state_id}
+                destination_city_id = drop_city_id
+                destination_state_id = drop_state_id
+
                 total_days = (end_dt - start_dt).days + 1
 
                 itinerary_rows = []
@@ -776,10 +673,14 @@ def register_routes(app):
                     return redirect(url_for("organizer_dashboard"))
                 for spot_id, _, _ in itinerary_rows:
                     spot = spot_map[spot_id]
-                    if int(spot["state_id"]) not in allowed_state_ids:
+                    if int(spot["state_id"]) != int(destination_state_id):
                         flash(
-                            f"Spot '{spot['spot_name']}' is outside selected pickup/drop states. "
-                            "Please use relevant spots only."
+                            f"Spot '{spot['spot_name']}' must belong to destination state."
+                        )
+                        return redirect(url_for("organizer_dashboard"))
+                    if int(spot["city_id"]) != int(destination_city_id):
+                        flash(
+                            f"Spot '{spot['spot_name']}' must belong to destination city."
                         )
                         return redirect(url_for("organizer_dashboard"))
 
@@ -787,10 +688,15 @@ def register_routes(app):
                     return sorted({to_int(v, 0) for v in raw_list if to_int(v, 0) > 0})
 
                 hotel_ids = parse_service_ids(linked_hotels)
-                guide_ids = parse_service_ids(linked_guides)
-                transport_ids = []
 
-                def validate_service_ids(service_ids, expected_type, label):
+                def validate_service_ids(
+                    service_ids,
+                    expected_type,
+                    label,
+                    allowed_state_ids=None,
+                    require_state=False,
+                    state_error_message=None,
+                ):
                     if not service_ids:
                         return service_ids
                     placeholders = ", ".join(["%s"] * len(service_ids))
@@ -812,107 +718,25 @@ def register_routes(app):
                         if row["service_type"] != expected_type:
                             flash(f"Invalid {label} type selected.")
                             return None
-                        state_id = row.get("state_id")
-                        if state_id and int(state_id) not in allowed_state_ids:
-                            flash(f"{label} must belong to pickup/drop states.")
+                        state_id = to_int(row.get("state_id"), 0)
+                        if require_state and state_id <= 0:
+                            flash(state_error_message or f"{label} must have a valid city/state.")
+                            return None
+                        if allowed_state_ids is not None and state_id > 0 and int(state_id) not in allowed_state_ids:
+                            flash(state_error_message or f"{label} must belong to selected route states.")
                             return None
                     return service_ids
 
-                hotel_ids = validate_service_ids(hotel_ids, "Hotel", "Hotel")
+                hotel_ids = validate_service_ids(
+                    hotel_ids,
+                    "Hotel",
+                    "Hotel",
+                    allowed_state_ids={int(destination_state_id)},
+                    require_state=True,
+                    state_error_message="Hotel must belong to destination state.",
+                )
                 if hotel_ids is None:
                     return redirect(url_for("organizer_dashboard"))
-                guide_ids = validate_service_ids(guide_ids, "Guides", "Guide")
-                if guide_ids is None:
-                    return redirect(url_for("organizer_dashboard"))
-                if not transport_details:
-                    flash("Add transport details for this tour.")
-                    return redirect(url_for("organizer_dashboard"))
-
-                hotel_stays = []
-                max_checkout = end_dt + timedelta(days=1)
-                stay_row_count = max(
-                    len(hotel_stay_service_ids),
-                    len(hotel_stay_check_ins),
-                    len(hotel_stay_check_outs),
-                    len(hotel_stay_notes),
-                )
-                for idx in range(stay_row_count):
-                    service_id = to_int(hotel_stay_service_ids[idx] if idx < len(hotel_stay_service_ids) else 0, 0)
-                    check_in_raw = (hotel_stay_check_ins[idx] if idx < len(hotel_stay_check_ins) else "").strip()
-                    check_out_raw = (hotel_stay_check_outs[idx] if idx < len(hotel_stay_check_outs) else "").strip()
-                    note = (hotel_stay_notes[idx] if idx < len(hotel_stay_notes) else "").strip()
-
-                    if not service_id and not check_in_raw and not check_out_raw and not note:
-                        continue
-                    if not service_id or not check_in_raw or not check_out_raw:
-                        flash("Each night-stay row needs hotel, check-in, and check-out dates.")
-                        return redirect(url_for("organizer_dashboard"))
-                    if service_id not in hotel_ids:
-                        flash("Night-stay hotel must be selected in linked hotels.")
-                        return redirect(url_for("organizer_dashboard"))
-                    check_in = parse_date(check_in_raw)
-                    check_out = parse_date(check_out_raw)
-                    if not check_in or not check_out:
-                        flash("Invalid hotel stay dates.")
-                        return redirect(url_for("organizer_dashboard"))
-                    if check_in >= check_out:
-                        flash("Hotel stay check-out must be after check-in.")
-                        return redirect(url_for("organizer_dashboard"))
-                    if check_in < start_dt or check_out > max_checkout:
-                        flash("Hotel stay dates must fall inside the tour duration.")
-                        return redirect(url_for("organizer_dashboard"))
-                    nights = (check_out - check_in).days
-                    hotel_stays.append((service_id, check_in, check_out, nights, note[:255] if note else None))
-
-                if hotel_ids and not hotel_stays:
-                    flash("Add at least one detailed hotel night-stay row for linked hotel(s).")
-                    return redirect(url_for("organizer_dashboard"))
-
-                city_schedule_rows = []
-                schedule_row_count = max(
-                    len(schedule_city_ids),
-                    len(schedule_arrivals),
-                    len(schedule_departures),
-                    len(schedule_notes),
-                )
-                for idx in range(schedule_row_count):
-                    city_id = to_int(schedule_city_ids[idx] if idx < len(schedule_city_ids) else 0, 0)
-                    arrival_raw = (schedule_arrivals[idx] if idx < len(schedule_arrivals) else "").strip()
-                    departure_raw = (schedule_departures[idx] if idx < len(schedule_departures) else "").strip()
-                    note = (schedule_notes[idx] if idx < len(schedule_notes) else "").strip()
-                    if not city_id and not arrival_raw and not departure_raw and not note:
-                        continue
-                    if not city_id or not arrival_raw or not departure_raw:
-                        flash("Each city schedule row requires city, arrival and departure datetime.")
-                        return redirect(url_for("organizer_dashboard"))
-                    city_row = query_db(
-                        "SELECT id, state_id FROM cities WHERE id=%s",
-                        (city_id,),
-                        one=True,
-                    )
-                    if not city_row:
-                        flash("Invalid city in schedule.")
-                        return redirect(url_for("organizer_dashboard"))
-                    if to_int(city_row.get("state_id"), 0) not in allowed_state_ids:
-                        flash("Scheduled cities must belong to pickup/drop states.")
-                        return redirect(url_for("organizer_dashboard"))
-                    arrival_dt = _parse_datetime_local(arrival_raw)
-                    departure_dt = _parse_datetime_local(departure_raw)
-                    if not arrival_dt or not departure_dt:
-                        flash("Invalid city schedule datetime.")
-                        return redirect(url_for("organizer_dashboard"))
-                    if arrival_dt >= departure_dt:
-                        flash("In city schedule, departure must be after arrival.")
-                        return redirect(url_for("organizer_dashboard"))
-                    city_schedule_rows.append(
-                        (
-                            city_id,
-                            arrival_dt.strftime("%Y-%m-%d %H:%M:%S"),
-                            departure_dt.strftime("%Y-%m-%d %H:%M:%S"),
-                            idx + 1,
-                            note[:255] if note else None,
-                        )
-                    )
 
                 db = get_db()
                 cur = db.cursor()
@@ -920,26 +744,24 @@ def register_routes(app):
                     """
                     INSERT INTO tours(
                         organizer_id,tour_status,title,description,price,start_date,end_date,start_point,end_point,image_path,
-                        travel_mode,food_plan,transport_details,hotel_notes,inclusions,exclusions,
+                        travel_mode,food_plan,inclusions,exclusions,
                         pickup_state_id,pickup_city_id,drop_state_id,drop_city_id,max_group_size,min_group_size,
                         terms_conditions,child_price_percent,departure_datetime,return_datetime,difficulty_level
                     )
-                    VALUES(%s,'open',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    VALUES(%s,'open',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     """,
                     (
                         session["user_id"],
                         title,
                         description,
                         price,
-                        start_date,
-                        end_date,
+                        start_date_value,
+                        end_date_value,
                         start_point,
                         end_point,
                         image_name,
                         travel_mode or None,
                         food_plan or None,
-                        transport_details or None,
-                        hotel_notes or None,
                         inclusions or None,
                         exclusions or None,
                         pickup_state_id,
@@ -974,58 +796,11 @@ def register_routes(app):
                         """,
                         (tour_id, sid),
                     )
-                for sid in guide_ids:
-                    cur.execute(
-                        """
-                        INSERT IGNORE INTO tour_service_links(tour_id, service_id, service_kind)
-                        VALUES(%s,%s,'Guides')
-                        """,
-                        (tour_id, sid),
-                    )
-                for sid in transport_ids:
-                    cur.execute(
-                        """
-                        INSERT IGNORE INTO tour_service_links(tour_id, service_id, service_kind)
-                        VALUES(%s,%s,'Transport')
-                        """,
-                        (tour_id, sid),
-                    )
-
-                if hotel_stays:
-                    cur.execute("SHOW TABLES LIKE 'tour_hotel_stays'")
-                    if not cur.fetchone():
-                        db.rollback()
-                        cur.close()
-                        db.close()
-                        flash("Hotel stay table not found. Restart app once to apply latest schema.")
-                        return redirect(url_for("organizer_dashboard"))
-                    for service_id, check_in, check_out, nights, stay_note in hotel_stays:
-                        cur.execute(
-                            """
-                            INSERT INTO tour_hotel_stays(
-                                tour_id, service_id, check_in_date, check_out_date, nights, stay_notes
-                            )
-                            VALUES(%s,%s,%s,%s,%s,%s)
-                            """,
-                            (tour_id, service_id, check_in, check_out, nights, stay_note),
-                        )
-
-                if city_schedule_rows:
-                    for city_id, arrival_dt, departure_dt, sequence_no, schedule_note in city_schedule_rows:
-                        cur.execute(
-                            """
-                            INSERT INTO tour_city_schedules(
-                                tour_id, city_id, arrival_datetime, departure_datetime, sequence_no, note
-                            )
-                            VALUES(%s,%s,%s,%s,%s,%s)
-                            """,
-                            (tour_id, city_id, arrival_dt, departure_dt, sequence_no, schedule_note),
-                        )
 
                 db.commit()
                 cur.close()
                 db.close()
-                flash("Tour published with detailed itinerary, stay plan and schedule.")
+                flash("Tour published with day-wise itinerary.")
 
             elif action == "update_tour_status":
                 tour_id = to_int(request.form.get("tour_id"), 0)
@@ -1045,6 +820,10 @@ def register_routes(app):
             """
             SELECT
                 t.*,
+                pc.city_name AS pickup_city_name,
+                ps.state_name AS pickup_state_name,
+                dc.city_name AS drop_city_name,
+                ds.state_name AS drop_state_name,
                 (
                     SELECT COALESCE(SUM(b.pax_count), 0)
                     FROM bookings b
@@ -1053,14 +832,12 @@ def register_routes(app):
                     SELECT COALESCE(SUM(eb.pax_count), 0)
                     FROM organizer_external_bookings eb
                     WHERE eb.tour_id=t.id
-                ) AS booked_pax,
-                (
-                    SELECT COUNT(*)
-                    FROM tour_service_links tsl
-                    WHERE tsl.tour_id=t.id
-                      AND tsl.service_kind='Transport'
-                ) AS linked_transport_count
+                ) AS booked_pax
             FROM tours t
+            LEFT JOIN cities pc ON pc.id=t.pickup_city_id
+            LEFT JOIN states ps ON ps.id=t.pickup_state_id
+            LEFT JOIN cities dc ON dc.id=t.drop_city_id
+            LEFT JOIN states ds ON ds.id=t.drop_state_id
             WHERE t.organizer_id=%s
             ORDER BY t.id DESC
             """,
@@ -1074,6 +851,34 @@ def register_routes(app):
             JOIN tours t ON t.id=b.tour_id
             WHERE t.organizer_id=%s
             ORDER BY b.id DESC
+            """,
+            (session["user_id"],),
+        )
+        joined_travelers = query_db(
+            """
+            SELECT
+                bt.id AS traveler_row_id,
+                bt.booking_id,
+                bt.full_name AS traveler_name,
+                bt.age,
+                bt.id_proof_type,
+                bt.id_proof_number,
+                bt.contact_number,
+                bt.is_child,
+                b.status AS booking_status,
+                b.date AS booking_date,
+                b.pax_count,
+                t.id AS tour_id,
+                t.title AS tour_title,
+                u.full_name AS lead_traveler_name,
+                u.phone AS lead_traveler_phone
+            FROM booking_travelers bt
+            JOIN bookings b ON b.id=bt.booking_id
+            JOIN tours t ON t.id=b.tour_id
+            JOIN users u ON u.id=b.user_id
+            WHERE t.organizer_id=%s
+            ORDER BY b.date DESC, bt.id DESC
+            LIMIT 300
             """,
             (session["user_id"],),
         )
@@ -1115,8 +920,6 @@ def register_routes(app):
                 ms.spot_name,
                 ms.image_url,
                 ms.photo_source,
-                ms.latitude,
-                ms.longitude,
                 c.id AS city_id,
                 c.city_name,
                 s.id AS state_id,
@@ -1138,8 +941,6 @@ def register_routes(app):
                 r.spot_name,
                 r.image_url,
                 r.photo_source,
-                r.latitude,
-                r.longitude,
                 r.spot_details,
                 r.admin_note,
                 r.created_at,
@@ -1155,17 +956,30 @@ def register_routes(app):
             """,
             (session["user_id"],),
         )
+        request_stats = {
+            "total": len(spot_requests),
+            "pending": sum(1 for r in spot_requests if (r.get("status") or "").lower() == "pending"),
+            "approved": sum(1 for r in spot_requests if (r.get("status") or "").lower() == "approved"),
+            "rejected": sum(1 for r in spot_requests if (r.get("status") or "").lower() == "rejected"),
+            "add_spot": sum(1 for r in spot_requests if (r.get("request_type") or "").lower() == "add_spot"),
+            "update_image": sum(
+                1 for r in spot_requests if (r.get("request_type") or "").lower() == "update_spot_image"
+            ),
+        }
         hotel_options = query_db(
             """
             SELECT
                 svc.id AS service_id,
                 hp.hotel_name,
+                svc.description AS hotel_description,
+                COALESCE(NULLIF(hp.hotel_contact_email, ''), owner_user.email) AS owner_email,
                 c.id AS city_id,
                 c.city_name,
                 s.id AS state_id,
                 s.state_name
             FROM services svc
             JOIN hotel_profiles hp ON hp.service_id=svc.id
+            LEFT JOIN users owner_user ON owner_user.id=svc.provider_id
             LEFT JOIN cities c ON c.id=svc.city_id
             LEFT JOIN states s ON s.id=c.state_id
             WHERE svc.service_type='Hotel'
@@ -1191,7 +1005,6 @@ def register_routes(app):
             ORDER BY s.state_name, c.city_name, svc.service_name
             """
         )
-        transport_options = []
         payment_profit_rows = query_db(
             """
             SELECT
@@ -1307,6 +1120,10 @@ def register_routes(app):
                     "tour_id": tid,
                     "title": t.get("title"),
                     "tour_status": t.get("tour_status"),
+                    "pickup_city_name": t.get("pickup_city_name"),
+                    "pickup_state_name": t.get("pickup_state_name"),
+                    "drop_city_name": t.get("drop_city_name"),
+                    "drop_state_name": t.get("drop_state_name"),
                     "internal_booking_count": booking_stats["internal_booking_count"],
                     "internal_pax": booking_stats["internal_pax"],
                     "paid_booking_count": booking_stats["paid_booking_count"],
@@ -1319,7 +1136,6 @@ def register_routes(app):
                 }
             )
 
-        charts, chart_error = _build_organizer_charts(tours, bookings)
         analytics = {
             "total_tours": len(tours),
             "total_bookings": len(bookings) + len(external_bookings),
@@ -1335,16 +1151,11 @@ def register_routes(app):
             ),
             "total_spots": len(spots),
             "partner_hotels": len(hotel_options),
-            "partner_transport": sum(
-                1
-                for t in tours
-                if to_int(t.get("linked_transport_count"), 0) > 0 or (t.get("transport_details") or "").strip()
-            ),
             "external_bookings": len(external_bookings),
+            "spot_requests": request_stats["total"],
+            "pending_spot_requests": request_stats["pending"],
             "total_profit": f"{total_profit:.2f}",
             "total_admin_commission": f"{total_admin_commission:.2f}",
-            "charts": charts,
-            "chart_error": chart_error,
         }
 
         return render_template(
@@ -1357,8 +1168,9 @@ def register_routes(app):
             spot_requests=spot_requests,
             hotel_options=hotel_options,
             guide_options=guide_options,
-            transport_options=transport_options,
             external_bookings=external_bookings,
+            joined_travelers=joined_travelers,
+            request_stats=request_stats,
             tour_booking_summaries=tour_booking_summaries,
             analytics=analytics,
             panel_title="Organizer Panel",
@@ -1388,7 +1200,7 @@ def register_routes(app):
 
         spots = query_db(
             f"""
-            SELECT ms.id, ms.spot_name, ms.image_url, ms.photo_source, ms.latitude, ms.longitude, c.city_name
+            SELECT ms.id, ms.spot_name, ms.image_url, ms.photo_source, c.city_name
             FROM master_spots ms
             JOIN cities c ON c.id=ms.city_id
             WHERE 1=1 {clause}
@@ -1409,5 +1221,4 @@ def register_routes(app):
             """,
             tuple(params),
         )
-        transports = []
-        return jsonify({"spots": spots, "hotels": hotels, "transports": transports})
+        return jsonify({"spots": spots, "hotels": hotels})

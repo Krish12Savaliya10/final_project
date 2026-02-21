@@ -692,6 +692,8 @@ def ensure_runtime_schema():
             "transport_bookings",
             "transport_inventory_logs",
             "transport_profiles",
+            "self_trip_plan_items",
+            "self_trip_plans",
         ):
             if _table_exists(cur, legacy_table):
                 try:

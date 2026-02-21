@@ -7,7 +7,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "tourgen-secret-key")
 UPLOAD_FOLDER = "static/uploads"
 DOC_UPLOAD_FOLDER = "static/uploads/documents"
 SPOT_UPLOAD_FOLDER = "static/uploads/spots"
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "YOUR_GOOGLE_MAPS_API_KEY")
 
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")

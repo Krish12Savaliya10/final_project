@@ -12,6 +12,54 @@
     color: var(--dash-ink);
 }
 
+.dashboard-topbar {
+    color: #ffffff;
+    padding: 12px 0;
+    background: linear-gradient(120deg, #0f172a, #1e3a8a);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+    box-shadow: 0 8px 22px rgba(2, 6, 23, 0.22);
+}
+
+.dashboard-topbar .dashboard-brand {
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: #ffffff;
+}
+
+.dashboard-topbar .btn-outline-light {
+    border-color: rgba(226, 232, 240, 0.62);
+}
+
+.dashboard-topbar .btn-outline-light:hover,
+.dashboard-topbar .btn-outline-light:focus {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-toolbar-card {
+    background: linear-gradient(120deg, #0f172a, #1e3a8a);
+    color: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 10px 26px rgba(2, 6, 23, 0.22);
+}
+
+.dashboard-toolbar-card .dashboard-brand {
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.dashboard-toolbar-card .btn-outline-light {
+    border-color: rgba(226, 232, 240, 0.62);
+}
+
+.dashboard-toolbar-card .btn-outline-light:hover,
+.dashboard-toolbar-card .btn-outline-light:focus {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
 .dashboard-page {
     background:
         radial-gradient(circle at 100% -20%, rgba(37, 99, 235, 0.14) 0%, transparent 44%),
@@ -29,9 +77,23 @@
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
-.dashboard-shell .topbar,
-.dashboard-shell .admin-topbar {
-    background: linear-gradient(120deg, #0f172a, #1e3a8a);
+.dashboard-shell .topbar:not(.dashboard-topbar),
+.dashboard-shell .admin-topbar:not(.dashboard-topbar) {
+    background: transparent;
+}
+
+.dashboard-shell .admin-sidebar,
+.dashboard-shell .provider-sidebar {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-shell .admin-content,
+.dashboard-shell .admin-main,
+.dashboard-shell .provider-main {
+    min-width: 0;
 }
 
 .dashboard-shell .sidebar-link.active {
@@ -156,6 +218,18 @@ body.dark-mode .dashboard-page {
         radial-gradient(circle at 100% -20%, rgba(37, 99, 235, 0.18) 0%, transparent 45%),
         radial-gradient(circle at -10% 120%, rgba(14, 165, 233, 0.12) 0%, transparent 42%),
         var(--dash-bg);
+}
+
+html[data-theme="dark"] .dashboard-shell .dashboard-topbar,
+body.dark-mode .dashboard-shell .dashboard-topbar {
+    background: linear-gradient(120deg, #020617, #1e3a8a);
+    border-bottom-color: #334155;
+}
+
+html[data-theme="dark"] .dashboard-shell .dashboard-toolbar-card,
+body.dark-mode .dashboard-shell .dashboard-toolbar-card {
+    background: linear-gradient(120deg, #0f172a, #1e3a8a);
+    border-color: #334155;
 }
 
 html[data-theme="dark"] .dashboard-shell .panel-card,

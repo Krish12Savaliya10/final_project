@@ -4,8 +4,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/provider_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/role_dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/oyo_hotel_hub.css') }}">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/provider_hotels_management.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -14,317 +13,201 @@
   <div class="provider-shell">
     {% include "provider_sidebar.html" %}
     <main class="provider-main">
-      <div class="oyo-page">
-  <div class="oyo-hero d-flex flex-wrap justify-content-between align-items-start gap-3">
-    <div>
-      <h2>OYO-Style Property Registration</h2>
-      <div class="sub">Add your hotel with detailed property profile, registration details, policies and media.</div>
-    </div>
-    <div class="oyo-actions">
-      <a href="{{ url_for('provider_hotels_management') }}" class="oyo-btn light"><i class="bi bi-buildings"></i> Manage Hotels</a>
-      <a href="{{ url_for('provider_dashboard') }}" class="oyo-btn outline"><i class="bi bi-grid"></i> Dashboard</a>
-    </div>
-  </div>
-
-  {% with messages = get_flashed_messages() %}
-  {% if messages %}
-  <div class="alert alert-info border-0 shadow-sm">{{ messages[0] }}</div>
-  {% endif %}
-  {% endwith %}
-
-  <div class="oyo-panel">
-    <div class="panel-head">
-      <h5>Create New Property</h5>
-      <div class="muted">Complete all major sections. Mandatory fields are validated before creating the hotel.</div>
-    </div>
-    <div class="panel-body">
-      <form method="POST" enctype="multipart/form-data">
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="oyo-section-title"><span class="dot"></span> Property Basics</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="oyo-label">Hotel Name</label>
-            <input type="text" name="hotel_name" class="form-control oyo-input" required>
-          </div>
-          <div class="col-md-3">
-            <label class="oyo-label">Brand Name</label>
-            <input type="text" name="brand_name" class="form-control oyo-input">
-          </div>
-          <div class="col-md-3">
-            <label class="oyo-label">Star Rating</label>
-            <select name="star_rating" class="form-select oyo-select">
-              <option value="0">0 Star</option>
-              <option value="1">1 Star</option>
-              <option value="2">2 Star</option>
-              <option value="3">3 Star</option>
-              <option value="4">4 Star</option>
-              <option value="5">5 Star</option>
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <label class="oyo-label">State</label>
-            <select class="form-select oyo-select js-state-filter" data-city-target="hotelCitySelect" required>
-              <option value="">Select state</option>
-              {% for s in states %}
-              <option value="{{ s.id }}">{{ s.state_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="oyo-label">City</label>
-            <select name="city_id" id="hotelCitySelect" class="form-select oyo-select" required disabled>
-              <option value="">Select city</option>
-              {% for c in cities %}
-              <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="oyo-label">Starting Price</label>
-            <input type="number" step="0.01" name="base_price" class="form-control oyo-input" required>
-          </div>
-          <div class="col-md-3">
-            <label class="oyo-label">Hotel Status</label>
-            <select name="listing_status" class="form-select oyo-select">
-              <option value="active" selected>Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
-          </div>
-
-          <div class="col-12 mt-2">
-            <div class="oyo-section-title"><span class="dot"></span> Address & Geo Details</div>
-          </div>
-          <div class="col-md-6">
-            <label class="oyo-label">Address Line 1</label>
-            <input type="text" name="address_line1" class="form-control oyo-input" required>
-          </div>
-          <div class="col-md-6">
-            <label class="oyo-label">Address Line 2</label>
-            <input type="text" name="address_line2" class="form-control oyo-input">
-          </div>
-
-          <div class="col-md-4">
-            <label class="oyo-label">Locality</label>
-            <input type="text" name="locality" class="form-control oyo-input">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Landmark</label>
-            <input type="text" name="landmark" class="form-control oyo-input">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Pincode</label>
-            <input type="text" name="pincode" class="form-control oyo-input">
-          </div>
-
-          <div class="col-md-2">
-            <label class="oyo-label">Check-In</label>
-            <input type="time" name="check_in_time" class="form-control oyo-input">
-          </div>
-          <div class="col-md-2">
-            <label class="oyo-label">Check-Out</label>
-            <input type="time" name="check_out_time" class="form-control oyo-input">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Latitude</label>
-            <input type="text" id="hotelLatitudeInput" name="latitude" class="form-control oyo-input" placeholder="23.0225">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Longitude</label>
-            <input type="text" id="hotelLongitudeInput" name="longitude" class="form-control oyo-input" placeholder="72.5714">
-          </div>
-          <div class="col-12">
-            <div id="hotelLocationMap" class="hotel-location-map"></div>
-            <div class="small-muted mt-1">Click on map to set hotel location inside India.</div>
-          </div>
-
-          <div class="col-12 mt-2">
-            <div class="oyo-section-title"><span class="dot"></span> Registration Details</div>
-          </div>
-
-          <div class="col-md-4">
-            <label class="oyo-label">Owner Name</label>
-            <input type="text" name="owner_name" class="form-control oyo-input" required>
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Hotel Contact Phone</label>
-            <input type="text" name="hotel_contact_phone" class="form-control oyo-input" placeholder="10 digit number" required>
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Hotel Contact Email</label>
-            <input type="email" name="hotel_contact_email" class="form-control oyo-input" placeholder="reservations@example.com">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">GST Number</label>
-            <input type="text" name="gst_number" class="form-control oyo-input" placeholder="GSTIN">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Trade License Number</label>
-            <input type="text" name="trade_license_number" class="form-control oyo-input">
-          </div>
-          <div class="col-md-4">
-            <label class="oyo-label">Registration Document (PDF/JPG)</label>
-            <input type="file" name="registration_doc" class="form-control oyo-input" accept=".pdf,.jpg,.jpeg,.png,.webp">
-          </div>
-
-          <div class="col-12 mt-2">
-            <div class="oyo-section-title"><span class="dot"></span> Services & Policies</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="oyo-label">Services / Amenities</label>
-            <div class="amenities-box border rounded p-2">
-              {% for a in amenities %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="amenity_ids" value="{{ a.id }}" id="amenity{{ a.id }}">
-                <label class="form-check-label" for="amenity{{ a.id }}">{{ a.amenity_name }}</label>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-          <div class="col-md-6">
-            <label class="oyo-label">Gallery Management</label>
-            <div class="oyo-reg-box mt-3">
-              <div class="title">Note</div>
-              <div class="text">Hotel image upload option is removed from this page.</div>
-            </div>
-          </div>
-
-          <div class="col-md-12">
-            <label class="oyo-label">Hotel Description</label>
-            <textarea name="hotel_description" rows="3" class="form-control oyo-textarea"></textarea>
-          </div>
-          <div class="col-md-12">
-            <label class="oyo-label">House Rules</label>
-            <textarea name="house_rules" rows="2" class="form-control oyo-textarea"></textarea>
-          </div>
-          <div class="col-md-12">
-            <label class="oyo-label">Terms & Conditions</label>
-            <textarea name="terms_conditions" rows="3" class="form-control oyo-textarea"></textarea>
-          </div>
-
-          <div class="col-md-12">
-            <div class="oyo-checkbox-row">
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="couple_friendly" id="cf"><label class="form-check-label" for="cf">Couple Friendly</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="pets_allowed" id="pa"><label class="form-check-label" for="pa">Pets Allowed</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="parking_available" id="pk"><label class="form-check-label" for="pk">Parking</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="breakfast_available" id="bf"><label class="form-check-label" for="bf">Breakfast</label></div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <button class="btn btn-danger rounded-pill px-4"><i class="bi bi-check2-circle"></i> Create Hotel Listing</button>
-          </div>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2 provider-header">
+        <h2 class="fw-bold mb-0">Add Hotel</h2>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{{ url_for('provider_hotels_management') }}" class="btn btn-outline-primary btn-sm rounded-pill">Manage Hotels</a>
+          <a href="{{ url_for('provider_dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill">Dashboard</a>
         </div>
-      </form>
-    </div>
-  </div>
+      </div>
+
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="alert alert-info border-0 shadow-sm">{{ messages[0] }}</div>
+      {% endif %}
+      {% endwith %}
+
+      <div class="card panel-card">
+        <div class="card-body">
+          <form method="POST" enctype="multipart/form-data" id="hotelCreateForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Hotel Name</label>
+                <input type="text" name="hotel_name" class="form-control" maxlength="120" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Brand Name</label>
+                <input type="text" name="brand_name" class="form-control" maxlength="120">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Star Rating</label>
+                <select name="star_rating" class="form-select">
+                  <option value="0">0 Star</option>
+                  <option value="1">1 Star</option>
+                  <option value="2">2 Star</option>
+                  <option value="3">3 Star</option>
+                  <option value="4">4 Star</option>
+                  <option value="5">5 Star</option>
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">State</label>
+                <select class="form-select js-state-filter" data-city-target="hotelCitySelect" required>
+                  <option value="">Select state</option>
+                  {% for s in states %}
+                  <option value="{{ s.id }}">{{ s.state_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">City</label>
+                <select name="city_id" id="hotelCitySelect" class="form-select" required disabled>
+                  <option value="">Select city</option>
+                  {% for c in cities %}
+                  <option value="{{ c.id }}" data-state-id="{{ c.state_id }}">{{ c.city_name }} ({{ c.state_name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Starting Price</label>
+                <input type="number" step="0.01" min="0" name="base_price" class="form-control" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Hotel Status</label>
+                <select name="listing_status" class="form-select">
+                  <option value="active" selected>Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Address</label>
+                <input type="text" name="address_line1" class="form-control" maxlength="255" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Locality</label>
+                <input type="text" name="locality" class="form-control" maxlength="120">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Pincode</label>
+                <input type="text" name="pincode" class="form-control" maxlength="6" pattern="\\d{6}" inputmode="numeric" placeholder="6 digits">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Owner Name</label>
+                <input type="text" name="owner_name" class="form-control" maxlength="120" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Hotel Contact Phone</label>
+                <input type="text" name="hotel_contact_phone" class="form-control" placeholder="10 digit number" maxlength="10" pattern="\\d{10}" inputmode="numeric" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Hotel Contact Email</label>
+                <input type="email" name="hotel_contact_email" class="form-control" maxlength="120" placeholder="hotel@example.com">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Hotel Description</label>
+                <textarea name="hotel_description" rows="3" class="form-control" maxlength="5000" placeholder="Short hotel description"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">House Rules</label>
+                <textarea name="house_rules" rows="2" class="form-control" maxlength="4000"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Terms & Conditions</label>
+                <textarea name="terms_conditions" rows="2" class="form-control" maxlength="4000"></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Amenities</label>
+                <div class="row g-2 border rounded p-2 bg-body-tertiary">
+                  {% for a in amenities %}
+                  <div class="col-md-4 col-sm-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="amenity_ids" value="{{ a.id }}" id="amenity{{ a.id }}">
+                      <label class="form-check-label" for="amenity{{ a.id }}">{{ a.amenity_name }}</label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="couple_friendly" id="cf"><label class="form-check-label" for="cf">Couple Friendly</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="pets_allowed" id="pa"><label class="form-check-label" for="pa">Pets Allowed</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="parking_available" id="pk"><label class="form-check-label" for="pk">Parking</label></div>
+                  <div class="form-check"><input class="form-check-input" type="checkbox" name="breakfast_available" id="bf"><label class="form-check-label" for="bf">Breakfast</label></div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                  <label class="form-label mb-0">Room Types</label>
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="addRoomRowBtn">Add Another Room</button>
+                </div>
+                <div class="form-text mb-2">Add at least one room type while creating hotel.</div>
+                <div id="roomRows">
+                  <div class="border rounded p-3 mb-2" data-room-row>
+                    <div class="row g-2">
+                      <div class="col-md-3">
+                        <label class="form-label">Room Type Name</label>
+                        <input type="text" name="room_type_name[]" class="form-control" maxlength="120" placeholder="Deluxe Room">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">Base Price</label>
+                        <input type="number" step="0.01" min="0" name="room_base_price[]" class="form-control" placeholder="2500">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">Total Rooms</label>
+                        <input type="number" min="1" name="room_total_rooms[]" class="form-control" value="10">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">Available</label>
+                        <input type="number" min="0" name="room_available_rooms[]" class="form-control" value="10">
+                      </div>
+                      <div class="col-md-2">
+                        <label class="form-label">Max Guests</label>
+                        <input type="number" min="1" max="20" name="room_max_guests[]" class="form-control" value="2">
+                      </div>
+                      <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-danger w-100 d-none" data-remove-room>&times;</button>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Bed Type</label>
+                        <input type="text" name="room_bed_type[]" class="form-control" maxlength="120" placeholder="King / Queen / Twin">
+                      </div>
+                      <div class="col-md-8">
+                        <label class="form-label">Room Description</label>
+                        <input type="text" name="room_description[]" class="form-control" maxlength="1000" placeholder="Short room details">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Hotel Photos (Multiple)</label>
+                <input type="file" name="hotel_photos" class="form-control" accept=".jpg,.jpeg,.png,.webp" multiple required>
+                <div class="form-text">Upload 1 to 20 photos (JPG, PNG, WEBP).</div>
+              </div>
+
+              <div class="col-12">
+                <button class="btn btn-primary rounded-pill px-4">Create Hotel</button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </main>
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
   (function () {
-    const indiaBoundsRaw = {
-      south: 6.4627,
-      west: 68.1097,
-      north: 37.0841,
-      east: 97.3956
-    };
-
-    let hotelMap = null;
-    let hotelMarker = null;
-
-    function parseCoord(value) {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    function isIndiaCoord(lat, lng) {
-      return lat !== null
-        && lng !== null
-        && lat >= indiaBoundsRaw.south
-        && lat <= indiaBoundsRaw.north
-        && lng >= indiaBoundsRaw.west
-        && lng <= indiaBoundsRaw.east;
-    }
-
-    function setCoordinateInputs(lat, lng) {
-      const latInput = document.getElementById("hotelLatitudeInput");
-      const lngInput = document.getElementById("hotelLongitudeInput");
-      if (!latInput || !lngInput) return;
-      latInput.value = Number(lat).toFixed(6);
-      lngInput.value = Number(lng).toFixed(6);
-    }
-
-    function setMarker(lat, lng, panTo = false) {
-      if (!hotelMap) return;
-      if (!hotelMarker) {
-        hotelMarker = L.marker([lat, lng], { draggable: true }).addTo(hotelMap);
-        hotelMarker.on("dragend", () => {
-          const pos = hotelMarker.getLatLng();
-          if (!isIndiaCoord(pos.lat, pos.lng)) return;
-          setCoordinateInputs(pos.lat, pos.lng);
-        });
-      } else {
-        hotelMarker.setLatLng([lat, lng]);
-      }
-      if (panTo) {
-        hotelMap.panTo([lat, lng]);
-      }
-    }
-
-    function syncMarkerFromInputs() {
-      const latInput = document.getElementById("hotelLatitudeInput");
-      const lngInput = document.getElementById("hotelLongitudeInput");
-      if (!latInput || !lngInput) return;
-      const lat = parseCoord(latInput.value);
-      const lng = parseCoord(lngInput.value);
-      if (!isIndiaCoord(lat, lng)) return;
-      setMarker(lat, lng, false);
-    }
-
-    function initHotelLocationMap() {
-      if (hotelMap || !window.L) return;
-      const mapEl = document.getElementById("hotelLocationMap");
-      if (!mapEl) return;
-
-      const indiaBounds = L.latLngBounds(
-        L.latLng(indiaBoundsRaw.south, indiaBoundsRaw.west),
-        L.latLng(indiaBoundsRaw.north, indiaBoundsRaw.east)
-      );
-      hotelMap = L.map("hotelLocationMap", {
-        maxBounds: indiaBounds,
-        maxBoundsViscosity: 1.0,
-        minZoom: 4
-      });
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 18,
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(hotelMap);
-      hotelMap.fitBounds(indiaBounds, { padding: [14, 14] });
-      hotelMap.on("click", (evt) => {
-        const lat = Number(evt.latlng.lat);
-        const lng = Number(evt.latlng.lng);
-        if (!isIndiaCoord(lat, lng)) return;
-        setMarker(lat, lng, true);
-        setCoordinateInputs(lat, lng);
-      });
-
-      const latInput = document.getElementById("hotelLatitudeInput");
-      const lngInput = document.getElementById("hotelLongitudeInput");
-      if (latInput) latInput.addEventListener("input", syncMarkerFromInputs);
-      if (lngInput) lngInput.addEventListener("input", syncMarkerFromInputs);
-
-      syncMarkerFromInputs();
-      hotelMap.invalidateSize();
-    }
-
     function syncCityOptions(stateSelect) {
       const citySelect = document.getElementById(stateSelect.dataset.cityTarget || "");
       if (!citySelect) return;
@@ -352,7 +235,206 @@
       syncCityOptions(stateSelect);
     });
 
-    initHotelLocationMap();
+    const roomRows = document.getElementById("roomRows");
+    const addRoomRowBtn = document.getElementById("addRoomRowBtn");
+    const defaultRoomTemplate = roomRows ? roomRows.querySelector("[data-room-row]") : null;
+    const hotelCreateForm = document.getElementById("hotelCreateForm");
+    const phoneInput = hotelCreateForm ? hotelCreateForm.querySelector('input[name="hotel_contact_phone"]') : null;
+    const pincodeInput = hotelCreateForm ? hotelCreateForm.querySelector('input[name="pincode"]') : null;
+    const photoInput = hotelCreateForm ? hotelCreateForm.querySelector('input[name="hotel_photos"]') : null;
+    const allowedPhotoExtensions = new Set(["jpg", "jpeg", "png", "webp"]);
+    const MAX_ROOM_ROWS = 20;
+    const MAX_PHOTO_FILES = 20;
+
+    function getRoomRows() {
+      return roomRows ? Array.from(roomRows.querySelectorAll("[data-room-row]")) : [];
+    }
+
+    function updateRemoveButtons() {
+      if (!roomRows) return;
+      const rows = getRoomRows();
+      rows.forEach((row) => {
+        const btn = row.querySelector("[data-remove-room]");
+        if (!btn) return;
+        btn.classList.toggle("d-none", rows.length <= 1);
+      });
+      if (addRoomRowBtn) {
+        addRoomRowBtn.disabled = rows.length >= MAX_ROOM_ROWS;
+      }
+    }
+
+    function resetRoomRowValues(row) {
+      row.querySelectorAll("input, textarea").forEach((field) => {
+        if (field.name === "room_total_rooms[]") field.value = "10";
+        else if (field.name === "room_available_rooms[]") field.value = "10";
+        else if (field.name === "room_max_guests[]") field.value = "2";
+        else field.value = "";
+      });
+    }
+
+    if (roomRows) {
+      roomRows.addEventListener("click", (event) => {
+        const removeBtn = event.target.closest("[data-remove-room]");
+        if (!removeBtn) return;
+        const row = removeBtn.closest("[data-room-row]");
+        if (!row) return;
+        const rows = getRoomRows();
+        if (rows.length <= 1) {
+          resetRoomRowValues(row);
+          return;
+        }
+        row.remove();
+        updateRemoveButtons();
+      });
+    }
+
+    if (addRoomRowBtn && roomRows && defaultRoomTemplate) {
+      addRoomRowBtn.addEventListener("click", () => {
+        if (getRoomRows().length >= MAX_ROOM_ROWS) {
+          window.alert("You can add maximum 20 room types.");
+          return;
+        }
+        const clone = defaultRoomTemplate.cloneNode(true);
+        resetRoomRowValues(clone);
+        roomRows.appendChild(clone);
+        updateRemoveButtons();
+      });
+    }
+
+    function buildValidationError(message, field) {
+      return { message, field };
+    }
+
+    function validateRoomRows() {
+      const rows = getRoomRows();
+      if (!rows.length) {
+        return buildValidationError("Please add at least one room type.");
+      }
+      const seenRoomTypes = new Set();
+      let filledRows = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNo = i + 1;
+        const roomTypeInput = row.querySelector('input[name="room_type_name[]"]');
+        const roomPriceInput = row.querySelector('input[name="room_base_price[]"]');
+        const totalRoomsInput = row.querySelector('input[name="room_total_rooms[]"]');
+        const availableRoomsInput = row.querySelector('input[name="room_available_rooms[]"]');
+        const maxGuestsInput = row.querySelector('input[name="room_max_guests[]"]');
+
+        const roomType = (roomTypeInput?.value || "").trim();
+        const roomPriceText = (roomPriceInput?.value || "").trim();
+        const totalRoomsText = (totalRoomsInput?.value || "").trim();
+        const availableRoomsText = (availableRoomsInput?.value || "").trim();
+        const maxGuestsText = (maxGuestsInput?.value || "").trim();
+
+        const hasAnyValue = !!(roomType || roomPriceText || totalRoomsText || availableRoomsText || maxGuestsText);
+        if (!hasAnyValue) {
+          continue;
+        }
+        filledRows += 1;
+
+        if (!roomType) {
+          return buildValidationError(`Room type name is required in row ${rowNo}.`, roomTypeInput);
+        }
+        const normalizedType = roomType.toLowerCase();
+        if (seenRoomTypes.has(normalizedType)) {
+          return buildValidationError(`Duplicate room type name in row ${rowNo}.`, roomTypeInput);
+        }
+        seenRoomTypes.add(normalizedType);
+
+        const roomPrice = Number(roomPriceText);
+        if (!Number.isFinite(roomPrice) || roomPrice < 0) {
+          return buildValidationError(`Base price is invalid in row ${rowNo}.`, roomPriceInput);
+        }
+
+        const totalRooms = Number(totalRoomsText);
+        if (!Number.isInteger(totalRooms) || totalRooms < 1) {
+          return buildValidationError(`Total rooms must be at least 1 in row ${rowNo}.`, totalRoomsInput);
+        }
+
+        const availableRooms = Number(availableRoomsText);
+        if (!Number.isInteger(availableRooms) || availableRooms < 0) {
+          return buildValidationError(`Available rooms cannot be negative in row ${rowNo}.`, availableRoomsInput);
+        }
+        if (availableRooms > totalRooms) {
+          return buildValidationError(`Available rooms cannot be more than total rooms in row ${rowNo}.`, availableRoomsInput);
+        }
+
+        const maxGuests = Number(maxGuestsText);
+        if (!Number.isInteger(maxGuests) || maxGuests < 1 || maxGuests > 20) {
+          return buildValidationError(`Max guests must be between 1 and 20 in row ${rowNo}.`, maxGuestsInput);
+        }
+      }
+
+      if (filledRows < 1) {
+        const firstTypeInput = rows[0].querySelector('input[name="room_type_name[]"]');
+        return buildValidationError("Please add at least one room type.", firstTypeInput);
+      }
+      return null;
+    }
+
+    function validatePhotoFiles() {
+      if (!photoInput) return null;
+      const files = Array.from(photoInput.files || []);
+      if (files.length < 1) {
+        return buildValidationError("Please upload at least one hotel photo.", photoInput);
+      }
+      if (files.length > MAX_PHOTO_FILES) {
+        return buildValidationError("You can upload maximum 20 hotel photos.", photoInput);
+      }
+      for (const file of files) {
+        const name = String(file.name || "");
+        const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+        if (!allowedPhotoExtensions.has(ext)) {
+          return buildValidationError("Only JPG, JPEG, PNG, and WEBP photo files are allowed.", photoInput);
+        }
+      }
+      return null;
+    }
+
+    if (hotelCreateForm) {
+      hotelCreateForm.addEventListener("submit", (event) => {
+        if (phoneInput) {
+          phoneInput.value = String(phoneInput.value || "").replace(/\D/g, "");
+        }
+        if (pincodeInput) {
+          pincodeInput.value = String(pincodeInput.value || "").replace(/\D/g, "");
+        }
+
+        const phoneValue = String(phoneInput?.value || "").trim();
+        if (!/^\d{10}$/.test(phoneValue)) {
+          event.preventDefault();
+          window.alert("Hotel contact phone must be exactly 10 digits.");
+          phoneInput?.focus();
+          return;
+        }
+
+        const pincodeValue = String(pincodeInput?.value || "").trim();
+        if (pincodeValue && !/^\d{6}$/.test(pincodeValue)) {
+          event.preventDefault();
+          window.alert("Pincode must be exactly 6 digits.");
+          pincodeInput?.focus();
+          return;
+        }
+
+        const roomError = validateRoomRows();
+        if (roomError) {
+          event.preventDefault();
+          window.alert(roomError.message);
+          roomError.field?.focus();
+          return;
+        }
+
+        const photoError = validatePhotoFiles();
+        if (photoError) {
+          event.preventDefault();
+          window.alert(photoError.message);
+          photoError.field?.focus();
+        }
+      });
+    }
+
+    updateRemoveButtons();
   })();
 </script>
 {% endblock %}
